@@ -1,0 +1,9 @@
+Win32
+x64
+*.exe
+*.dll
+*.zip
+*.iobj
+*.ipdb
+*.ilk
+*.pdb
