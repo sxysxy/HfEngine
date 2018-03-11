@@ -57,6 +57,12 @@
     <ClCompile Include="DX\SwapChain.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics2D\G2DRenderer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics2D\G2DSprite.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="extension.h">
@@ -96,6 +102,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="DX\SwapChain.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics2D\G2DRenderer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics2D\G2DSprite.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

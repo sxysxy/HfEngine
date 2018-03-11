@@ -7,12 +7,31 @@ HFWindow.new("恋恋 VS 紫妈", 300, 300) {
     device = DX::D3DDevice.new(DX::HARDWARE_DEVICE);
     swap_chain = DX::SwapChain.new(device, window)
     context = DX::D3DDeviceContext.new(device).bind_pipeline(DX::RenderPipeline.new {
-        set_vshader DX::Shader.load_hlsl(device, "texture_vs.shader", DX::VertexShader)
-        set_pshader DX::Shader.load_hlsl(device, "texture_ps.shader", DX::PixelShader)
+        set_vshader DX::VertexShader.load_string(device, RSDSL.generate {
+			struct(:vs_output) {
+				declare :pos, :float4, :SV_POSITION
+				declare :tex, :float2, :TEXCOORD
+			}
+			defunc(:main, :vs_output, [:pos, :float4, :POSITION], [:tex, :float2, :TEXCOORD]) {
+				dvar :opt, :vs_output
+				p "opt.pos = pos,"
+				p "opt.tex = tex;"
+				creturn {p "opt"}
+			}
+		})
+        set_pshader DX::PixelShader.load_string(device, RSDSL.generate {
+			cbuffer(:param, 0) { declare :rate, :float }
+			Texture2D(:koishi, 0)
+			Texture2D(:yukari, 1)
+			SamplerState(:color_sampler, 0)
+			defunc(:main, :float4, [:pos, :float4, :SV_POSITION], [:tex, :float2, :TEXCOORD], :SV_TARGET) {
+				creturn { p "koishi.Sample(color_sampler, tex) * rate + yukari.Sample(color_sampler, tex) * (1-rate)" }
+			}
+		})
         set_input_layout device, ["POSITION", "TEXCOORD"], [DX::R32G32_FLOAT, DX::R32G32_FLOAT]
     }).instance_eval {
-        koishi = DX::D3DTexture2D.new(device, "../CommonFiles/300px-Komeiji Koishi.jpg")
-		yukari = DX::D3DTexture2D.new(device, "../CommonFiles/250px-Yukari.jpg")
+        koishi = DX::D3DTexture2D.new(device, "300px-Komeiji Koishi.jpg")
+		yukari = DX::D3DTexture2D.new(device, "250px-Yukari.jpg")
         vecs = [[-1.0, -1.0], [0.0, 1.0],
                 [-1.0, 1.0],  [0.0, 0.0],
                 [1.0, -1.0],  [1.0, 1.0],

@@ -99,6 +99,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -107,6 +108,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -117,6 +119,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -131,6 +134,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -148,6 +152,8 @@
     <ClCompile Include="DX\RenderPipeline.cpp" />
     <ClCompile Include="DX\SwapChain.cpp" />
     <ClCompile Include="extension.cpp" />
+    <ClCompile Include="Graphics2D\G2DRenderer.cpp" />
+    <ClCompile Include="Graphics2D\G2DSprite.cpp" />
     <ClCompile Include="HFWindow.cpp" />
     <ClCompile Include="libmsvcrt.cpp" />
     <ClCompile Include="main.cpp" />
@@ -164,6 +170,8 @@
     <ClInclude Include="DX\RenderPipeline.h" />
     <ClInclude Include="DX\SwapChain.h" />
     <ClInclude Include="extension.h" />
+    <ClInclude Include="Graphics2D\G2DRenderer.h" />
+    <ClInclude Include="Graphics2D\G2DSprite.h" />
     <ClInclude Include="HFWindow.h" />
     <ClInclude Include="libmsvcrt.h" />
     <ClInclude Include="stdafx.h" />

@@ -13,6 +13,11 @@ namespace Ext {
             extern VALUE module_DXMath;
             extern VALUE klass_Vector;
             extern VALUE klass_Matrix;
+
+            struct XMVector {
+                XMVECTOR v;
+            };
+
             void Init();
         }
     }

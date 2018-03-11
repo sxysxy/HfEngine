@@ -5,13 +5,14 @@
 */
 
 #include <assert.h>
+#include <atomic>
 
 namespace Utility{
 
 
 class ReferredObject{
 public:
-	int __ref_count;
+     std::atomic<int> __ref_count;
 	
 	ReferredObject(){
 		__ref_count = 0;

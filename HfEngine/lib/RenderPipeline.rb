@@ -18,4 +18,15 @@ class Shader
     end
 end
 
+[VertexShader, PixelShader].each {|klass|
+	klass.instance_exec {
+		def self.load_hlsl(device, filename)
+			Shader.load_hlsl(device, filename, self)
+		end
+		def self.load_string(device, str)
+			Shader.load_string(device, str, self)
+		end
+	}
+}
+
 end

@@ -12,6 +12,7 @@ namespace Ext {
             void Delete(T *d) {
                 delete d;
             }
+
             template<class T>
             VALUE New(VALUE klass) {
                 return Data_Wrap_Struct(klass, nullptr, Delete<T>, new T);
@@ -23,7 +24,7 @@ namespace Ext {
             void Init() {
                 module_DXMath = rb_define_module_under(module, "Math");
                 klass_Vector = rb_define_class_under(module_DXMath, "Vector", rb_cObject);
-                rb_define_alloc_func(klass_Vector, New<XMVECTOR>);
+                rb_define_alloc_func(klass_Vector, New<XMVector>);
                 
 
                 klass_Matrix = rb_define_class_under(module_DXMath, "Matrix", rb_cObject);
