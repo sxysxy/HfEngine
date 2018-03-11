@@ -8,7 +8,15 @@ namespace Utility{
 	};
 
 	struct Rect {
-		int x, y, w, h;
+		int x, y; 
+        union {
+            int w;
+            int width;
+        };
+        union {
+            int h;
+            int height;
+        };
 		Rect() { x = y = w = h = 0; }
 		Rect(int _x, int _y, int _w, int _h) {
 			x = _x, y = _y, w = _w, h = _h;

@@ -9,6 +9,7 @@
 #include <DX/D3DTexture2D.h>
 #include <DX/D3DBuffer.h>
 #include <DX/Input.h>
+#include <Graphics2D\G2DRenderer.h>
 
 using namespace Utility;
 
@@ -56,6 +57,7 @@ int __cdecl cmain(int argc, char *argv_[]) {
 
 void JustTest2();
 void JustTest3();
+void JustTest4();
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmd, int nShow) {
 	MSVCRT::GetFunctions();
     CoInitialize(nullptr);
@@ -66,12 +68,40 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmd, in
 	    return 0;
 	}
 
-	return cmain(0, nullptr);
+	//return cmain(0, nullptr);
     //JustTest2();
-    JustTest3();
+    //JustTest3();
+    JustTest4();
     return 0;
 }
 
+void JustTest4() {
+    auto window = ReferPtr<HFWindow>::New(L"emm...", 500, 500);
+    window->SetFixed(true);
+    window->Show();
+    auto device = ReferPtr<D3DDevice>::New(D3D_DRIVER_TYPE_HARDWARE);
+    auto swap_chain = ReferPtr<SwapChain>::New(device.Get(), window.Get());
+
+    auto renderer = ReferPtr<G2D::Renderer>::New(device.Get(), window.Get());
+    renderer->SetRenderTarget(&swap_chain->backbuffer);
+
+    SleepFPSTimer timer;
+    timer.Restart(60);
+    MSG msg;
+    while (true) {
+        if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE) > 0) {
+            if (msg.message == WM_QUIT)break;
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+        else {
+            renderer->FillRect({ 100, 100, 200, 200 }, { 1.0f, 0.0f, 1.0f, 1.0f });
+            renderer->ExecuteRender();
+            swap_chain->Present();
+            timer.Await();
+        }
+    }
+}
 
 void JustTest2() {
     auto window = ReferPtr<HFWindow>::New(L"ÁµÁµ!", 300, 300);

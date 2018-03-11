@@ -1,6 +1,6 @@
 #encoding: utf-8
 require './libcore.rb'
-HFWindow.new("Demo", 500, 500) { 
+HFWindow.new("Demo", 1296, 768) { 
     show
     window = self
     set_handler(:on_closed) {exit_mainloop}
@@ -35,7 +35,7 @@ HFWindow.new("Demo", 500, 500) {
         set_render_target(swap_chain.back_buffer)
 		self
     }
-	timer = FPSTimer.new(30)
+	timer = FPSTimer.new(60)
     messageloop {
         context.clear_render_target(swap_chain.back_buffer, HFColorRGBA.new(0.0, 0.0, 0.0, 0.0));
         context.draw(0, 4)
