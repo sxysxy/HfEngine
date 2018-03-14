@@ -10,11 +10,11 @@
 #include <DX/D3DBuffer.h>
 #include <DX/Input.h>
 #include <Graphics2D\G2DRenderer.h>
-
 using namespace Utility;
 
-int __cdecl cmain(int argc, char *argv_[]) {
-	ruby_sysinit(&argc, (char***)&argv_);  //’‚∏ˆruby_sysinit“ª∂®“™”–£¨ƒƒ≈¬≤ª”√√¸¡Ó––≤Œ ˝°£
+int __cdecl cmain(wchar_t *path) {
+    int argc; char **argv;
+	ruby_sysinit(&argc, (char***)&argv);  //Ëøô‰∏™ruby_sysinit‰∏ÄÂÆöË¶ÅÊúâÔºåÂì™ÊÄï‰∏çÁî®ÂëΩ‰ª§Ë°åÂèÇÊï∞„ÄÇ
 	{
 		RUBY_INIT_STACK;
 		ruby_init();
@@ -25,16 +25,29 @@ int __cdecl cmain(int argc, char *argv_[]) {
         int len = lstrlenW(buffer->ptr);
         int p;
         for (p = len - 1; ~p; p--) {
-            if(buffer->ptr[p] == L'\\')break;
+            if (buffer->ptr[p] == L'\\')break;
         }
-        buffer->ptr[p+1] = L'm';
-        buffer->ptr[p+2] = L'a';
-        buffer->ptr[p+3] = L'i';
-        buffer->ptr[p+4] = L'n';
-        buffer->ptr[p+5] = L'.';
-        buffer->ptr[p+6] = L'r';
-        buffer->ptr[p+7] = L'b';
-        buffer->ptr[p+8] = 0;
+        if (!path) {
+            buffer->ptr[p + 1] = L'm';
+            buffer->ptr[p + 2] = L'a';
+            buffer->ptr[p + 3] = L'i';
+            buffer->ptr[p + 4] = L'n';
+            buffer->ptr[p + 5] = L'.';
+            buffer->ptr[p + 6] = L'r';
+            buffer->ptr[p + 7] = L'b';
+            buffer->ptr[p + 8] = 0;
+        }
+        else {
+            lstrcpyW(buffer->ptr, path);
+            len = lstrlenW(buffer->ptr);
+            for (p = len - 1; ~p; p--) {
+                if (buffer->ptr[p] == L'\\')break;
+            }
+        }
+        buffer->ptr[p] = 0;
+        SetCurrentDirectory(buffer->ptr);
+        buffer->ptr[p] = L'\\';
+
         std::string filename;
         Ext::U16ToU8(buffer->ptr, filename, CP_UTF8);
 		VALUE script = rb_str_new_cstr(filename.c_str());
@@ -55,25 +68,36 @@ int __cdecl cmain(int argc, char *argv_[]) {
 
 }
 
-void JustTest2();
-void JustTest3();
-void JustTest4();
+wchar_t path_buffer[MAX_PATH+10];
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmd, int nShow) {
 	MSVCRT::GetFunctions();
-    CoInitialize(nullptr);
+    	CoInitialize(nullptr);
 	Input::Initialize();
 
+//#define RUBY_ENTRY 
+#ifdef RUBY_ENTRY
 	if (GetFileAttributes(TEXT("main.rb")) == INVALID_FILE_ATTRIBUTES) {
-	    MessageBox(0, TEXT("main.rb not found, stop."), TEXT("Error"), MB_OK);
-	    return 0;
-	}
-
-	//return cmain(0, nullptr);
-    //JustTest2();
-    //JustTest3();
+        if (MessageBox(0, TEXT("main.rb not found, choose a script?."), TEXT("Tip"), MB_YESNO) == IDYES) {
+            OPENFILENAMEW op;
+            ZeroMemory(&op, sizeof op);
+            op.lStructSize = sizeof(op);
+            op.lpstrFilter = L"Ruby script files(.rb)\0*.rb\0All files(*.*)\0*.*\0\0"; 
+            op.lpstrInitialDir = L"./";   
+            op.lpstrFile = path_buffer;
+            op.nMaxFile = MAX_PATH;
+            op.nFilterIndex = 0;
+            op.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_EXPLORER;
+            GetOpenFileNameW(&op);
+            return cmain(path_buffer);
+        }else
+	        return 0;
+    }
+    else {
+        return cmain(nullptr);
+    }
+#else
     JustTest4();
-    return 0;
-}
+#endif
 
 void JustTest4() {
     auto window = ReferPtr<HFWindow>::New(L"emm...", 500, 500);
@@ -104,7 +128,7 @@ void JustTest4() {
 }
 
 void JustTest2() {
-    auto window = ReferPtr<HFWindow>::New(L"¡µ¡µ!", 300, 300);
+    auto window = ReferPtr<HFWindow>::New(L"ÊÅãÊÅã!", 300, 300);
     window->SetFixed(true);
     window->Show();
     auto device = ReferPtr<D3DDevice>::New(D3D_DRIVER_TYPE_HARDWARE);
@@ -130,7 +154,7 @@ void JustTest2() {
         {{-1.0f, 1.0f},  {0.0f, 0.0f}},
         {{1.0f, -1.0f},  {1.0f, 1.0f}},
         {{1.0f, 1.0f},   {1.0f, 0.0f}}
-    }; ////◊Ûœ¬£¨ ◊Û…œ£¨ ”“œ¬£¨ ”“…œ
+    }; ////Â∑¶‰∏ãÔºå Â∑¶‰∏äÔºå Âè≥‰∏ãÔºå Âè≥‰∏ä
     auto vbuffer = ReferPtr<D3DVertexBuffer>::New(device.Get(), sizeof vecs, reinterpret_cast<void *>(vecs));
     context->BindVertexBuffer(0, vbuffer.Get(), sizeof Vertex);
     context->SetRenderTarget(&swap_chain->backbuffer);
