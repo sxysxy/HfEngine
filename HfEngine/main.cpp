@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "extension.h"
 #include "HFWindow.h"
 #include <regex>
@@ -68,29 +68,31 @@ int __cdecl cmain(wchar_t *path) {
 
 }
 
+void JustTest4();
 wchar_t path_buffer[MAX_PATH+10];
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmd, int nShow) {
-	MSVCRT::GetFunctions();
-    	CoInitialize(nullptr);
-	Input::Initialize();
+    MSVCRT::GetFunctions();
+    CoInitialize(nullptr);
+    Input::Initialize();
 
-//#define RUBY_ENTRY 
+    //#define RUBY_ENTRY 
 #ifdef RUBY_ENTRY
-	if (GetFileAttributes(TEXT("main.rb")) == INVALID_FILE_ATTRIBUTES) {
+    if (GetFileAttributes(TEXT("main.rb")) == INVALID_FILE_ATTRIBUTES) {
         if (MessageBox(0, TEXT("main.rb not found, choose a script?."), TEXT("Tip"), MB_YESNO) == IDYES) {
             OPENFILENAMEW op;
             ZeroMemory(&op, sizeof op);
             op.lStructSize = sizeof(op);
-            op.lpstrFilter = L"Ruby script files(.rb)\0*.rb\0All files(*.*)\0*.*\0\0"; 
-            op.lpstrInitialDir = L"./";   
+            op.lpstrFilter = L"Ruby script files(.rb)\0*.rb\0All files(*.*)\0*.*\0\0";
+            op.lpstrInitialDir = L"./";
             op.lpstrFile = path_buffer;
             op.nMaxFile = MAX_PATH;
             op.nFilterIndex = 0;
             op.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_EXPLORER;
             GetOpenFileNameW(&op);
             return cmain(path_buffer);
-        }else
-	        return 0;
+        }
+        else
+            return 0;
     }
     else {
         return cmain(nullptr);
@@ -98,6 +100,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmd, in
 #else
     JustTest4();
 #endif
+}
 
 void JustTest4() {
     auto window = ReferPtr<HFWindow>::New(L"emm...", 500, 500);
