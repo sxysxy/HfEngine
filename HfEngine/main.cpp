@@ -68,6 +68,8 @@ int __cdecl cmain(wchar_t *path) {
 
 }
 
+void JustTest1();
+void JustTest2();
 void JustTest4();
 wchar_t path_buffer[MAX_PATH+10];
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmd, int nShow) {
@@ -75,7 +77,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmd, in
     CoInitialize(nullptr);
     Input::Initialize();
 
-    //#define RUBY_ENTRY 
+//#define RUBY_ENTRY 
 #ifdef RUBY_ENTRY
     if (GetFileAttributes(TEXT("main.rb")) == INVALID_FILE_ATTRIBUTES) {
         if (MessageBox(0, TEXT("main.rb not found, choose a script?."), TEXT("Tip"), MB_YESNO) == IDYES) {
@@ -100,6 +102,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmd, in
 #else
     JustTest4();
 #endif
+    return 0;
 }
 
 void JustTest4() {
@@ -108,7 +111,6 @@ void JustTest4() {
     window->Show();
     auto device = ReferPtr<D3DDevice>::New(D3D_DRIVER_TYPE_HARDWARE);
     auto swap_chain = ReferPtr<SwapChain>::New(device.Get(), window.Get());
-
     auto renderer = ReferPtr<G2D::Renderer>::New(device.Get(), window.Get());
     renderer->SetRenderTarget(&swap_chain->backbuffer);
 
@@ -122,12 +124,85 @@ void JustTest4() {
             DispatchMessage(&msg);
         }
         else {
-            renderer->FillRect({ 100, 100, 200, 200 }, { 1.0f, 0.0f, 1.0f, 1.0f });
+            renderer->ClearTarget({0.0f, 0.0f, 0.0f, 0.0f});
+            renderer->FillRect({ 100, 100, 200, 300 }, {0.0f, 1.0f, 0.0f, 1.0f});
             renderer->ExecuteRender();
             swap_chain->Present();
             timer.Await();
         }
     }
+
+}
+
+static const char *draw_rect_ps = " \
+    float4 main(float4 pos : SV_POSITION, float4 color : COLOR) : SV_TARGET {\n \
+        return color;                                                        \n \
+    }                                                                        \n \
+";
+
+static const char *draw_rect_vs = " \
+    struct vs_output {             \n     \
+        float4 pos : SV_POSITION;  \n     \
+        float4 color : COLOR;      \n     \
+    };                             \n     \
+    vs_output main(float4 pos : POSITION, float4 color : COLOR) { \n  \
+            vs_output opt;                                        \n  \
+            opt.color = color;                                    \n  \
+            opt.pos = pos;                                        \n  \
+                                             \n  \
+            return opt;                                           \n  \
+    }                                                             \n  \
+";
+
+void JustTest1() {
+    auto window = ReferPtr<HFWindow>::New(L"emm...", 500, 500);
+    window->SetFixed(true);
+    window->Show();
+    auto device = ReferPtr<D3DDevice>::New(D3D_DRIVER_TYPE_HARDWARE);
+    auto swap_chain = ReferPtr<SwapChain>::New(device.Get(), window.Get());
+    auto pipeline = ReferPtr<RenderPipeline>::New();
+    pipeline->vshader = VertexShader::LoadCodeString(device.Get(), draw_rect_vs);
+    pipeline->pshader = PixelShader::LoadCodeString(device.Get(), draw_rect_ps);
+    pipeline->SetInputLayout(device.Get(),
+        std::initializer_list<std::string>({ "POSITION", "COLOR" }).begin(),
+        std::initializer_list<DXGI_FORMAT>({ DXGI_FORMAT_R32G32B32_FLOAT,  DXGI_FORMAT_R32G32B32A32_FLOAT }).begin(),
+        2);
+    auto context = device->immcontext;
+    context->BindPipeline(pipeline.Get());
+    struct ColoredVertex {
+        float pos[3];
+        float color[4];
+    };
+    ColoredVertex vecs[4] = {
+    { {-0.5, -0.5, 0.0},{0.0, 1.0, 0.0, 1.0} },
+    { {-0.5, 0.5, 0.0},{1.0, 0.0, 1.0, 1.0} },
+    { {0.5, -0.5, 0.0},{0.0, 0.0, 1.0, 1.0} },
+    { {0.5, 0.5, 0.0},{0.0, 1.0, 1.0, 1.0} }
+    };
+    auto vbuffer = ReferPtr<D3DVertexBuffer>::New(device.Get(), sizeof vecs, (void*)vecs);
+    context->BindVertexBuffer(0, vbuffer.Get(), sizeof ColoredVertex);
+    context->SetTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+    context->SetViewport({ 0, 0, window->width, window->height });
+    context->SetRenderTarget(&swap_chain->backbuffer);
+
+    SleepFPSTimer timer;
+    timer.Restart(60);
+    MSG msg;
+    while (true) {
+        if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE) > 0) {
+            if (msg.message == WM_QUIT)break;
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+        else {
+            context->ClearRenderTarget(&swap_chain->backbuffer, 
+                std::initializer_list<float>({0.0f, 0.0f, 0.0f, 0.0f}).begin());
+            context->Draw(0, 4);
+            swap_chain->Present();
+            timer.Await();
+        }
+    }
+    
 }
 
 void JustTest2() {
@@ -137,7 +212,7 @@ void JustTest2() {
     auto device = ReferPtr<D3DDevice>::New(D3D_DRIVER_TYPE_HARDWARE);
     auto swap_chain = ReferPtr<SwapChain>::New(device.Get(), window.Get());
     auto context = ReferPtr<D3DDeviceContext>::New(device.Get());
-    auto texture = ReferPtr<D3DTexture2D>::New(device.Get(), L"../CommonFiles/300px-Komeiji Koishi.jpg", false);
+    auto texture = ReferPtr<D3DTexture2D>::New(device.Get(), L"./Demos/Komeiji Koishi/300px-Komeiji Koishi.jpg", false);
     auto pipeline = ReferPtr<RenderPipeline>::New();
     pipeline->vshader = VertexShader::LoadHLSLFile(device.Get(), L"texture_vs.shader");
     pipeline->pshader = PixelShader::LoadHLSLFile(device.Get(), L"texture_ps.shader");

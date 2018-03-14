@@ -20,6 +20,9 @@ namespace G2D {
         
         ReferPtr<D3DDeviceContext> draw_rect;
         ReferPtr<D3DVertexBuffer> draw_rect_vbuffer;
+        ReferPtr<RenderPipeline> dr_pipeline;
+
+
         ReferPtr<D3DDeviceContext> draw_texture;
         void InitPipelines();
 
@@ -55,6 +58,7 @@ namespace G2D {
             for (auto pcontext : contexts) {
                 pcontext->SetViewport(rect);
             }
+            context->SetViewport(rect);
         }
         void UseDefaultViewport() {
             SetViewport({0, 0, window->width, window->height});
@@ -87,6 +91,9 @@ namespace G2D {
         void FillRect(const Rect &rect, const Color &color);
         void FillVerticalGradientRect(const Rect &rect, const Color &color1, const Color &color2);
         void FillHorizontalGradientRect(const Rect &rect, const Color &color1, const Color &color2);
+        void ClearTarget(const std::initializer_list<float> &color) {
+            context->ClearRenderTarget(render_target.Get(), color.begin());
+        }
 
     };
 
