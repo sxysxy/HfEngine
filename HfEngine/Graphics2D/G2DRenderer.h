@@ -24,11 +24,16 @@ namespace G2D {
 
 
         ReferPtr<D3DDeviceContext> draw_texture;
+        ReferPtr<D3DVertexBuffer> draw_texture_vbuffer;
+        ReferPtr<D3DConstantBuffer> draw_texture_cbuffer;
+        ReferPtr<RenderPipeline> dt_pipeline;
+        ReferPtr<D3DSampler> draw_texture_sampler;
         void InitPipelines();
 
         std::vector<ReferPtr<D3DDeviceContext>> contexts; //observing pointers to contexts
+        float _z_depth;             //z depth
     public:
-       
+        const float &z_depth = _z_depth;
         Rect viewport;
 
         Renderer() {}
@@ -39,6 +44,7 @@ namespace G2D {
         void Initialize(D3DDevice *_device, HFWindow *wnd) {
             device = _device;
             context = _device->immcontext.Get();
+            SetZDepth(0.0f);
             InitPipelines();
             SetViewport({0, 0, wnd->width, wnd->height});
         }
@@ -50,6 +56,9 @@ namespace G2D {
             return context;
         }
         
+        void SetZDepth(float z) {
+            _z_depth = min(1.0f, max(_z_depth, 0.0f));
+        }
         void SetViewport(int x, int y, int w, int h) {
             SetViewport({x, y, w, h});
         }
@@ -94,6 +103,7 @@ namespace G2D {
         void ClearTarget(const std::initializer_list<float> &color) {
             context->ClearRenderTarget(render_target.Get(), color.begin());
         }
+        void DrawTexture(const D3DTexture2D *texture, const Rect &rect);
 
     };
 

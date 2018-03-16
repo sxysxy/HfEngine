@@ -102,6 +102,8 @@ public:
 };
 
 class D3DDeviceImmdiateContext : public D3DDeviceContext {
+    friend class D3DDevice;
+    D3DDeviceImmdiateContext() {}
 public:
     D3DDeviceImmdiateContext(D3DDevice *device);
     void ExecuteCommandList(D3DDeviceContext *ocontext);

@@ -113,6 +113,7 @@ void JustTest4() {
     auto swap_chain = ReferPtr<SwapChain>::New(device.Get(), window.Get());
     auto renderer = ReferPtr<G2D::Renderer>::New(device.Get(), window.Get());
     renderer->SetRenderTarget(&swap_chain->backbuffer);
+    auto texture = ReferPtr<D3DTexture2D>::New(device.Get(), L"./Demos/Komeiji Koishi/300px-Komeiji Koishi.jpg", false);
 
     SleepFPSTimer timer;
     timer.Restart(60);
@@ -126,6 +127,8 @@ void JustTest4() {
         else {
             renderer->ClearTarget({0.0f, 0.0f, 0.0f, 0.0f});
             renderer->FillRect({ 100, 100, 200, 300 }, {0.0f, 1.0f, 0.0f, 1.0f});
+            renderer->FillRect({ 300, 300, 50, 50}, {1.0, 0.0f, 1.0, 1.0f});
+            renderer->DrawTexture(texture.Get(), {0, 0, 100, 100});
             renderer->ExecuteRender();
             swap_chain->Present();
             timer.Await();
