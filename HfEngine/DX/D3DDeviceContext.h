@@ -54,6 +54,7 @@ public:
             native_context->PSSetShaderResources(slot_pos, 1, tex->native_shader_resource_view.GetAddressOf());
     }
     void BindShaderSampler(int slot_pos, const D3DSampler *sampler, SHADERS_WHICH_TO_APPLAY which) {
+        if(!sampler)throw std::invalid_argument("Nullptr sampler is given");
         if (as_integer(which) & as_integer(SHADERS_APPLYTO_VSHADER))
             native_context->VSSetSamplers(slot_pos, 1, sampler->native_sampler.GetAddressOf());
         if (as_integer(which) & as_integer(SHADERS_APPLYTO_PSHADER))
@@ -61,7 +62,11 @@ public:
     }
     void BindShaderSampler(int start_slot, int count, const D3DSampler *const *ss, SHADERS_WHICH_TO_APPLAY which) {
         ID3D11SamplerState *s[16];
-        for(int i = 0; i < count; i++)s[i] = ss[i]->native_sampler.Get();
+        for (int i = 0; i < count; i++) {
+            s[i] = ss[i]->native_sampler.Get();
+            if(!s[i])
+                throw std::invalid_argument("Nullptr sampler is given");
+        }
         if (as_integer(which) & as_integer(SHADERS_APPLYTO_VSHADER))
             native_context->VSSetSamplers(start_slot, count, s);
         if (as_integer(which) & as_integer(SHADERS_APPLYTO_PSHADER))

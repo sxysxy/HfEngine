@@ -1,5 +1,6 @@
 #include "G2DRenderer.h"
 #include <shapes.h>
+#include <DX\RenderPipeline.h>
 
 namespace G2D {
 
@@ -34,9 +35,9 @@ namespace G2D {
         vs_output opt = (vs_output)0;                          \n \
         opt.pos = pos;            \n \
                                   \n \
-        float2 t = opt.pos.xy;    \n \
-        opt.pos.x = (cosa*t.x - sina*t.y); \n \
-        opt.pos.y = (sina*t.x + cosa*t.y); \n \
+        //float2 t = opt.pos.xy;    \n \
+        //opt.pos.x = (cosa*t.x - sina*t.y); \n \
+        //opt.pos.y = (sina*t.x + cosa*t.y); \n \
                                   \n \
         opt.tex = tex;          \n \
         return opt;             \n \
@@ -145,11 +146,11 @@ void Renderer::DrawTexture(const D3DTexture2D * texture, const Rect & rect) {
     struct VertexXXX {
         float pos[3];
         float tex[2];
-    }vecs[] = {
-        {x1, y1, _z_depth}, {0.0, 1.0},
-        {x1, y2, _z_depth}, {0.0, 0.0},
-        {x2, y1, _z_depth}, {1.0, 1.0},
-        {x2, y2, _z_depth}, {1.0, 0.0}
+    }vecs[4] = {
+        {{x1, y1, _z_depth}, {0.0, 1.0}},
+        {{x1, y2, _z_depth}, {0.0, 0.0}},
+        {{x2, y1, _z_depth}, {1.0, 1.0}},
+        {{x2, y2, _z_depth}, {1.0, 0.0}}
     };
     DT_PS_Param param = {0.0, 1.0};
     draw_texture->UpdateSubResource(draw_texture_vbuffer.Get(), vecs);
@@ -162,4 +163,165 @@ void Renderer::DrawTexture(const D3DTexture2D * texture, const Rect & rect) {
     draw_texture->Draw(0, 4);
 }
 
+}
+
+namespace Ext {
+    namespace G2D {
+        VALUE module_G2D;
+        namespace Renderer {
+            VALUE klass;
+            
+            void Delete(::G2D::Renderer *r) {
+                r->SubRefer();
+            }
+            VALUE New(VALUE klass) {
+                auto r = new ::G2D::Renderer;
+                r->AddRefer();
+                return Data_Wrap_Struct(klass, nullptr, Delete, r);
+            }
+            static VALUE initialize(VALUE self, VALUE device, VALUE wnd) {
+                if (!rb_obj_is_kind_of(device, Ext::DX::D3DDevice::klass)) {
+                    rb_raise(rb_eArgError, "G2D::Renderer#initialize: The first param should be a D3DDevice");
+                }
+                if (!rb_obj_is_kind_of(wnd, Ext::HFWindow::klass)) {
+                    rb_raise(rb_eArgError, "G2D::Renderer#initialize: The second param should be a HFWindow");
+                }
+                auto renderer = GetNativeObject<::G2D::Renderer>(self);
+                auto ddddd = GetNativeObject<D3DDevice>(device);
+                auto window = GetNativeObject<Ext::HFWindow::RHFWindow>(wnd);
+                renderer->Initialize(ddddd, window);
+                return self;
+            }
+            static VALUE set_render_target(VALUE self, VALUE target) {
+                if (!rb_obj_is_kind_of(target, Ext::DX::D3DTexture2D::klass)) {
+                    rb_raise(rb_eArgError, "G2D::Renderer#set_render_target : The param should be a D3DTexture2D");
+                }
+                auto renderer = GetNativeObject<::G2D::Renderer>(self);
+                auto texture = GetNativeObject<D3DTexture2D>(target);
+                renderer->SetRenderTarget(texture);
+                return self;
+            }
+
+            //color, 要求是一个HFColor
+            static VALUE clear_target(VALUE self, VALUE color) {
+                //float c[4];
+                float *p;
+                if (rb_obj_is_kind_of(color, Ext::DX::klass_HFColor)) {
+                    auto hc = GetNativeObject<Utility::Color>(color);
+                    p = reinterpret_cast<float *>(hc);
+                }
+                else {
+                    rb_raise(rb_eArgError, "G2D::Renderer#clear_target : The param color should be a HFColor");
+                }
+                auto renderer = GetNativeObject<::G2D::Renderer>(self);
+                renderer->ClearTarget({p[0], p[1], p[2], p[3]});
+                return self;
+            }
+                                                                    //rect
+            static VALUE draw_texture(VALUE self, VALUE texture, VALUE r) {
+                //
+                if (!rb_obj_is_kind_of(texture, Ext::DX::D3DTexture2D::klass) || !rb_obj_is_kind_of(r, Ext::DX::klass_HFRect)) {
+                    rb_raise(rb_eArgError, "G2D::Renderer#draw_texture : please call draw_texture(texture, rect)");
+                }
+                auto renderer = GetNativeObject<::G2D::Renderer>(self);
+                auto tex = GetNativeObject<::D3DTexture2D>(texture);
+                auto rect = GetNativeObject<Utility::Rect>(r);
+                renderer->DrawTexture(tex, *rect);
+                return self;
+            }
+                                                //rect, color
+            static VALUE fill_rect(VALUE self, VALUE r, VALUE c) {
+                if (!rb_obj_is_kind_of(r, Ext::DX::klass_HFRect) || !rb_obj_is_kind_of(c, Ext::DX::klass_HFColor)) {
+                    rb_raise(rb_eArgError, "G2D::Renderer#fill_rect : please call draw_rect(rect, color)");
+                }
+                auto renderer = GetNativeObject<::G2D::Renderer>(self);
+                auto color = GetNativeObject<Utility::Color>(c);
+                auto rect = GetNativeObject<Utility::Rect>(r);
+                renderer->FillRect(*rect, *color);
+                return self;
+            }
+
+            static VALUE set_z_depth(VALUE self, VALUE z) {
+                auto renderer = GetNativeObject<::G2D::Renderer>(self);
+                renderer->SetZDepth((float)rb_float_value(z));
+                return self;
+            }
+
+            static VALUE get_z_depth(VALUE self) {
+                auto renderer = GetNativeObject<::G2D::Renderer>(self);
+                return rb_float_new(renderer->z_depth);
+            }
+
+            static VALUE execute_render(VALUE self) {
+                GetNativeObject<::G2D::Renderer>(self)->ExecuteRender();
+                return self;
+            }
+
+            static VALUE set_viewport(VALUE self, VALUE r) {
+                if (!rb_obj_is_kind_of(r, Ext::DX::klass_HFRect)) {
+                    rb_raise(rb_eArgError, "G2D::Renderer#set_viewport : the first param should be a HFRect to specific the viewport area");
+                }
+                auto rect = GetNativeObject<Utility::Rect>(r);
+                auto renderer = GetNativeObject<::G2D::Renderer>(self);
+                renderer->SetViewport(*rect);
+                return self;
+            }
+            static VALUE use_default_viewport(VALUE self) {
+                GetNativeObject<::G2D::Renderer>(self)->UseDefaultViewport();
+                return self;
+            }
+
+            //DT, DR PS
+            static VALUE set_DT_PS(VALUE self, VALUE ps) {
+                if (!rb_obj_is_kind_of(ps, Ext::DX::Shader::klass_pshader)) {
+                    rb_raise(rb_eArgError, "G2D::Renderer#set_DT_PS : The param should be a PixelShader");
+                }
+                auto s = GetNativeObject<PixelShader>(ps);
+                auto renderer = GetNativeObject<::G2D::Renderer>(self);
+                renderer->SetDTPixelShader(s);
+                return self;
+            }
+            static VALUE set_DR_PS(VALUE self, VALUE ps) {
+                if (!rb_obj_is_kind_of(ps, Ext::DX::Shader::klass_pshader)) {
+                    rb_raise(rb_eArgError, "G2D::Renderer#set_DT_PS : The param should be a PixelShader");
+                }
+                auto s = GetNativeObject<PixelShader>(ps);
+                auto renderer = GetNativeObject<::G2D::Renderer>(self);
+                renderer->SetDRPixelShader(s);
+                return self;
+            }
+            static VALUE use_default_DR_PS(VALUE self) {
+                GetNativeObject<::G2D::Renderer>(self)->UseDefaultDRPixelShader();
+                return self;
+            }
+            static VALUE use_default_DT_PS(VALUE self) {
+                GetNativeObject<::G2D::Renderer>(self)->UseDefaultDTPixelShader();
+                return self;
+            }
+
+            void Init() {
+                module_G2D = rb_define_module("G2D");
+                klass = rb_define_class_under(module_G2D, "Renderer", rb_cObject);
+                
+                rb_define_alloc_func(klass, New);
+                rb_define_method(klass, "initialize", (rubyfunc)initialize, 2);
+                rb_define_method(klass, "set_render_target", (rubyfunc)set_render_target, 1);
+                rb_define_method(klass, "clear_target", (rubyfunc)clear_target, 1);
+                rb_define_method(klass, "draw_texture", (rubyfunc)draw_texture, 2);
+                rb_define_method(klass, "fill_rect", (rubyfunc)fill_rect, 2);
+                rb_define_method(klass, "set_z_depth", (rubyfunc)set_z_depth, 1);
+                rb_alias(klass, rb_intern("z_depth="), rb_intern("set_z_depth"));
+                rb_define_method(klass, "get_z_depth", (rubyfunc)get_z_depth, 0);
+                rb_alias(klass, rb_intern("z_depth"), rb_intern("get_z_depth"));
+                rb_define_method(klass, "execute_render", (rubyfunc)execute_render, 0);
+                rb_define_method(klass, "set_viewport", (rubyfunc)set_viewport, 1);
+                rb_define_method(klass, "use_default_viewport", (rubyfunc)use_default_viewport, 0);
+                rb_define_method(klass, "set_DT_PS", (rubyfunc)set_DT_PS, 1);
+                rb_define_method(klass, "set_DR_PS", (rubyfunc)set_DR_PS, 1);
+                rb_define_method(klass, "use_default_DT_PS", (rubyfunc)use_default_DT_PS, 0);
+                rb_define_method(klass, "use_default_DR_PS", (rubyfunc)use_default_DR_PS, 0);
+                
+            }
+        }
+    }
 }

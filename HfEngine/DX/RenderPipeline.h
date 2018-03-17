@@ -150,7 +150,8 @@ public:
 class D3DBlendState : public Utility::ReferredObject {
 public:
     ComPtr<ID3D11BlendState> native_blend_state;
-
+    D3DBlendState() {}
+    
     virtual void Release() {}
 };
 

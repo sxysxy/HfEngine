@@ -34,6 +34,8 @@ public:
         native_swap_chain.ReleaseAndGetAddressOf();
                     //do not need to release native_device. delete operation will do it automacailly.
                     //UnIntialize dose not entirely equal to Destructor. eg. You can Uninitalize an object and then call Initialize.
+        
+        backbuffer.UnInitialize(); //this should be called...
     }
     ~SwapChain() {
         UnInitialize();

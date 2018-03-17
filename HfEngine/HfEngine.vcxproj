@@ -153,7 +153,6 @@
     <ClCompile Include="DX\SwapChain.cpp" />
     <ClCompile Include="extension.cpp" />
     <ClCompile Include="Graphics2D\G2DRenderer.cpp" />
-    <ClCompile Include="Graphics2D\G2DSprite.cpp" />
     <ClCompile Include="HFWindow.cpp" />
     <ClCompile Include="libmsvcrt.cpp" />
     <ClCompile Include="main.cpp" />
@@ -171,7 +170,6 @@
     <ClInclude Include="DX\SwapChain.h" />
     <ClInclude Include="extension.h" />
     <ClInclude Include="Graphics2D\G2DRenderer.h" />
-    <ClInclude Include="Graphics2D\G2DSprite.h" />
     <ClInclude Include="HFWindow.h" />
     <ClInclude Include="libmsvcrt.h" />
     <ClInclude Include="stdafx.h" />

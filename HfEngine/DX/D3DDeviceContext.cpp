@@ -302,7 +302,12 @@ namespace Ext {
                     rb_raise(rb_eArgError, "D3DDeviceContext::bind_sampler: The second param should be a D3DSampler");
                 auto context = GetNativeObject<::D3DDeviceContext>(self);
                 auto sampler = GetNativeObject<::D3DSampler>(sam);
-                context->BindShaderSampler(FIX2INT(slot_pos), sampler, (SHADERS_WHICH_TO_APPLAY)FIX2INT(which));
+                try {
+                    context->BindShaderSampler(FIX2INT(slot_pos), sampler, (SHADERS_WHICH_TO_APPLAY)FIX2INT(which));
+                }
+                catch(std::invalid_argument &e){
+                    rb_raise(rb_eArgError, e.what());
+                }
                 return self;
             }
             static VALUE bind_samplers(VALUE self, VALUE start_slot, VALUE sams, VALUE which) {
@@ -318,7 +323,12 @@ namespace Ext {
                             "D3DDeviceContext::bind_samplers: The second param should be an Array filled with DX::D3DSampler");
                     buffers.push_back(GetNativeObject<D3DSampler>(p[i]));
                 }
-                context->BindShaderSampler(FIX2INT(start_slot), len, buffers.data(), (SHADERS_WHICH_TO_APPLAY)FIX2INT(which));
+                try {
+                    context->BindShaderSampler(FIX2INT(start_slot), len, buffers.data(), (SHADERS_WHICH_TO_APPLAY)FIX2INT(which));
+                }
+                catch (std::invalid_argument &e) {
+                    rb_raise(rb_eArgError, e.what());
+                }
                 return self;
             }
             static VALUE update_subresource(VALUE self, VALUE buf, VALUE data) {

@@ -67,6 +67,11 @@ namespace Ext{
             }
             return self;
         }
+        static VALUE HFR(int argc, VALUE *argv, VALUE self) {
+            VALUE r = HFRNew(klass_HFRect);
+            return rb_funcall2(r, rb_intern("initialize"), argc, argv);
+            return r;
+        }
 
 #pragma warning(push)
 #pragma warning(disable:4244)
@@ -119,9 +124,14 @@ namespace Ext{
                 color->a = rb_float_value(argv[3]);
             }
             else {
-                rb_raise(rb_eArgError, "HFRect::initialize: Wrong number of arguments. expecting 1 or 4 but got %d", argc);
+                rb_raise(rb_eArgError, "HFColor::initialize: Wrong number of arguments. expecting 1 or 4 but got %d", argc);
             }
             return self;
+        }
+        static VALUE CRGBA(int argc, VALUE *argv, VALUE self) {
+            VALUE c = CRGBANew(klass_HFColor);
+            rb_funcall2(c, rb_intern("initialize"), argc, argv);
+            return c;
         }
 
         void BasicInit() {
@@ -136,6 +146,7 @@ namespace Ext{
             rb_define_method(klass_HFRect, "w=", (rubyfunc)HRF_setw, 1);
             rb_define_method(klass_HFRect, "h=", (rubyfunc)HRF_seth, 1);
             rb_define_method(klass_HFRect, "initialize", (rubyfunc)HFR_initialize, -1);
+            rb_define_module_function(rb_mKernel, "HFRect", (rubyfunc)HFR, -1);
 
             klass_HFColor = rb_define_class("HFColorRGBA", rb_cObject);
             rb_define_alloc_func(klass_HFColor, CRGBANew);
@@ -148,6 +159,7 @@ namespace Ext{
             rb_define_method(klass_HFColor, "b=", (rubyfunc)CRBGA_sb, 1);
             rb_define_method(klass_HFColor, "a=", (rubyfunc)CRBGA_sa, 1);
             rb_define_method(klass_HFColor, "initialize", (rubyfunc)CRGBA_initialize, -1);
+            rb_define_module_function(rb_mKernel, "HFColorRGBA", (rubyfunc)CRGBA, -1);
         }
 #pragma warning(pop)
 

@@ -33,6 +33,7 @@ void D3DTexture2D::Initialize(D3DDevice *device, int w, int h, bool stenciled = 
     if (FAILED(hr = device->native_device->CreateTexture2D(&td, nullptr, &native_texture2d))) {
         MAKE_ERRMSG<std::runtime_error>("Failed to create D3D Texture2D, Error code:", hr);
     }
+    CreateViews(device->native_device.Get());
     if(stenciled)
         CreateStencil();
 }

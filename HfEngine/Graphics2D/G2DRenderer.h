@@ -4,6 +4,7 @@
 #include <DX/D3DDeviceContext.h>
 #include <DX/D3DTexture2D.h>
 #include <DX/D3DBuffer.h>
+#include <DX/RenderPipeline.h>
 #include <shapes.h>
 #include <HFWindow.h>
 
@@ -32,6 +33,7 @@ namespace G2D {
 
         std::vector<ReferPtr<D3DDeviceContext>> contexts; //observing pointers to contexts
         float _z_depth;             //z depth
+        float _alpha_mod;           //alpha modulation value
     public:
         const float &z_depth = _z_depth;
         Rect viewport;
@@ -57,14 +59,14 @@ namespace G2D {
         }
         
         void SetZDepth(float z) {
-            _z_depth = min(1.0f, max(_z_depth, 0.0f));
+            _z_depth = min(1.0f, max(z, 0.0f));
         }
         void SetViewport(int x, int y, int w, int h) {
             SetViewport({x, y, w, h});
         }
         void SetViewport(const Rect &rect) {;
             viewport = rect;
-            for (auto pcontext : contexts) {
+            for (auto &pcontext : contexts) {
                 pcontext->SetViewport(rect);
             }
             context->SetViewport(rect);
@@ -74,7 +76,7 @@ namespace G2D {
         }
         void SetRenderTarget(D3DTexture2D *texture) {
             render_target = texture;
-            for (auto pcontext : contexts) {
+            for (auto &pcontext : contexts) {
                 pcontext->SetRenderTarget(texture);
             }
         }
@@ -83,7 +85,7 @@ namespace G2D {
         }
 
         void ExecuteRender() {
-            for (auto pcontext : contexts) {
+            for (auto &pcontext : contexts) {
                 pcontext->FinishiCommandList();
                 context->ExecuteCommandList(pcontext->native_command_list.Get());
             }
@@ -103,8 +105,34 @@ namespace G2D {
         void ClearTarget(const std::initializer_list<float> &color) {
             context->ClearRenderTarget(render_target.Get(), color.begin());
         }
+        void ClearTarget(const Color &color) {
+            context->ClearRenderTarget(render_target.Get(), 
+                std::initializer_list<float>({color.r, color.g, color.b, color.a}).begin());
+        }
         void DrawTexture(const D3DTexture2D *texture, const Rect &rect);
+        void SetDTPixelShader(const PixelShader *ps) {
+            draw_texture->native_context->PSSetShader(ps->native_shader.Get(), 0, 0);
+        }
+        void UseDefaultDTPixelShader() {
+            SetDTPixelShader(dt_pipeline->pshader.Get());
+        }
+        void SetDRPixelShader(const PixelShader *ps) {
+            draw_rect->native_context->PSSetShader(ps->native_shader.Get(), 0, 0);
+        }
+        void UseDefaultDRPixelShader() {
+            SetDRPixelShader(dr_pipeline->pshader.Get());
+        }
 
     };
 
+}
+
+namespace Ext {
+    extern VALUE module_G2D;
+    namespace G2D {
+        namespace Renderer {
+            extern VALUE klass;
+            void Init();
+        }
+    }
 }

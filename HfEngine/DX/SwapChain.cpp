@@ -4,7 +4,7 @@
 #include <stdafx.h>
 #include <extension.h>
 
-void SwapChain::Initialize(D3DDevice * device, HFWindow * wnd, bool fullscreen = false, bool _stenciled = false) {
+void SwapChain::Initialize(D3DDevice * device, HFWindow * wnd, bool fullscreen = false, bool _stenciled = true) {
     DXGI_SWAP_CHAIN_DESC sd;
     ZeroMemory(&sd, sizeof sd);
     sd.BufferCount = 1;
@@ -34,6 +34,7 @@ void SwapChain::Initialize(D3DDevice * device, HFWindow * wnd, bool fullscreen =
     Resize(wnd->width, wnd->height);
     if(fullscreen)
         SetFullScreen(fullscreen);
+    backbuffer.AddRefer();   //add reference count.
 }
 
 void SwapChain::Resize(int w, int h) {
@@ -97,8 +98,14 @@ namespace Ext { namespace DX {
 
             auto sc = GetNativeObject<::SwapChain>(self);
             try{
-            sc->Initialize(GetNativeObject<::D3DDevice>(argv[0]), GetNativeObject<Ext::HFWindow::RHFWindow>(argv[1]), 
-                argc > 2 ? (argv[2] == Qtrue) : false, argc > 3 ? (argv[3] == Qtrue) : false);
+                if(argc == 2)
+                    sc->Initialize(GetNativeObject<::D3DDevice>(argv[0]), GetNativeObject<Ext::HFWindow::RHFWindow>(argv[1]));
+                else if(argc == 3)
+                    sc->Initialize(GetNativeObject<::D3DDevice>(argv[0]), GetNativeObject<Ext::HFWindow::RHFWindow>(argv[1]), 
+                        argv[2] == Qtrue);
+                else
+                    sc->Initialize(GetNativeObject<::D3DDevice>(argv[0]), GetNativeObject<Ext::HFWindow::RHFWindow>(argv[1]),
+                        argv[2] == Qtrue, argv[3] == Qtrue);
             }
             catch (std::runtime_error re) {
                 rb_raise(rb_eRuntimeError, re.what());

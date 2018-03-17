@@ -77,7 +77,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmd, in
     CoInitialize(nullptr);
     Input::Initialize();
 
-//#define RUBY_ENTRY 
+#define RUBY_ENTRY 
 #ifdef RUBY_ENTRY
     if (GetFileAttributes(TEXT("main.rb")) == INVALID_FILE_ATTRIBUTES) {
         if (MessageBox(0, TEXT("main.rb not found, choose a script?."), TEXT("Tip"), MB_YESNO) == IDYES) {
@@ -112,8 +112,19 @@ void JustTest4() {
     auto device = ReferPtr<D3DDevice>::New(D3D_DRIVER_TYPE_HARDWARE);
     auto swap_chain = ReferPtr<SwapChain>::New(device.Get(), window.Get());
     auto renderer = ReferPtr<G2D::Renderer>::New(device.Get(), window.Get());
-    renderer->SetRenderTarget(&swap_chain->backbuffer);
-    auto texture = ReferPtr<D3DTexture2D>::New(device.Get(), L"./Demos/Komeiji Koishi/300px-Komeiji Koishi.jpg", false);
+    auto koishi = ReferPtr<D3DTexture2D>::New(device.Get(), L"./Demos/Komeiji Koishi/300px-Komeiji Koishi.jpg", false);
+    auto yukari = ReferPtr<D3DTexture2D>::New(device.Get(), L"./Demos/Komeiji Koishi/250px-Yukari.jpg", false);
+    auto back = ReferPtr<D3DTexture2D>::New(device.Get(), window->width, window->height, true);
+    static const char *new_ps = " \
+    Texture2D color_map : register(t0);   \n \
+    SamplerState color_sampler : register(s0); \n \
+    float4 main(float4 pos : SV_POSITION, float2 tex : TEXCOORD) : SV_TARGET { \
+        float4 c = color_map.Sample(color_sampler, tex); \
+        c.b += 0.4f; \
+        return c;    \
+        }"           \
+    ;
+    auto ps = PixelShader::LoadCodeString(device.Get(), new_ps);
 
     SleepFPSTimer timer;
     timer.Restart(60);
@@ -125,16 +136,25 @@ void JustTest4() {
             DispatchMessage(&msg);
         }
         else {
+            renderer->SetRenderTarget(back.Get());
             renderer->ClearTarget({0.0f, 0.0f, 0.0f, 0.0f});
+            renderer->SetZDepth(0.5);
             renderer->FillRect({ 100, 100, 200, 300 }, {0.0f, 1.0f, 0.0f, 1.0f});
             renderer->FillRect({ 300, 300, 50, 50}, {1.0, 0.0f, 1.0, 1.0f});
-            renderer->DrawTexture(texture.Get(), {0, 0, 100, 100});
+            renderer->DrawTexture(yukari.Get(), {350, 150, 150, 150});
+            renderer->SetZDepth(0.0);  //恋恋虽然是最后进行渲染的，但是深度最浅，所以还可以显示在最前面
+            renderer->DrawTexture(koishi.Get(), {0, 0, 200, 200});
+            renderer->ExecuteRender();
+            renderer->SetRenderTarget(&swap_chain->backbuffer);
+            renderer->ClearTarget({ 0.0f, 0.0f, 0.0f, 0.0f });
+            renderer->SetDTPixelShader(ps.Get());       //修改DT渲染管线的PixelShader, 给所有颜色的blue分量提高0.4
+            renderer->DrawTexture(back.Get(), {0, 0, window->width, window->height});
+            renderer->UseDefaultDTPixelShader();
             renderer->ExecuteRender();
             swap_chain->Present();
             timer.Await();
         }
     }
-
 }
 
 static const char *draw_rect_ps = " \
