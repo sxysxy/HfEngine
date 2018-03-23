@@ -1,3 +1,4 @@
+=begin
 module DX #namespace DX
 
 class Shader
@@ -30,3 +31,4 @@ end
 }
 
 end
+=end

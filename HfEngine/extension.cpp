@@ -2,7 +2,7 @@
 #include "extension.h"
 #include "HFWindow.h"
 #include "DX\DX.h"
-#include "Graphics2D\G2DRenderer.h"
+
 namespace Ext {
 
     VALUE __msgbox__(VALUE self, VALUE msg) {
@@ -104,7 +104,7 @@ namespace Ext {
         rb_define_module_function(rb_mKernel, "exit_mainloop", (rubyfunc)exit_mainloop, 0);
 		Ext::DX::Init();
         Ext::FPSTimer::Init();
-        Ext::G2D::Renderer::Init();
+        //Ext::G2D::Renderer::Init();
 
 	}
 }

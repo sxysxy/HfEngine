@@ -1,5 +1,6 @@
 #include "Input.h"
-#include <HFWindow.h>
+#include "../HFWindow.h"
+#include "../extension.h"
 #pragma comment(lib, "dinput8.lib")
 
 namespace Input {

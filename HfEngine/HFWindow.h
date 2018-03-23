@@ -1,7 +1,7 @@
 #pragma once
 #include "stdafx.h"
 #include "extension.h"
-#include "NativeThread.h"
+#include "../Utility/NativeThread.h"
 
 const UINT WM_EXITLOOP = (WM_USER + 2333);
 const UINT WM_PROCESS_FLAG = (WM_USER+2332);
@@ -26,22 +26,7 @@ public:
 	const HWND &native_handle = _native_handle;
 	const int &width = _width, &height = _height;
     UINT style;
-    /*
-    struct InteractData {
-        int closed_flag;
-        int sized_flag;
-        int set_fixed_flag;
-        int show_flag;
-        int close_flag;
-        int resize_flag;
-        int resize_w, resize_h;
-        int set_title_flag;
-        wchar_t *set_title_string;
-        int moveto_flag;
-        int moveto_x, moveto_y;
-    };
-    Utility::ReferPtr<NativeThread<InteractData>> message_thread;
-    */
+
 
 	HFWindow() {
 		_native_handle = 0;

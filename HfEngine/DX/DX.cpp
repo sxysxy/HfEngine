@@ -1,12 +1,7 @@
 #include "DX.h"
-#include "D3DDevice.h"
-#include "D3DDeviceContext.h"
-#include "SwapChain.h"
-#include "D3DTexture2D.h"
-#include "RenderPipeline.h"
-#include "D3DBuffer.h"
 #include "Input.h"
 #include "Math.h"
+#include "../extension.h"
 
 namespace Ext{
     namespace DX{
@@ -167,14 +162,14 @@ namespace Ext{
             module = rb_define_module("DX");
             klass_eImplementStillNotSupported = rb_define_class_under(module, "ImplementStillNotSupported", rb_eException);
             BasicInit();
-            Ext::DX::D3DDevice::Init();
-            Ext::DX::D3DDeviceContext::Init();
-            Ext::DX::D3DTexture2D::Init();
-            Ext::DX::SwapChain::Init();
-            Ext::DX::RenderPipeline::Init();
-            Ext::DX::D3DBuffer::Init();
+          //  Ext::DX::D3DDevice::Init();
+         //   Ext::DX::D3DDeviceContext::Init();
+         //   Ext::DX::D3DTexture2D::Init();
+         //   Ext::DX::SwapChain::Init();
+        //    Ext::DX::RenderPipeline::Init();
+        //    Ext::DX::D3DBuffer::Init();
             Ext::DX::Input::Init();
-            Ext::DX::RenderingThread::Init();
+        //    Ext::DX::RenderingThread::Init();
            // Ext::DX::Math::Init();
         }
        

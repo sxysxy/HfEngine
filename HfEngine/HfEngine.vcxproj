@@ -71,25 +71,25 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ReferencePath>$(VC_ReferencesPath_x86);</ReferencePath>
-    <IncludePath>$(DXSDK_DIR)\Include;$(SolutionDir)\Utility;$(SolutionDir)\$(ProjectName);$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(DXSDK_DIR)\Include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(DXSDK_DIR)\Lib\x86;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
     <OutDir>$(SolutionDir)\$(ProjectName)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ReferencePath>$(VC_ReferencesPath_x86);</ReferencePath>
-    <IncludePath>$(DXSDK_DIR)\Include;$(SolutionDir)\Utility;$(SolutionDir)\$(ProjectName);$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(DXSDK_DIR)\Include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(DXSDK_DIR)\Lib\x86;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
     <OutDir>$(SolutionDir)\$(ProjectName)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ReferencePath>$(VC_ReferencesPath_x64);</ReferencePath>
-    <IncludePath>$(DXSDK_DIR)\Include;$(SolutionDir)\Utility;$(SolutionDir)\$(ProjectName);$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(DXSDK_DIR)\Include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(DXSDK_DIR)\Lib\x64;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
     <OutDir>$(SolutionDir)\$(ProjectName)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ReferencePath>$(VC_ReferencesPath_x64);</ReferencePath>
-    <IncludePath>$(DXSDK_DIR)\Include;$(SolutionDir)\Utility;$(SolutionDir)\$(ProjectName);$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(DXSDK_DIR)\Include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(DXSDK_DIR)\Lib\x64;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
     <OutDir>$(SolutionDir)\$(ProjectName)\</OutDir>
   </PropertyGroup>
@@ -142,34 +142,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="DX\D3DBuffer.cpp" />
-    <ClCompile Include="DX\D3DDevice.cpp" />
-    <ClCompile Include="DX\D3DDeviceContext.cpp" />
-    <ClCompile Include="DX\D3DTexture2D.cpp" />
     <ClCompile Include="DX\DX.cpp" />
     <ClCompile Include="DX\Input.cpp" />
-    <ClCompile Include="DX\Math.cpp" />
-    <ClCompile Include="DX\RenderPipeline.cpp" />
-    <ClCompile Include="DX\SwapChain.cpp" />
     <ClCompile Include="extension.cpp" />
-    <ClCompile Include="Graphics2D\G2DRenderer.cpp" />
     <ClCompile Include="HFWindow.cpp" />
     <ClCompile Include="libmsvcrt.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stdafx.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DX\D3DBuffer.h" />
-    <ClInclude Include="DX\D3DDevice.h" />
-    <ClInclude Include="DX\D3DDeviceContext.h" />
-    <ClInclude Include="DX\D3DTexture2D.h" />
     <ClInclude Include="DX\DX.h" />
     <ClInclude Include="DX\Input.h" />
-    <ClInclude Include="DX\Math.h" />
-    <ClInclude Include="DX\RenderPipeline.h" />
-    <ClInclude Include="DX\SwapChain.h" />
     <ClInclude Include="extension.h" />
-    <ClInclude Include="Graphics2D\G2DRenderer.h" />
     <ClInclude Include="HFWindow.h" />
     <ClInclude Include="libmsvcrt.h" />
     <ClInclude Include="stdafx.h" />

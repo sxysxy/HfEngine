@@ -1,15 +1,8 @@
 ﻿#include "stdafx.h"
 #include "extension.h"
 #include "HFWindow.h"
+#include "DX\Input.h"
 #include <regex>
-#include <DX/D3DDevice.h>
-#include <DX/SwapChain.h>
-#include <DX/RenderPipeline.h>
-#include <DX/D3DDeviceContext.h>
-#include <DX/D3DTexture2D.h>
-#include <DX/D3DBuffer.h>
-#include <DX/Input.h>
-#include <Graphics2D\G2DRenderer.h>
 using namespace Utility;
 
 int __cdecl cmain(wchar_t *path) {
@@ -68,9 +61,6 @@ int __cdecl cmain(wchar_t *path) {
 
 }
 
-void JustTest1();
-void JustTest2();
-void JustTest4();
 wchar_t path_buffer[MAX_PATH+10];
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmd, int nShow) {
     MSVCRT::GetFunctions();
@@ -100,200 +90,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmd, in
         return cmain(nullptr);
     }
 #else
-    JustTest4();
+    
 #endif
     return 0;
-}
-
-void JustTest4() {
-    auto window = ReferPtr<HFWindow>::New(L"emm...", 500, 500);
-    window->SetFixed(true);
-    window->Show();
-    auto device = ReferPtr<D3DDevice>::New(D3D_DRIVER_TYPE_HARDWARE);
-    auto swap_chain = ReferPtr<SwapChain>::New(device.Get(), window.Get());
-    auto renderer = ReferPtr<G2D::Renderer>::New(device.Get(), window.Get());
-    auto koishi = ReferPtr<D3DTexture2D>::New(device.Get(), L"./Demos/Komeiji Koishi/300px-Komeiji Koishi.jpg", false);
-    auto yukari = ReferPtr<D3DTexture2D>::New(device.Get(), L"./Demos/Komeiji Koishi/250px-Yukari.jpg", false);
-    auto back = ReferPtr<D3DTexture2D>::New(device.Get(), window->width, window->height, true);
-
-    SleepFPSTimer timer;
-    timer.Restart(60);
-    MSG msg;
-    while (true) {
-        if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE) > 0) {
-            if (msg.message == WM_QUIT)break;
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
-        else {
-            renderer->SetRenderTarget(back.Get());
-            renderer->ClearTarget({0.0f, 0.0f, 0.0f, 0.0f});
-            renderer->SetZDepth(0.5);
-            renderer->FillRect({ 100, 100, 200, 300 }, {0.0f, 1.0f, 0.0f, 1.0f});
-            renderer->FillRect({ 300, 300, 50, 50}, {1.0, 0.0f, 1.0, 1.0f});
-            renderer->DrawTexture(yukari.Get(), {350, 150, 150, 150});
-            renderer->SetZDepth(0.0);  //恋恋虽然是最后进行渲染的，但是深度最浅，所以还可以显示在最前面
-            renderer->DrawTexture(koishi.Get(), {0, 0, 200, 200});
-            renderer->SetRenderTarget(&(swap_chain->backbuffer));
-            renderer->ClearTarget({ 0.0f, 0.0f, 0.0f, 0.0f });
-            renderer->DrawTextureEx(back.Get(), { 0, 0, window->width, window->height }, 
-                { 1.0f, 1.0f, 1.0f, 0.5f },     //color_mod 
-                { 0.0f, 0.4f, 0.0f, 0.0f},      //tone_mod        
-                0.0f);                       //angle
-            renderer->ExecuteRender();
-            swap_chain->Present();
-            timer.Await();
-            
-        }
-    }
-}
-
-static const char *draw_rect_ps = " \
-    float4 main(float4 pos : SV_POSITION, float4 color : COLOR) : SV_TARGET {\n \
-        return color;                                                        \n \
-    }                                                                        \n \
-";
-
-static const char *draw_rect_vs = " \
-    struct vs_output {             \n     \
-        float4 pos : SV_POSITION;  \n     \
-        float4 color : COLOR;      \n     \
-    };                             \n     \
-    vs_output main(float4 pos : POSITION, float4 color : COLOR) { \n  \
-            vs_output opt;                                        \n  \
-            opt.color = color;                                    \n  \
-            opt.pos = pos;                                        \n  \
-                                             \n  \
-            return opt;                                           \n  \
-    }                                                             \n  \
-";
-
-void JustTest1() {
-    auto window = ReferPtr<HFWindow>::New(L"emm...", 500, 500);
-    window->SetFixed(true);
-    window->Show();
-    auto device = ReferPtr<D3DDevice>::New(D3D_DRIVER_TYPE_HARDWARE);
-    auto swap_chain = ReferPtr<SwapChain>::New(device.Get(), window.Get());
-    auto pipeline = ReferPtr<RenderPipeline>::New();
-    pipeline->vshader = VertexShader::LoadCodeString(device.Get(), draw_rect_vs);
-    pipeline->pshader = PixelShader::LoadCodeString(device.Get(), draw_rect_ps);
-    pipeline->SetInputLayout(device.Get(),
-        std::initializer_list<std::string>({ "POSITION", "COLOR" }).begin(),
-        std::initializer_list<DXGI_FORMAT>({ DXGI_FORMAT_R32G32B32_FLOAT,  DXGI_FORMAT_R32G32B32A32_FLOAT }).begin(),
-        2);
-    auto context = device->immcontext;
-    context->BindPipeline(pipeline.Get());
-    struct ColoredVertex {
-        float pos[3];
-        float color[4];
-    };
-    ColoredVertex vecs[4] = {
-    { {-0.5, -0.5, 0.0},{0.0, 1.0, 0.0, 1.0} },
-    { {-0.5, 0.5, 0.0},{1.0, 0.0, 1.0, 1.0} },
-    { {0.5, -0.5, 0.0},{0.0, 0.0, 1.0, 1.0} },
-    { {0.5, 0.5, 0.0},{0.0, 1.0, 1.0, 1.0} }
-    };
-    auto vbuffer = ReferPtr<D3DVertexBuffer>::New(device.Get(), sizeof vecs, (void*)vecs);
-    context->BindVertexBuffer(0, vbuffer.Get(), sizeof ColoredVertex);
-    context->SetTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-    context->SetViewport({ 0, 0, window->width, window->height });
-    context->SetRenderTarget(&swap_chain->backbuffer);
-
-    SleepFPSTimer timer;
-    timer.Restart(60);
-    MSG msg;
-    while (true) {
-        if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE) > 0) {
-            if (msg.message == WM_QUIT)break;
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
-        else {
-            context->ClearRenderTarget(&swap_chain->backbuffer, 
-                std::initializer_list<float>({0.0f, 0.0f, 0.0f, 0.0f}).begin());
-            context->Draw(0, 4);
-            swap_chain->Present();
-            timer.Await();
-        }
-    }
-    
-}
-
-void JustTest2() {
-    auto window = ReferPtr<HFWindow>::New(L"恋恋!", 300, 300);
-    window->SetFixed(true);
-    window->Show();
-    auto device = ReferPtr<D3DDevice>::New(D3D_DRIVER_TYPE_HARDWARE);
-    auto swap_chain = ReferPtr<SwapChain>::New(device.Get(), window.Get());
-    auto context = ReferPtr<D3DDeviceContext>::New(device.Get());
-    auto texture = ReferPtr<D3DTexture2D>::New(device.Get(), L"./Demos/Komeiji Koishi/300px-Komeiji Koishi.jpg", false);
-    auto pipeline = ReferPtr<RenderPipeline>::New();
-    pipeline->vshader = VertexShader::LoadHLSLFile(device.Get(), L"texture_vs.shader");
-    pipeline->pshader = PixelShader::LoadHLSLFile(device.Get(), L"texture_ps.shader");
-    pipeline->SetInputLayout(device.Get(),
-        std::initializer_list<std::string>({ "POSITION", "TEXCOORD" }).begin(),
-        std::initializer_list<DXGI_FORMAT>({ DXGI_FORMAT_R32G32_FLOAT,  DXGI_FORMAT_R32G32_FLOAT }).begin(),
-        2);
-    context->BindPipeline(pipeline.Get());
-    auto sampler = ReferPtr<D3DSampler>::New();
-    sampler->UseDefault();
-    sampler->CreateState(device.Get());
-    context->BindShaderSampler(0, sampler.Get(), SHADERS_APPLYTO_PSHADER);
-    context->BindShaderResource(0, texture.Get(), SHADERS_APPLYTO_PSHADER);
-    struct Vertex { float pos[2], tex[2]; };
-    Vertex vecs[] = {
-        {{-1.0f, -1.0f}, {0.0f, 1.0f}},
-        {{-1.0f, 1.0f},  {0.0f, 0.0f}},
-        {{1.0f, -1.0f},  {1.0f, 1.0f}},
-        {{1.0f, 1.0f},   {1.0f, 0.0f}}
-    }; ////左下， 左上， 右下， 右上
-    auto vbuffer = ReferPtr<D3DVertexBuffer>::New(device.Get(), sizeof vecs, reinterpret_cast<void *>(vecs));
-    context->BindVertexBuffer(0, vbuffer.Get(), sizeof Vertex);
-    context->SetRenderTarget(&swap_chain->backbuffer);
-    context->SetTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-    context->SetViewport({0, 0, window->width, window->height});
-    auto keyboard = ReferPtr<Input::Keyboard>::New(window->native_handle);
-    auto rth = ReferPtr<RenderingThread>::New(device.Get(), swap_chain.Get(), 60);
-    Utility::SleepFPSTimer timer;
-    timer.Restart(60);
-    MSG msg;
-    while (true) {
-        if(PeekMessage(&msg, 0, 0, 0, PM_REMOVE) > 0){
-            if(msg.message == WM_QUIT)break;
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
-        else {
-            context->ClearRenderTarget(&swap_chain->backbuffer, 
-                std::initializer_list<FLOAT>({0.0f, 0.0f, 0.0f, 0.0f}).begin());
-            context->Draw(0, 4);
-            context->FinishiCommandList();
-            rth->PushCommandList(context.Get());
-            timer.Await();
-        }
-    }
-    rth->Terminate();
-}
-
-void JustTest3() {
-    auto window = ReferPtr<HFWindow>::New(L"Deep Dark Fantasy", 600, 600);
-    window->SetFixed(true);
-    window->Show();
-    auto device = ReferPtr<D3DDevice>::New(D3D_DRIVER_TYPE_HARDWARE);
-    auto swap_chain = ReferPtr<SwapChain>::New(device.Get(), window.Get(),false, true);
-    auto context = ReferPtr<D3DDeviceContext>::New(device.Get());
-    
-    auto rth = ReferPtr<RenderingThread>::New(device.Get(), swap_chain.Get(), 60);
-    SleepFPSTimer timer;
-    timer.Restart(60);
-    MSG msg;
-    while (true) {
-        if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
-            if(msg.message == WM_QUIT)break;
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
-        timer.Await();
-    }
-    rth->Terminate();
 }

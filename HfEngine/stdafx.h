@@ -18,8 +18,8 @@
 #include <thread>
 #include <sstream> 
 #include <mutex>
-#include <NativeThread.h>
-#include <embeddedruby.h>
+#include "../Utility/NativeThread.h"
+#include "../Utility/embeddedruby.h"
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,12 +28,12 @@
 #include <d3d11.h>
 #include <D3DX11.h>
 #include <wrl\client.h>
-#include <referptr.h>
-#include <fpstimer.h>
-#include <shapes.h>
+#include "../Utility/referptr.h"
+#include "../Utility/shapes.h"
+#include "../Utility/fpstimer.h"
 #include <errno.h>
 #include <assert.h>
-#include <HFBuffer.h>
+#include "../Utility/HFBuffer.h"
 #include "libmsvcrt.h"
 template<class T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;

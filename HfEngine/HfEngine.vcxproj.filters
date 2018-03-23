@@ -30,34 +30,10 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="DX\D3DBuffer.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="DX\D3DDevice.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="DX\D3DDeviceContext.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="DX\D3DTexture2D.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="DX\DX.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="DX\Input.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="DX\Math.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="DX\RenderPipeline.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="DX\SwapChain.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphics2D\G2DRenderer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -74,34 +50,10 @@
     <ClInclude Include="stdafx.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="DX\D3DBuffer.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="DX\D3DDevice.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="DX\D3DDeviceContext.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="DX\D3DTexture2D.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="DX\DX.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="DX\Input.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="DX\Math.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="DX\RenderPipeline.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="DX\SwapChain.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics2D\G2DRenderer.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
