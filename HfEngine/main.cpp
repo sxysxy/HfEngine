@@ -77,7 +77,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmd, in
     CoInitialize(nullptr);
     Input::Initialize();
 
-#define RUBY_ENTRY 
+//#define RUBY_ENTRY 
 #ifdef RUBY_ENTRY
     if (GetFileAttributes(TEXT("main.rb")) == INVALID_FILE_ATTRIBUTES) {
         if (MessageBox(0, TEXT("main.rb not found, choose a script?."), TEXT("Tip"), MB_YESNO) == IDYES) {
@@ -115,16 +115,6 @@ void JustTest4() {
     auto koishi = ReferPtr<D3DTexture2D>::New(device.Get(), L"./Demos/Komeiji Koishi/300px-Komeiji Koishi.jpg", false);
     auto yukari = ReferPtr<D3DTexture2D>::New(device.Get(), L"./Demos/Komeiji Koishi/250px-Yukari.jpg", false);
     auto back = ReferPtr<D3DTexture2D>::New(device.Get(), window->width, window->height, true);
-    static const char *new_ps = " \
-    Texture2D color_map : register(t0);   \n \
-    SamplerState color_sampler : register(s0); \n \
-    float4 main(float4 pos : SV_POSITION, float2 tex : TEXCOORD) : SV_TARGET { \
-        float4 c = color_map.Sample(color_sampler, tex); \
-        c.b += 0.4f; \
-        return c;    \
-        }"           \
-    ;
-    auto ps = PixelShader::LoadCodeString(device.Get(), new_ps);
 
     SleepFPSTimer timer;
     timer.Restart(60);
@@ -144,15 +134,16 @@ void JustTest4() {
             renderer->DrawTexture(yukari.Get(), {350, 150, 150, 150});
             renderer->SetZDepth(0.0);  //恋恋虽然是最后进行渲染的，但是深度最浅，所以还可以显示在最前面
             renderer->DrawTexture(koishi.Get(), {0, 0, 200, 200});
-            renderer->ExecuteRender();
-            renderer->SetRenderTarget(&swap_chain->backbuffer);
+            renderer->SetRenderTarget(&(swap_chain->backbuffer));
             renderer->ClearTarget({ 0.0f, 0.0f, 0.0f, 0.0f });
-            renderer->SetDTPixelShader(ps.Get());       //修改DT渲染管线的PixelShader, 给所有颜色的blue分量提高0.4
-            renderer->DrawTexture(back.Get(), {0, 0, window->width, window->height});
-            renderer->UseDefaultDTPixelShader();
+            renderer->DrawTextureEx(back.Get(), { 0, 0, window->width, window->height }, 
+                { 1.0f, 1.0f, 1.0f, 0.5f },     //color_mod 
+                { 0.0f, 0.4f, 0.0f, 0.0f},      //tone_mod        
+                0.0f);                       //angle
             renderer->ExecuteRender();
             swap_chain->Present();
             timer.Await();
+            
         }
     }
 }

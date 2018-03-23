@@ -53,6 +53,12 @@ public:
         if (as_integer(which) & as_integer(SHADERS_APPLYTO_PSHADER))
             native_context->PSSetShaderResources(slot_pos, 1, tex->native_shader_resource_view.GetAddressOf());
     }
+    void ClearShaderResource(int slot, SHADERS_WHICH_TO_APPLAY which) {
+        if(as_integer(which) & as_integer(SHADERS_APPLYTO_VSHADER))
+            native_context->VSSetShaderResources(slot, 1, nullptr);
+        if (as_integer(which) & as_integer(SHADERS_APPLYTO_PSHADER))
+            native_context->PSSetShaderResources(slot, 1, nullptr);
+    }
     void BindShaderSampler(int slot_pos, const D3DSampler *sampler, SHADERS_WHICH_TO_APPLAY which) {
         if(!sampler)throw std::invalid_argument("Nullptr sampler is given");
         if (as_integer(which) & as_integer(SHADERS_APPLYTO_VSHADER))
@@ -93,6 +99,7 @@ public:
         native_context->OMSetRenderTargets(count, rtvs, ts[0]->native_depth_sencil_view.Get());
     }
     void SetRenderTarget(D3DTexture2D *tex) {
+        if(!tex)throw std::invalid_argument("SetRenderTarget : Nullptr is invalid arugment");
         native_context->OMSetRenderTargets(1, tex->native_render_target_view.GetAddressOf(), 
             tex->native_depth_sencil_view.Get());
     }

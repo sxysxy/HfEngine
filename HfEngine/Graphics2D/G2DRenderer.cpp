@@ -48,11 +48,30 @@ static const char *draw_texture_ps = " \
     SamplerState color_sampler : register(s0); \n \
     float4 main(float4 pos : SV_POSITION, float2 tex : TEXCOORD) : SV_TARGET { return color_map.Sample(color_sampler, tex); }";
        
-struct DT_PS_Param {
+
+static const char *draw_texture_ps_ex = " \n \
+    cbuffer params : register(b1) {       \n \
+        float4 color_mod;                  \n \
+        float4 tone_mod;                   \n \
+    };                                    \n \
+    Texture2D color_map : register(t0);   \n \
+    SamplerState color_sampler : register(s0); \n \
+    float4 main(float4 pos : SV_POSITION, float2 tex : TEXCOORD) : SV_TARGET { \
+        float4 color = color_map.Sample(color_sampler, tex); \n \
+        color *= color_mod;                                  \n \
+        color += tone_mod;                                   \n \
+        return color; \n \
+    } \
+";
+
+struct DT_VS_Param {
     float sina, cosa;
     float unused[2];  //fill to 16 bytes
 };
 
+struct DT_PS_EX_Param {
+    float color_mod[4], tone_mod[4];  //32 bytes in total
+};
 void Renderer::InitPipelines() {
     //draw_rect:
     draw_rect = ReferPtr<D3DDeviceContext>::New(device.Get());
@@ -79,11 +98,15 @@ void Renderer::InitPipelines() {
     draw_texture->BindPipeline(dt_pipeline.Get());
  
     draw_texture_vbuffer = ReferPtr<D3DVertexBuffer>::New(device.Get(), 5 * sizeof(float) * 4);
-    draw_texture_cbuffer = ReferPtr<D3DConstantBuffer>::New(device.Get(), sizeof DT_PS_Param);
+    draw_texture_cbuffer = ReferPtr<D3DConstantBuffer>::New(device.Get(), sizeof DT_VS_Param);
     draw_texture_sampler = ReferPtr<D3DSampler>::New();
     draw_texture_sampler->UseDefault();
     draw_texture_sampler->CreateState(device.Get());
     
+    //Ex
+    dt_pshader_ex = PixelShader::LoadCodeString(device.Get(), draw_texture_ps_ex);
+    draw_texture_cbuffer1 = ReferPtr<D3DConstantBuffer>::New(device.Get(), sizeof DT_PS_EX_Param);
+
     contexts.push_back(draw_texture);
 }
 
@@ -146,21 +169,60 @@ void Renderer::DrawTexture(const D3DTexture2D * texture, const Rect & rect) {
     struct VertexXXX {
         float pos[3];
         float tex[2];
-    }vecs[4] = {
-        {{x1, y1, _z_depth}, {0.0, 1.0}},
-        {{x1, y2, _z_depth}, {0.0, 0.0}},
-        {{x2, y1, _z_depth}, {1.0, 1.0}},
-        {{x2, y2, _z_depth}, {1.0, 0.0}}
+    }vecs[] = {
+        {{ x1, y1, _z_depth },{ 0.0, 1.0 }},
+    {{ x1, y2, _z_depth },{ 0.0, 0.0 }},
+    {{ x2, y1, _z_depth },{ 1.0, 1.0 }},
+    {{ x2, y2, _z_depth },{ 1.0, 0.0 }}
     };
-    DT_PS_Param param = {0.0, 1.0};
+    draw_texture->UpdateSubResource(draw_texture_vbuffer.Get(), vecs);
+    draw_texture->BindVertexBuffer(0, draw_texture_vbuffer.Get(), 5 * sizeof(float));
+    draw_texture->SetTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+    draw_texture->BindShaderResource(0, texture, SHADERS_APPLYTO_PSHADER);
+    draw_texture->BindShaderSampler(0, draw_texture_sampler.Get(), SHADERS_APPLYTO_PSHADER);
+    draw_texture->BindPixelShader(dt_pipeline->pshader.Get());      //Use normal
+    draw_texture->Draw(0, 4);
+   // draw_texture->ClearShaderResource(0, SHADERS_APPLYTO_PSHADER);
+}
+
+void Renderer::DrawTextureEx(const D3DTexture2D * texture, const Rect & rect, const Color & color_mod,
+    const Color &tone_mod, float angle)
+{
+    int midx = viewport.w / 2;
+    int midy = viewport.h / 2;
+#pragma warning(push)
+#pragma warning(disable:4244)
+    float x1 = 1.0 * (rect.x - midx) / midx;
+    float x2 = 1.0 * (rect.x + rect.w - midx) / midx;
+    float y2 = -1.0 * (rect.y - midy) / midy;
+    float y1 = -1.0 * (rect.y + rect.h - midy) / midy;
+#pragma warning(pop)
+    struct VertexXXX {
+        float pos[3];
+        float tex[2];
+    }vecs[] = {
+        {{ x1, y1, _z_depth },{ 0.0, 1.0 }},
+    {{ x1, y2, _z_depth },{ 0.0, 0.0 } },
+    {{ x2, y1, _z_depth }, { 1.0, 1.0 }},
+    {{ x2, y2, _z_depth },{ 1.0, 0.0 }}
+    };
+    DT_VS_Param param = { sin(angle), cos(angle), {0.0, 0.0} };
+    DT_PS_EX_Param param1 = {
+        {color_mod.r, color_mod.g, color_mod.b, color_mod.a},
+        {tone_mod.r, tone_mod.g, tone_mod.b, tone_mod.a},
+    };
     draw_texture->UpdateSubResource(draw_texture_vbuffer.Get(), vecs);
     draw_texture->UpdateSubResource(draw_texture_cbuffer.Get(), &param);
+    draw_texture->UpdateSubResource(draw_texture_cbuffer1.Get(), &param1);
+    draw_texture->BindPixelShader(dt_pshader_ex.Get());  //Use ex
     draw_texture->BindVertexBuffer(0, draw_texture_vbuffer.Get(), 5 * sizeof(float));
     draw_texture->SetTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
     draw_texture->BindShaderConstantBuffer(0, draw_texture_cbuffer.Get(), SHADERS_APPLYTO_PSHADER);
+    draw_texture->BindShaderConstantBuffer(1, draw_texture_cbuffer1.Get(), SHADERS_APPLYTO_PSHADER);
     draw_texture->BindShaderResource(0, texture, SHADERS_APPLYTO_PSHADER);
     draw_texture->BindShaderSampler(0, draw_texture_sampler.Get(), SHADERS_APPLYTO_PSHADER);
     draw_texture->Draw(0, 4);
+   // draw_texture->ClearShaderResource(0, SHADERS_APPLYTO_PSHADER);
 }
 
 }

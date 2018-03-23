@@ -5,7 +5,7 @@
 #include <extension.h>
 
 class D3DTexture : public Utility::ReferredObject {
-
+    
 };
 
 class D3DDevice;

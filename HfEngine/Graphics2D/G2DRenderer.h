@@ -27,8 +27,10 @@ namespace G2D {
         ReferPtr<D3DDeviceContext> draw_texture;
         ReferPtr<D3DVertexBuffer> draw_texture_vbuffer;
         ReferPtr<D3DConstantBuffer> draw_texture_cbuffer;
-        ReferPtr<RenderPipeline> dt_pipeline;
         ReferPtr<D3DSampler> draw_texture_sampler;
+        ReferPtr<RenderPipeline> dt_pipeline;
+        ReferPtr<PixelShader> dt_pshader_ex;
+        ReferPtr<D3DConstantBuffer> draw_texture_cbuffer1;  //PS Ex (b1)
         void InitPipelines();
 
         std::vector<ReferPtr<D3DDeviceContext>> contexts; //observing pointers to contexts
@@ -110,6 +112,7 @@ namespace G2D {
                 std::initializer_list<float>({color.r, color.g, color.b, color.a}).begin());
         }
         void DrawTexture(const D3DTexture2D *texture, const Rect &rect);
+        void DrawTextureEx(const D3DTexture2D *texture, const Rect &rect, const Color &color_mod, const Color &tone_mod, float angle);
         void SetDTPixelShader(const PixelShader *ps) {
             draw_texture->native_context->PSSetShader(ps->native_shader.Get(), 0, 0);
         }
