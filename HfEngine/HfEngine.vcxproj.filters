@@ -24,9 +24,6 @@
     <ClCompile Include="libmsvcrt.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -36,24 +33,36 @@
     <ClCompile Include="DX\Input.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="DX\RenderPipeline.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Entry.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="extension.h">
+    <ClInclude Include="Include\DX.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="HFWindow.h">
+    <ClInclude Include="Include\extension.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="libmsvcrt.h">
+    <ClInclude Include="Include\HFWindow.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="stdafx.h">
+    <ClInclude Include="Include\Input.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="DX\DX.h">
+    <ClInclude Include="Include\libmsvcrt.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="DX\Input.h">
+    <ClInclude Include="Include\RenderPipeline.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\stdafx.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Entry.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

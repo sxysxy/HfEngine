@@ -1,5 +1,5 @@
 def require_lib(lib)
-	require "./lib/#{lib}"
+	require "./libruby/#{lib}"
 end
 
 require_lib('HFWindow.rb')

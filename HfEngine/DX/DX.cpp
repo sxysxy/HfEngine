@@ -1,7 +1,6 @@
-#include "DX.h"
-#include "Input.h"
-#include "Math.h"
-#include "../extension.h"
+#include "../Include/DX.h"
+#include "../Include/Input.h"
+#include "../Include/extension.h"
 
 namespace Ext{
     namespace DX{

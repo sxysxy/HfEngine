@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "extension.h"
 #include "HFWindow.h"
-#include "DX\DX.h"
+#include "DX.h"
 
 namespace Ext {
 

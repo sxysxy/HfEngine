@@ -1,7 +1,7 @@
 #pragma once
 #include "stdafx.h"
 #include "extension.h"
-#include "../Utility/NativeThread.h"
+#include "./Utility/NativeThread.h"
 
 const UINT WM_EXITLOOP = (WM_USER + 2333);
 const UINT WM_PROCESS_FLAG = (WM_USER+2332);
