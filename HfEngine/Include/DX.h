@@ -3,6 +3,7 @@
 #include "Input.h"
 #include <D3D11.h>
 #include <d3dx11.h>
+#include "extension.h"
 
 namespace Ext {
    

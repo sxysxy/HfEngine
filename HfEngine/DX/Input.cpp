@@ -2,6 +2,7 @@
 #include "../HFWindow.h"
 #include "../extension.h"
 #pragma comment(lib, "dinput8.lib")
+#pragma comment(lib, "dxguid.lib")
 
 namespace Input {
     ComPtr<IDirectInput8> native_dinput_object;
