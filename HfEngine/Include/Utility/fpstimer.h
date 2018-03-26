@@ -31,12 +31,20 @@ struct FPSTimer {
 				cls::Wait(0);
 		}
 	}
+
+    FPSTimer(int r) {
+        Restart(r);
+    }
+    FPSTimer() {}
 };
 
-struct SleepWait{
-	static void Wait(int s) {
-		::Sleep(s);
-	}
+class SleepWait {
+public:
+    static void Wait(int ms) {
+        typedef void(__stdcall *pSleep)(DWORD);
+        static pSleep sleep = (pSleep)GetProcAddress(GetModuleHandle(L"kernel32.dll"), "Sleep");
+        sleep(ms);
+    }
 };
 typedef FPSTimer<SleepWait> SleepFPSTimer;
 

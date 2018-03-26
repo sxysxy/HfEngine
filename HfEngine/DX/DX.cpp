@@ -5,7 +5,6 @@
 namespace Ext{
     namespace DX{
         VALUE module;
-        VALUE klass_eImplementStillNotSupported;
 
         VALUE klass_HFRect;
         VALUE klass_HFColor;
@@ -159,7 +158,6 @@ namespace Ext{
 
         void Ext::DX::Init() {
             module = rb_define_module("DX");
-            klass_eImplementStillNotSupported = rb_define_class_under(module, "ImplementStillNotSupported", rb_eException);
             BasicInit();
           //  Ext::DX::D3DDevice::Init();
          //   Ext::DX::D3DDeviceContext::Init();

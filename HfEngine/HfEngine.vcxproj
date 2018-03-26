@@ -146,16 +146,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="DX\ConstantBuffer.cpp" />
+    <ClCompile Include="DX\D3DBuffer.cpp" />
     <ClCompile Include="DX\DX.cpp" />
     <ClCompile Include="DX\Input.cpp" />
     <ClCompile Include="DX\RenderPipeline.cpp" />
+    <ClCompile Include="DX\Sprite.cpp" />
+    <ClCompile Include="DX\Texture2D.cpp" />
+    <ClCompile Include="DX\VertexBuffer.cpp" />
     <ClCompile Include="extension.cpp" />
     <ClCompile Include="HFWindow.cpp" />
     <ClCompile Include="libmsvcrt.cpp" />
     <ClCompile Include="Entry.cpp" />
     <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="Tests.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Include\ConstantBuffer.h" />
+    <ClInclude Include="Include\D3DBuffer.h" />
     <ClInclude Include="Include\DX.h" />
     <ClInclude Include="Include\Entry.h" />
     <ClInclude Include="Include\extension.h" />
@@ -163,7 +171,12 @@
     <ClInclude Include="Include\Input.h" />
     <ClInclude Include="Include\libmsvcrt.h" />
     <ClInclude Include="Include\RenderPipeline.h" />
+    <ClInclude Include="Include\Shaders.h" />
+    <ClInclude Include="Include\Sprite.h" />
     <ClInclude Include="Include\stdafx.h" />
+    <ClInclude Include="Include\Tests.h" />
+    <ClInclude Include="Include\Texture2D.h" />
+    <ClInclude Include="Include\VertexBuffer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
