@@ -45,9 +45,6 @@
     <ClCompile Include="DX\D3DBuffer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="DX\Sprite.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="DX\Texture2D.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -55,6 +52,15 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="Tests.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DX\Renderer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DX\D3DDevice.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\Shaders.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -92,9 +98,6 @@
     <ClInclude Include="Include\Shaders.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Include\Sprite.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Include\VertexBuffer.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -102,6 +105,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Include\Tests.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Renderer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\D3DDevice.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

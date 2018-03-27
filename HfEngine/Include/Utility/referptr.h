@@ -126,7 +126,8 @@ public:
 	template<typename ... _Arg>
 	static ReferPtr New(const _Arg & ..._arg) {
 		typedef _T ___T;          //mdzz msvc++ _T __T 
-		ReferPtr _ptr = new ___T(_arg...);
+		ReferPtr _ptr = new ___T();
+		_ptr->Initialize(_arg...);
 		return _ptr;
 	}
 };
