@@ -39,16 +39,10 @@
     <ClCompile Include="Entry.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="DX\ConstantBuffer.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="DX\D3DBuffer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="DX\Texture2D.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="DX\VertexBuffer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="Tests.cpp">
@@ -89,16 +83,10 @@
     <ClInclude Include="Include\Entry.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Include\ConstantBuffer.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Include\D3DBuffer.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Include\Shaders.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\VertexBuffer.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Include\Texture2D.h">

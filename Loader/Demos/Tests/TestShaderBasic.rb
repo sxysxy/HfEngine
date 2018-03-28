@@ -1,15 +1,11 @@
 require 'libcore'
 
-vscode = RSDSL.generate {
-	struct(:vs_output){
-		declare :pos, :float4, :SV_POSITION
-		declare :color, :float4, :COLOR
-	}
-	defunc(:main, :vs_output, [:pos, :float4, :POSITION], [:color, :float4, :COLOR]){
-		dvar :opt, :vs_output
-		svar "opt.ops", "pos"
-		svar "opt.color", "color"
-		creturn {p "opt"}
-	}
+vscode = <<VS
+float4 main(float4 pos : POSITION) : SV_POSITION {
+	return pos;
 }
-msgbox vscode
+VS
+
+device = DX::D3DDevice.new(DX::HARDWARE_DEVICE)
+vs = DX::VertexShader::load_string device, vscode
+msgbox vs

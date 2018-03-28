@@ -3,6 +3,8 @@
 #include "../Include/extension.h"
 #include "D3DDevice.h"
 #include "Shaders.h"
+#include "D3DBuffer.h"
+#include "RenderPipeline.h"
 
 namespace Ext{
     namespace DX{
@@ -164,8 +166,8 @@ namespace Ext{
             Ext::DX::Input::Init();
             Ext::DX::D3DDevice::Init();
             Ext::DX::Shader::Init();
-        //    Ext::DX::RenderingThread::Init();
-           // Ext::DX::Math::Init();
+            Ext::DX::D3DBuffer::Init();
+            Ext::DX::RenderPipeline::Init();
         }
        
     }

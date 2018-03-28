@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "D3DDevice.h"
 #include "DX.h"
-#include <Utility\referptr.h>
+#include "Utility\referptr.h"
 
 class Shader : public Utility::ReferredObject {
 public:
@@ -75,12 +75,12 @@ public:
 
 
 //Sampler
-class D3DSampler : public Utility::ReferredObject {
+class Sampler : public Utility::ReferredObject {
     D3D11_SAMPLER_DESC desc;
 public:
     ComPtr<ID3D11SamplerState> native_sampler;
 
-    D3DSampler() { Initialize(); }
+    Sampler() { Initialize(); }
     void Initialize() {}
     void UnInitialize() {
         native_sampler.ReleaseAndGetAddressOf();

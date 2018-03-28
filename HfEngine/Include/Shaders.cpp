@@ -173,7 +173,7 @@ namespace Ext {
             }
 
             //sampler
-            static void DeleteSampler(D3DSampler *s) {
+            static void DeleteSampler(Sampler *s) {
                 s->SubRefer();
             }
 
@@ -183,7 +183,7 @@ namespace Ext {
             }
 
             static VALUE set_filter(VALUE self, VALUE filter, VALUE comp) {
-                auto sampler = GetNativeObject<D3DSampler>(self);
+                auto sampler = GetNativeObject<Sampler>(self);
                 sampler->SetFilter((D3D11_FILTER)FIX2INT(filter), (D3D11_COMPARISON_FUNC)FIX2INT(comp));
                 return self;
             }
@@ -192,31 +192,31 @@ namespace Ext {
                 if (!rb_obj_is_kind_of(border_color, Ext::DX::klass_HFColor)) {
                     rb_raise(rb_eArgError, "D3DSamper::set_uvwaddress: The 4th param should be a HFColorRGBA");
                 }
-                auto sampler = GetNativeObject<D3DSampler>(self);
+                auto sampler = GetNativeObject<Sampler>(self);
                 sampler->SetUVWAddress((D3D11_TEXTURE_ADDRESS_MODE)FIX2INT(u), (D3D11_TEXTURE_ADDRESS_MODE)FIX2INT(v),
                     (D3D11_TEXTURE_ADDRESS_MODE)FIX2INT(w),
                     *GetNativeObject<Utility::Color>(border_color));
                 return self;
             }
             static VALUE set_mip(VALUE self, VALUE min_mip, VALUE max_mip, VALUE mip_bias) {
-                auto sampler = GetNativeObject<D3DSampler>(self);
+                auto sampler = GetNativeObject<Sampler>(self);
                 sampler->SetMip((float)rb_float_value(min_mip), (float)rb_float_value(max_mip), (float)rb_float_value(mip_bias));
                 return self;
             }
 
             static VALUE set_max_anisotropy(VALUE self, VALUE v) {
-                auto sampler = GetNativeObject<D3DSampler>(self);
+                auto sampler = GetNativeObject<Sampler>(self);
                 sampler->SetMaxAnisotropy((unsigned)FIX2INT(v));
                 return self;
             }
             static VALUE use_default(VALUE self) {
-                auto sampler = GetNativeObject<D3DSampler>(self);
+                auto sampler = GetNativeObject<Sampler>(self);
                 sampler->UseDefault();
                 return self;
             }
 
             static VALUE create_state(VALUE self, VALUE device) {
-                auto sampler = GetNativeObject<D3DSampler>(self);
+                auto sampler = GetNativeObject<Sampler>(self);
                 if (!rb_obj_is_kind_of(device, Ext::DX::D3DDevice::klass))
                     rb_raise(rb_eArgError, "D3DSampler::create_state: Param device should be a DX::D3DDevice");
                 auto d = GetNativeObject<::D3DDevice>(device);
@@ -258,9 +258,9 @@ namespace Ext {
                 rb_define_method(klass_pshader, "create_from_string", (rubyfunc)create_from_string, 2);
 
                 //sampler
-                klass_sampler = rb_define_class_under(module, "D3DSampler", rb_cObject);
+                klass_sampler = rb_define_class_under(module, "Sampler", rb_cObject);
                 rb_define_alloc_func(klass_sampler, [](VALUE k)->VALUE {
-                    auto sampler = new D3DSampler;
+                    auto sampler = new Sampler;
                     sampler->AddRefer();
                     return Data_Wrap_Struct(klass_sampler, nullptr, DeleteSampler, sampler);
                 });

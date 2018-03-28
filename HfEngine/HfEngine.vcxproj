@@ -158,7 +158,6 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="DX\ConstantBuffer.cpp" />
     <ClCompile Include="DX\D3DBuffer.cpp" />
     <ClCompile Include="DX\D3DDevice.cpp" />
     <ClCompile Include="DX\DX.cpp" />
@@ -166,7 +165,6 @@
     <ClCompile Include="DX\RenderPipeline.cpp" />
     <ClCompile Include="DX\Renderer.cpp" />
     <ClCompile Include="DX\Texture2D.cpp" />
-    <ClCompile Include="DX\VertexBuffer.cpp" />
     <ClCompile Include="extension.cpp" />
     <ClCompile Include="HFWindow.cpp" />
     <ClCompile Include="Include\Shaders.cpp" />
@@ -176,7 +174,6 @@
     <ClCompile Include="Tests.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Include\ConstantBuffer.h" />
     <ClInclude Include="Include\D3DBuffer.h" />
     <ClInclude Include="Include\D3DDevice.h" />
     <ClInclude Include="Include\DX.h" />
@@ -191,7 +188,6 @@
     <ClInclude Include="Include\stdafx.h" />
     <ClInclude Include="Include\Tests.h" />
     <ClInclude Include="Include\Texture2D.h" />
-    <ClInclude Include="Include\VertexBuffer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
