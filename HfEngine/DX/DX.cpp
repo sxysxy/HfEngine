@@ -2,6 +2,7 @@
 #include "../Include/Input.h"
 #include "../Include/extension.h"
 #include "D3DDevice.h"
+#include "Shaders.h"
 
 namespace Ext{
     namespace DX{
@@ -160,13 +161,9 @@ namespace Ext{
         void Ext::DX::Init() {
             module = rb_define_module("DX");
             BasicInit();
-            Ext::DX::D3DDevice::Init();
-         //   Ext::DX::D3DDeviceContext::Init();
-         //   Ext::DX::D3DTexture2D::Init();
-         //   Ext::DX::SwapChain::Init();
-        //    Ext::DX::RenderPipeline::Init();
-        //    Ext::DX::D3DBuffer::Init();
             Ext::DX::Input::Init();
+            Ext::DX::D3DDevice::Init();
+            Ext::DX::Shader::Init();
         //    Ext::DX::RenderingThread::Init();
            // Ext::DX::Math::Init();
         }

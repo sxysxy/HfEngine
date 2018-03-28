@@ -1,5 +1,5 @@
 #encoding: utf-8
-require './libcore.rb'
+require 'libcore.rb'
 HFWindow.new("Demo", 500, 500) { 
     show
     window = self

@@ -3,5 +3,5 @@ namespace Tests {
 
     void TestHFWindow();
 
-    void TestD3DDevice();
+    void TestShaderBasic();
 };

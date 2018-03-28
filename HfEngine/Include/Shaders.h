@@ -3,12 +3,13 @@
 #include "stdafx.h"
 #include "D3DDevice.h"
 #include "DX.h"
+#include <Utility\referptr.h>
 
 class Shader : public Utility::ReferredObject {
-protected:
+public:
     ComPtr<ID3D10Blob> byte_code;
-    virtual void CreateFromHLSLFile(D3DDevice *device, std::wstring &filename) = 0;
-    virtual void CreateFromString(D3DDevice *device, std::string &code) = 0;
+    virtual void CreateFromHLSLFile(D3DDevice *device, const std::wstring &filename) = 0;
+    virtual void CreateFromString(D3DDevice *device, const std::string &code) = 0;
     virtual void CreateFromBinary(D3DDevice *device, void *, int size) = 0;
 
     void UnInitialize() {
@@ -18,14 +19,28 @@ protected:
     virtual void Release() {
         UnInitialize();
     }
+    
+    template<class T>
+    static Utility::ReferPtr<T> LoadHLSLFile(D3DDevice *device, const std::wstring &filename) {
+        auto ptr = ReferPtr<T>::New();
+        ptr->CreateFromHLSLFile(device, filename);
+        return ptr;
+    }
+
+    template<class T>
+    static Utility::ReferPtr<T> LoadCodeString(D3DDevice *device, const std::string &str) {
+        auto ptr = ReferPtr<T>::New();
+        ptr->CreateFromString(device, str);
+        return ptr;
+    }
 };
 
 class VertexShader : public Shader {
 public:
     ComPtr<ID3D11VertexShader> native_vshader;
     void Initialize() {}
-    void CreateFromHLSLFile(D3DDevice *device, std::wstring &filename);
-    void CreateFromString(D3DDevice *device, std::string &code);
+    void CreateFromHLSLFile(D3DDevice *device, const std::wstring &filename);
+    void CreateFromString(D3DDevice *device, const std::string &code);
     void CreateFromBinary(D3DDevice *device, void *, int size);
     void UnInitialize() {
         Shader::UnInitialize();
@@ -40,8 +55,8 @@ class PixelShader : public Shader {
 public:
     ComPtr<ID3D11PixelShader> native_pshader;
     void Initialize() {}
-    void CreateFromHLSLFile(D3DDevice *device, std::wstring &filename);
-    void CreateFromString(D3DDevice *device, std::string &code);
+    void CreateFromHLSLFile(D3DDevice *device, const std::wstring &filename);
+    void CreateFromString(D3DDevice *device, const std::string &code);
     void CreateFromBinary(D3DDevice *device, void *, int size);
     void UnInitialize() {
         Shader::UnInitialize();
@@ -52,7 +67,11 @@ public:
     }
 };
 
-using ShaderCompileError = std::runtime_error;
+class ShaderCompileError : public std::runtime_error {
+public:
+    template<class ...T>
+    ShaderCompileError(const T &...arg):std::runtime_error(arg...) {}
+};
 
 
 //Sampler
@@ -123,3 +142,4 @@ namespace Ext {
         }
     }
 }
+

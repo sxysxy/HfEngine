@@ -6,8 +6,14 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HfEngine", "HfEngine\HfEngine.vcxproj", "{FEDD9FDE-20EC-418A-BE38-A28876F935BE}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Loader", "Loader\Loader.vcxproj", "{609F2FD9-ACC8-451E-B6F6-E9B25E446E85}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FEDD9FDE-20EC-418A-BE38-A28876F935BE} = {FEDD9FDE-20EC-418A-BE38-A28876F935BE}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTest", "UnitTest\UnitTest.vcxproj", "{6797CDE4-81A5-483E-81E2-339D0DABDF78}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FEDD9FDE-20EC-418A-BE38-A28876F935BE} = {FEDD9FDE-20EC-418A-BE38-A28876F935BE}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

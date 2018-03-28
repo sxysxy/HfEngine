@@ -20,4 +20,11 @@ namespace UnitTest{
         }
     };
 
+    TEST_CLASS(DX) {
+    public:
+        TEST_METHOD(TestShader) {
+            Tests::TestShaderBasic();
+        }
+    };
+
 }

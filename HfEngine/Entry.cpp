@@ -24,7 +24,28 @@ int __cdecl cmain(wchar_t *path) {
         int len = lstrlenW(buffer->ptr);
         int p;
         for (p = len - 1; ~p; p--) {
-            if (buffer->ptr[p] == L'\\')break;
+            if (buffer->ptr[p] == L'\\') {
+                std::string s;
+                Ext::U16ToU8(buffer->ptr, s);
+                rb_define_global_const("EXECUTIVE_FILENAME", rb_str_new_cstr(s.c_str()));
+                s[p] = 0;
+                rb_define_global_const("EXECUTIVE_DIRECTORY", rb_str_new_cstr(s.c_str()));
+                static const char *require_lib = " \
+                    alias :o_require :require \n \
+                    def require(lib)   \n \
+                        begin         \n \
+                            o_require(lib) \n \
+                        rescue LoadError \n \
+                            o_require(EXECUTIVE_DIRECTORY+'/'+lib) \n \
+                        end   \n \
+                    end    \n \
+                    def require_lib(lib) \n \
+                        require('/libruby/'+lib)\n \
+                    end \n \
+                ";
+                rb_eval_string(require_lib);
+                break;
+            }
         }
         if (!path) {
             buffer->ptr[p + 1] = L'm';
@@ -59,6 +80,7 @@ int __cdecl cmain(wchar_t *path) {
             VALUE backtrance = rb_funcall(rb_make_backtrace(), rb_intern("to_s"), 0);
             rb_funcall(rb_mKernel, rb_intern("puts"), 1, backtrance);
             rb_funcall(rb_mKernel, rb_intern("puts"), 1, errorinfo);
+       
             rb_eval_string("STDOUT.flush");
             system("pause");
         }

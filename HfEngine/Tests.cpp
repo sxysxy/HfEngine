@@ -1,6 +1,8 @@
 #include <Tests.h>
 #include <stdafx.h>
 #include <HFWindow.h>
+#include <D3DDevice.h>
+#include <Shaders.h>
 using namespace std;
 using namespace Utility;
 
@@ -30,5 +32,14 @@ namespace Tests {
         window->SetFixed(true);
         window->Show();
         MessageLoop(60, []() {});
+    }
+
+    void TestShaderBasic() {
+        auto device = ReferPtr<D3DDevice>::New(D3D_DRIVER_TYPE_HARDWARE);
+        auto vshader = Shader::LoadCodeString<VertexShader>(device.Get(),"\
+         float4 main(float4 pos : POSITION) : SV_POSITION {      \n\
+            return pos;                                          \n\
+         }                                                       \n\
+         ");
     }
 }
