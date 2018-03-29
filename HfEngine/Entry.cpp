@@ -76,9 +76,10 @@ int __cdecl cmain(wchar_t *path) {
         if (state) {
             VALUE errorinfo = rb_errinfo();
             rb_funcall(rb_mKernel, rb_intern("show_console"), 0);
-
-            VALUE backtrance = rb_funcall(rb_make_backtrace(), rb_intern("to_s"), 0);
-            rb_funcall(rb_mKernel, rb_intern("puts"), 1, backtrance);
+            
+            
+            VALUE pos = rb_eval_string("$@");
+            rb_funcall(rb_mKernel, rb_intern("puts"), 1, pos);
             rb_funcall(rb_mKernel, rb_intern("puts"), 1, errorinfo);
        
             rb_eval_string("STDOUT.flush");

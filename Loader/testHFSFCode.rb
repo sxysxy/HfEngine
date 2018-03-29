@@ -1,10 +1,14 @@
 Program("DrawTexture") {
 p = <<EMMMM
-	cbuffer param : register(b0) {
-		float zoom_x, zoom_y;
-	};
 	float4 VS(float4 pos : POSITION) : SV_POSITION {
 		return pos;
+	}
+	
+	cbuffer param : register(b0) {
+		float4 color;
+	}
+	float4 PS(float4 pos : POSITION) : SV_TARGET {
+		return color;
 	}
 EMMMM
 	Code p
@@ -19,6 +23,8 @@ EMMMM
 		}
 	}
 	Section("main") {
+		set_ps_cbuffer("param")
 		set_vshader("VS")
+		set_pshader("PS")
 	}
 }
