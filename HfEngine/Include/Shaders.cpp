@@ -2,10 +2,10 @@
 #include "stdafx.h"
 #pragma comment(lib, "d3dx11.lib")
 
-void VertexShader::CreateFromHLSLFile(D3DDevice * device, const std::wstring & filename){
+void VertexShader::CreateFromHLSLFile(D3DDevice * device, const std::wstring & filename, const std::string &entry){
     ComPtr<ID3D10Blob> sbuffer, errmsg;
 
-    HRESULT hr = D3DX11CompileFromFileW(filename.c_str(), nullptr, nullptr, "main",
+    HRESULT hr = D3DX11CompileFromFileW(filename.c_str(), nullptr, nullptr, entry.c_str(),
         "vs_4_0", 0, 0, 0,
         &sbuffer, &errmsg, nullptr); //cause a _com_error,,but why?, it returns S_OK...         
 
@@ -28,9 +28,10 @@ void VertexShader::CreateFromHLSLFile(D3DDevice * device, const std::wstring & f
         MAKE_ERRMSG<std::runtime_error>("Fail to Create VertexShader, Error code:", hr);
 }
 
-void VertexShader::CreateFromString(D3DDevice * device, const std::string & code){
+void VertexShader::CreateFromString(D3DDevice * device, const std::string & code, const std::string &entry){
     ComPtr<ID3D10Blob> sbuffer, errmsg;
-    HRESULT hr = D3DX11CompileFromMemory(code.c_str(), code.length(), 0, 0, 0, "main", "vs_4_0", 0, 0, 0, &sbuffer, &errmsg, 0);
+    HRESULT hr = D3DX11CompileFromMemory(code.c_str(), code.length(), 0, 0, 0, entry.c_str(), 
+        "vs_4_0", 0, 0, 0, &sbuffer, &errmsg, 0);
     if (FAILED(hr)) {
         if (errmsg) {
             std::string msg;
@@ -52,10 +53,10 @@ void VertexShader::CreateFromString(D3DDevice * device, const std::string & code
 void VertexShader::CreateFromBinary(D3DDevice * device, void *, int size){
 }
 
-void PixelShader::CreateFromHLSLFile(D3DDevice * device, const std::wstring & filename){
+void PixelShader::CreateFromHLSLFile(D3DDevice * device, const std::wstring & filename, const std::string &entry){
     ComPtr<ID3D10Blob> sbuffer, errmsg;
 
-    HRESULT hr = D3DX11CompileFromFileW(filename.c_str(), nullptr, nullptr, "main",
+    HRESULT hr = D3DX11CompileFromFileW(filename.c_str(), nullptr, nullptr, entry.c_str(),
         "ps_4_0", 0, 0, 0,
         &sbuffer, &errmsg, nullptr);
     if (FAILED(hr)) {
@@ -77,9 +78,10 @@ void PixelShader::CreateFromHLSLFile(D3DDevice * device, const std::wstring & fi
         MAKE_ERRMSG<std::runtime_error>("Fail to Create PixelShader, Error code:", hr);
 }
 
-void PixelShader::CreateFromString(D3DDevice * device, const std::string & code){
+void PixelShader::CreateFromString(D3DDevice * device, const std::string & code, const std::string &entry){
     ComPtr<ID3D10Blob> sbuffer, errmsg;
-    HRESULT hr = D3DX11CompileFromMemory(code.c_str(), code.length(), 0, 0, 0, "main", "ps_4_0", 0, 0, 0, &sbuffer, &errmsg, 0);
+    HRESULT hr = D3DX11CompileFromMemory(code.c_str(), code.length(), 0, 0, 0, entry.c_str(), 
+        "ps_4_0", 0, 0, 0, &sbuffer, &errmsg, 0);
     if (FAILED(hr)) {
         if (errmsg) {
             std::string msg;
@@ -119,18 +121,29 @@ namespace Ext {
                 if (rb_block_given_p())rb_obj_instance_eval(0, nullptr, self);
                 return self;
             }
-            static VALUE create_from_hlsl(VALUE self, VALUE _device, VALUE _filename) {
+            static VALUE create_from_hlsl(int argc, VALUE *argv, VALUE self) {
+                if (argc < 2 || argc > 3) {
+                    rb_raise(rb_eArgError, "Shader::create_from_hlsl: Expecting to get (2..3) arguments but got %d", argc);
+                }
+                VALUE _device = argv[0];
+                VALUE _filename = argv[1];
+                VALUE entry = 0;
+                if(argc == 3)
+                    entry = argv[2];
                 auto shader = GetNativeObject<::Shader>(self);
                 if (!rb_obj_is_kind_of(_device, Ext::DX::D3DDevice::klass) ||
-                    !rb_obj_is_kind_of(_filename, rb_cString)) {
-                    rb_raise(rb_eArgError, "Shader::create_from_hlsl: This first param should be a DX::D3DDevice and the \
-                        second one should be a String. (No Automatically Converting).");
+                    !rb_obj_is_kind_of(_filename, rb_cString) || 
+                    !rb_obj_is_kind_of(entry, rb_cString)) {
+                    rb_raise(rb_eArgError, "Shader::create_from_hlsl: Usage:(device, filename, [entry = \"main\"])");
                 }
                 auto device = GetNativeObject<::D3DDevice>(_device);
                 cstring filename;
                 U8ToU16(rb_string_value_cstr(&_filename), filename);
                 try {
-                    shader->CreateFromHLSLFile(device, filename);
+                    if(entry)
+                        shader->CreateFromHLSLFile(device, filename, rb_string_value_cstr(&entry));
+                    else
+                        shader->CreateFromHLSLFile(device, filename);
                 }
                 catch (ShaderCompileError ce) {
                     rb_raise(klass_eShaderCompileError, ce.what());
@@ -146,17 +159,28 @@ namespace Ext {
                 return self;
             }
 
-            static VALUE create_from_string(VALUE self, VALUE _device, VALUE str) {
+            static VALUE create_from_string(int argc, VALUE *argv, VALUE self) {
+                if (argc < 2 || argc > 3) {
+                    rb_raise(rb_eArgError, "Shader::create_from_string: Expecting to get (2..3) arguments but got %d", argc);
+                }
                 auto shader = GetNativeObject<::Shader>(self);
+                VALUE _device = argv[0];
+                VALUE str = argv[1];
+                VALUE entry = 0;
+                if (argc == 3)
+                    entry = argv[2];
                 if (!rb_obj_is_kind_of(_device, Ext::DX::D3DDevice::klass) ||
-                    !rb_obj_is_kind_of(str, rb_cString)) {
-                    rb_raise(rb_eArgError, "Shader::create_from_string: This first param should be a DX::D3DDevice and the \
-                        second one should be a String. (No Automatically Converting).");
+                    !rb_obj_is_kind_of(str, rb_cString) ||
+                    !rb_obj_is_kind_of(entry, rb_cString)) {
+                    rb_raise(rb_eArgError, "Shader::create_from_string: Usage:(device, filename, [entry = \"main\"])");
                 }
                 auto device = GetNativeObject<::D3DDevice>(_device);
                 std::string code = rb_string_value_cstr(&str);
                 try {
-                    shader->CreateFromString(device, code);
+                    if(entry)
+                        shader->CreateFromString(device, code, rb_string_value_cstr(&entry));
+                    else
+                        shader->CreateFromString(device, code);
                 }
                 catch (ShaderCompileError ce) {
                     rb_raise(klass_eShaderCompileError, ce.what());
@@ -241,9 +265,9 @@ namespace Ext {
                     return Data_Wrap_Struct(k, nullptr, DeleteShader<::VertexShader>, s);
                 });
                 rb_define_method(klass_vshader, "initialize", (rubyfunc)initialize, 0);
-                rb_define_method(klass_vshader, "create_from_hlsl", (rubyfunc)create_from_hlsl, 2);
-                rb_define_method(klass_vshader, "create_from_binfile", (rubyfunc)create_from_binfile, 2);
-                rb_define_method(klass_vshader, "create_from_string", (rubyfunc)create_from_string, 2);
+                rb_define_method(klass_vshader, "create_from_hlsl", (rubyfunc)create_from_hlsl, -1);
+                rb_define_method(klass_vshader, "create_from_binfile", (rubyfunc)create_from_binfile, -1);
+                rb_define_method(klass_vshader, "create_from_string", (rubyfunc)create_from_string, -1);
                                                                                                       //¡ü
                 klass_pshader = rb_define_class_under(module, "PixelShader", klass);                   //
                 rb_define_alloc_func(klass_pshader, [](VALUE k)->VALUE {                               //
@@ -253,9 +277,9 @@ namespace Ext {
                 });                                                                                    //
                 //Please use Ctrl-C and Ctrl-V                          --------------------------------|                                    
                 rb_define_method(klass_pshader, "initialize", (rubyfunc)initialize, 0);
-                rb_define_method(klass_pshader, "create_from_hlsl", (rubyfunc)create_from_hlsl, 2);
-                rb_define_method(klass_pshader, "create_from_binfile", (rubyfunc)create_from_binfile, 2);
-                rb_define_method(klass_pshader, "create_from_string", (rubyfunc)create_from_string, 2);
+                rb_define_method(klass_pshader, "create_from_hlsl", (rubyfunc)create_from_hlsl, -1);
+                rb_define_method(klass_pshader, "create_from_binfile", (rubyfunc)create_from_binfile, -1);
+                rb_define_method(klass_pshader, "create_from_string", (rubyfunc)create_from_string, -1);
 
                 //sampler
                 klass_sampler = rb_define_class_under(module, "Sampler", rb_cObject);

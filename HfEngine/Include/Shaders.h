@@ -8,8 +8,8 @@
 class Shader : public Utility::ReferredObject {
 public:
     ComPtr<ID3D10Blob> byte_code;
-    virtual void CreateFromHLSLFile(D3DDevice *device, const std::wstring &filename) = 0;
-    virtual void CreateFromString(D3DDevice *device, const std::string &code) = 0;
+    virtual void CreateFromHLSLFile(D3DDevice *device, const std::wstring &filename, const std::string &entry = "main") = 0;
+    virtual void CreateFromString(D3DDevice *device, const std::string &code, const std::string &entry = "main") = 0;
     virtual void CreateFromBinary(D3DDevice *device, void *, int size) = 0;
 
     void UnInitialize() {
@@ -21,16 +21,16 @@ public:
     }
     
     template<class T>
-    static Utility::ReferPtr<T> LoadHLSLFile(D3DDevice *device, const std::wstring &filename) {
+    static Utility::ReferPtr<T> LoadHLSLFile(D3DDevice *device, const std::wstring &filename, const std::string &entry = "main") {
         auto ptr = ReferPtr<T>::New();
-        ptr->CreateFromHLSLFile(device, filename);
+        ptr->CreateFromHLSLFile(device, filename, entry);
         return ptr;
     }
 
     template<class T>
-    static Utility::ReferPtr<T> LoadCodeString(D3DDevice *device, const std::string &str) {
+    static Utility::ReferPtr<T> LoadCodeString(D3DDevice *device, const std::string &str, const std::string &entry = "main") {
         auto ptr = ReferPtr<T>::New();
-        ptr->CreateFromString(device, str);
+        ptr->CreateFromString(device, str, entry);
         return ptr;
     }
 };
@@ -39,8 +39,8 @@ class VertexShader : public Shader {
 public:
     ComPtr<ID3D11VertexShader> native_vshader;
     void Initialize() {}
-    void CreateFromHLSLFile(D3DDevice *device, const std::wstring &filename);
-    void CreateFromString(D3DDevice *device, const std::string &code);
+    void CreateFromHLSLFile(D3DDevice *device, const std::wstring &filename, const std::string &entry = "main");
+    void CreateFromString(D3DDevice *device, const std::string &code, const std::string &entry = "main");
     void CreateFromBinary(D3DDevice *device, void *, int size);
     void UnInitialize() {
         Shader::UnInitialize();
@@ -55,8 +55,8 @@ class PixelShader : public Shader {
 public:
     ComPtr<ID3D11PixelShader> native_pshader;
     void Initialize() {}
-    void CreateFromHLSLFile(D3DDevice *device, const std::wstring &filename);
-    void CreateFromString(D3DDevice *device, const std::string &code);
+    void CreateFromHLSLFile(D3DDevice *device, const std::wstring &filename, const std::string &entry = "main");
+    void CreateFromString(D3DDevice *device, const std::string &code, const std::string &entry = "main");
     void CreateFromBinary(D3DDevice *device, void *, int size);
     void UnInitialize() {
         Shader::UnInitialize();
