@@ -73,10 +73,21 @@ public:
     ShaderCompileError(const T &...arg):std::runtime_error(arg...) {}
 };
 
+template<class T>
+class WithDescriptionStruct {
+protected:
+    T desc;
+public:
+    void DumpDescription(T *s) {
+        memcpy(s, &desc, sizeof desc);
+    }
+    void LoadDescription(T *s) {
+        memcpy(&desc, s, sizeof desc);
+    }
+};
 
 //Sampler
-class Sampler : public Utility::ReferredObject {
-    D3D11_SAMPLER_DESC desc;
+class Sampler : public Utility::ReferredObject, public WithDescriptionStruct<D3D11_SAMPLER_DESC> {
 public:
     ComPtr<ID3D11SamplerState> native_sampler;
 
@@ -129,6 +140,52 @@ public:
     virtual void Release() { UnInitialize(); }
 };
 
+//Blender (for OM only)
+class Blender : public Utility::ReferredObject, public WithDescriptionStruct<D3D11_BLEND_DESC>{
+public:
+    ComPtr<ID3D11BlendState> native_blender;
+    Utility::Color blend_factor;
+
+    void Initialize() {}
+    void Enable(bool f) {
+        desc.RenderTarget[0].BlendEnable = f;
+    }
+    void SetColorBlend(D3D11_BLEND src_blend, D3D11_BLEND dest_blend, D3D11_BLEND_OP op) {
+        desc.RenderTarget[0].SrcBlend = src_blend;
+        desc.RenderTarget[0].DestBlend = dest_blend;
+        desc.RenderTarget[0].BlendOp = op;
+    }
+    void SetAlphaBlend(D3D11_BLEND src_blend, D3D11_BLEND dest_blend, D3D11_BLEND_OP op) {
+        desc.RenderTarget[0].SrcBlendAlpha = src_blend;
+        desc.RenderTarget[0].DestBlendAlpha = dest_blend;
+        desc.RenderTarget[0].BlendOpAlpha = op;
+    }
+    void SetMask(D3D11_COLOR_WRITE_ENABLE mask) {
+        desc.RenderTarget[0].RenderTargetWriteMask = mask;
+    }
+    void SetBlendFactor(const Utility::Color &c) {
+        blend_factor = c;
+    }
+    
+    void UseDefault() {
+        Enable(false);
+        SetColorBlend(D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD);
+        SetAlphaBlend(D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD);
+        SetMask(D3D11_COLOR_WRITE_ENABLE_ALL);
+        SetBlendFactor({1.0, 1.0, 1.0, 1.0});
+    }
+    void CreateState(D3DDevice *device) {
+        device->native_device->CreateBlendState(&desc, &native_blender);
+    }
+
+    void UnInitialize() {
+        native_blender.ReleaseAndGetAddressOf();
+    }
+    void Release() {
+        UnInitialize();
+    }
+};
+
 namespace Ext {
     namespace DX {
         namespace Shader {
@@ -136,6 +193,7 @@ namespace Ext {
             extern VALUE klass_vshader;
             extern VALUE klass_pshader;
             extern VALUE klass_sampler;
+            extern VALUE klass_blender;
             extern VALUE klass_eShaderCompileError;
 
             void Init();

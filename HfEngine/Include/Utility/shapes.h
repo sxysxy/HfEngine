@@ -30,7 +30,22 @@ namespace Utility{
 	};
 
 	struct Color {
-		float r, g, b, a;
+        union {
+            float r;
+            float red;
+        };
+        union {
+            float g;
+            float green;
+        };
+        union {
+            float b;
+            float blue;
+        };
+        union {
+            float a;
+            float alpha;
+        };
 		Color() { r = g = b = a = 0.0f; }
 		Color(float _r, float _g, float _b, float _a) {
 			r = _r, g = _g, b = _b, a = _a;

@@ -16,9 +16,10 @@ class Generator
 	
 	attr_accessor :name		    #optional, but most of them have.
 	attr_reader :native_objcet  #optional 
-	def initialize(name)
+	def initialize(name, nobj_klass = nil)
 		@list = []
 		@name = name
+		@native_objcet = nobj_klass.new if nobj_klass
 	end
 	
 	def self.set_valid_area
@@ -31,6 +32,8 @@ class Generator
 
 	
 	def method_missing(method_name, *arg, &block)
+		begin
+		
 		if @native_objcet.respond_to? method_name
 			@native_objcet.__send__ method_name, *arg, &block
 		else
@@ -40,12 +43,19 @@ class Generator
 				if self.class != HFSF.const_get(new_area.class_variable_get(:@@valid_area))
 					raise GeneratingLogicError, "You should not create a #{g} in #{self.class}"
 				end
+			
 				generator = new_area.new(*arg)
 				generator.instance_eval(&block) if block
+				
 				@list.push generator
 			else
 				super
 			end
+		end
+		
+		rescue Exception => e
+			puts "HFSF Complie Error in #{method_name.to_s} #{arg.to_s}" 
+			raise e
 		end
 		
 	end
@@ -57,13 +67,19 @@ class SamplerGenerator < Generator
 	@@valid_area = :ResourceGenerator
 	
 	def initialize(name)
-		super(name)
-		@name = name
-		
-		@native_objcet = DX::Sampler.new
+		super(name, DX::Sampler)
 		@native_objcet.use_default
 	end
 	
+end
+
+class BlenderGenerator < Generator
+	@@valid_area = :ResourceGenerator
+	
+	def initialize(name)
+		super(name, DX::Blender)
+		@native_objcet.use_default
+	end
 end
 
 #ConstantBufferGenerator
@@ -115,11 +131,11 @@ class SectionGenerator < Generator
 		@ps = s
 	end
 	
-	def set_vs_cbuffer(b)
-	
+	def set_vs_cbuffer(b, slot = 0)
+		
 	end
 	
-	def set_ps_cbuffer(b)
+	def set_ps_cbuffer(b, slot = 0)
 	
 	end
 end
@@ -143,7 +159,12 @@ class Compiler < Generator
 	
 	def self.compile_code(code)
 		x = self.new
-		x.instance_eval(code)
+		begin
+			x.instance_eval(code)
+		rescue Exception => e
+			puts e.message
+			puts $@
+		end
 		return x
 	end
 	def self.compile_file(filename)

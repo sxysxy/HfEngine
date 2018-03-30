@@ -111,6 +111,7 @@ namespace Ext {
             VALUE klass_vshader;
             VALUE klass_pshader;
             VALUE klass_sampler;
+            VALUE klass_blender;
             VALUE klass_eShaderCompileError;
 
             template<class T>
@@ -233,24 +234,80 @@ namespace Ext {
                 sampler->SetMaxAnisotropy((unsigned)FIX2INT(v));
                 return self;
             }
+
+            template<class Native>
             static VALUE use_default(VALUE self) {
-                auto sampler = GetNativeObject<Sampler>(self);
-                sampler->UseDefault();
+                auto obj = GetNativeObject<Native>(self);
+                obj->UseDefault();
                 return self;
             }
-
+            template<class Native>
             static VALUE create_state(VALUE self, VALUE device) {
-                auto sampler = GetNativeObject<Sampler>(self);
+                auto obj = GetNativeObject<Native>(self);
                 if (!rb_obj_is_kind_of(device, Ext::DX::D3DDevice::klass))
-                    rb_raise(rb_eArgError, "D3DSampler::create_state: Param device should be a DX::D3DDevice");
+                    rb_raise(rb_eArgError, "create_state: Param device should be a DX::D3DDevice");
                 auto d = GetNativeObject<::D3DDevice>(device);
                 try {
-                    sampler->CreateState(d);
+                    obj->CreateState(d);
                 }
                 catch (const std::runtime_error &err) {
                     rb_raise(rb_eRuntimeError, err.what());
                 }
                 return self;
+            }
+            
+            template<class NativeClass, class NativeDesc>
+            static VALUE dump_description(VALUE self) {
+                auto native = GetNativeObject<NativeClass>(self);
+                NativeDesc d;
+                native->DumpDescription(&d); 
+                VALUE data = rb_str_buf_new(sizeof d);
+                memcpy(rb_string_value_cstr(&data), &d, sizeof d);
+                return data;
+            }
+            template<class NativeClass, class NativeDesc>
+            static VALUE load_description(VALUE self, VALUE s) {
+                if (!rb_obj_is_kind_of(s, rb_cString)) {
+                    rb_raise(rb_eArgError, "Load Description : Param should be a String");
+                }
+                auto native = GetNativeObject<NativeClass>(self);
+                NativeDesc *d = reinterpret_cast<NativeDesc*>(rb_string_value_cstr(&s));
+                native->LoadDescription(d);
+                return self;
+            }
+
+            static VALUE blender_enable(VALUE self, VALUE f) {
+                auto b = GetNativeObject<Blender>(self);
+                b->Enable(f == Qtrue);
+                return self;
+            }
+            static VALUE set_color_blend(VALUE self, VALUE src_blend, VALUE dest_blend, VALUE op) {
+                auto b = GetNativeObject<Blender>(self);
+                b->SetColorBlend((D3D11_BLEND)FIX2INT(src_blend), (D3D11_BLEND)FIX2INT(dest_blend), 
+                    (D3D11_BLEND_OP)FIX2INT(op));
+                return self;
+            }
+            static VALUE set_alpha_blend(VALUE self, VALUE src_blend, VALUE dest_blend, VALUE op) {
+                auto b = GetNativeObject<Blender>(self);
+                b->SetAlphaBlend((D3D11_BLEND)FIX2INT(src_blend), (D3D11_BLEND)FIX2INT(dest_blend),
+                    (D3D11_BLEND_OP)FIX2INT(op));
+                return self;
+            }
+            static VALUE set_mask(VALUE self, VALUE m) {
+                auto b = GetNativeObject<Blender>(self);
+                b->SetMask((D3D11_COLOR_WRITE_ENABLE)FIX2INT(m));
+                return self;
+            }
+            static VALUE set_blend_factor(VALUE self, VALUE f) {
+                auto b = GetNativeObject<Blender>(self);
+                if (!rb_obj_is_kind_of(f, Ext::DX::klass_HFColor)) {
+                    rb_raise(rb_eArgError, "Blender::set_blend_factor : the param should be an HFColorRGBA");
+                }
+                b->SetBlendFactor(*GetNativeObject<Utility::Color>(f));
+                return self;
+            }
+            static void DeleteBlender(Blender *b) {
+                b->SubRefer();
             }
 
             void Init() {
@@ -293,28 +350,32 @@ namespace Ext {
                 rb_define_method(klass_sampler, "set_uvwaddress", (rubyfunc)set_uvwaddress, 4);
                 rb_define_method(klass_sampler, "set_mip", (rubyfunc)set_mip, 3);
                 rb_define_method(klass_sampler, "set_max_anisotropy", (rubyfunc)set_max_anisotropy, 1);
-                rb_define_method(klass_sampler, "use_default", (rubyfunc)use_default, 0);
-                rb_define_method(klass_sampler, "create_state", (rubyfunc)create_state, 1);
+                rb_define_method(klass_sampler, "use_default", (rubyfunc)use_default<Sampler>, 0);
+                rb_define_method(klass_sampler, "create_state", (rubyfunc)create_state<Sampler>, 1);
+                rb_define_method(klass_sampler, "dump_description", 
+                        (rubyfunc)dump_description<Sampler, D3D11_SAMPLER_DESC>, 0);
+                rb_define_method(klass_sampler, "load_description", 
+                        (rubyfunc)load_description<Sampler, D3D11_SAMPLER_DESC>, 1);
 
                 /*
-                D3D11_FILTER_MIN_MAG_MIP_POINT
-                D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR
-                D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT
+                D3D11_FILTER_MIN_MAG_MIP_POINT     *
+                D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR *
+                D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT  *
                 D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR
-                D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT
-                D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR
-                D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT
-                D3D11_FILTER_MIN_MAG_MIP_LINEAR
-                D3D11_FILTER_ANISOTROPIC
-                D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT
-                D3D11_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR
-                D3D11_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT
-                D3D11_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR
-                D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT
-                D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR
-                D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT
-                D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR
-                D3D11_FILTER_COMPARISON_ANISOTROPIC
+                D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT  *
+                D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR *
+                D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT *
+                D3D11_FILTER_MIN_MAG_MIP_LINEAR *
+                D3D11_FILTER_ANISOTROPIC        *
+                D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT  *
+                D3D11_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR  *
+                D3D11_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT *
+                D3D11_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR  *
+                D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT  *
+                D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR *
+                D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT *
+                D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR *
+                D3D11_FILTER_COMPARISON_ANISOTROPIC *
                 D3D11_FILTER_TEXT_1BIT
                 */
                 rb_define_const(module, "FILTER_MIN_MAG_MIP_POINT", INT2FIX(D3D11_FILTER_MIN_MAG_MIP_POINT));
@@ -323,7 +384,18 @@ namespace Ext {
                 rb_define_const(module, "FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR", INT2FIX(D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR));
                 rb_define_const(module, "FILTER_MIN_MAG_POINT_MIP_LINEAR", INT2FIX(D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR));
                 rb_define_const(module, "FILTER_MIN_MAG_LINEAR_MIP_POINT", INT2FIX(D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT));
+                rb_define_const(module, "FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT", INT2FIX(D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT));
+                rb_define_const(module, "FILTER_MIN_POINT_MAG_MIP_LINEAR", INT2FIX(D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR));
                 rb_define_const(module, "FILTER_ANISOTROPIC", INT2FIX(D3D11_FILTER_ANISOTROPIC));
+                rb_define_const(module, "FILTER_COMPARISON_MIN_MAG_MIP_POINT", INT2FIX(D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT));
+                rb_define_const(module, "FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR", INT2FIX(D3D11_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR));
+                rb_define_const(module, "FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT", INT2FIX(D3D11_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT));
+                rb_define_const(module, "FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR",INT2FIX(D3D11_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR));
+                rb_define_const(module, "FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT",INT2FIX(D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT));
+                rb_define_const(module, "FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR", INT2FIX(D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR));
+                rb_define_const(module, "FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT", INT2FIX(D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT));
+                rb_define_const(module, "FILTER_COMPARISON_MIN_MAG_MIP_LINEAR", INT2FIX(D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR));
+                rb_define_const(module, "FILTER_COMPARISON_ANISOTROPIC", INT2FIX(D3D11_FILTER_COMPARISON_ANISOTROPIC));
 
                 //Address mode
                 rb_define_const(module, "ADDRESS_WRAP", INT2FIX(D3D11_TEXTURE_ADDRESS_WRAP));
@@ -331,6 +403,93 @@ namespace Ext {
                 rb_define_const(module, "ADDRESS_MIRROR_ONCE", INT2FIX(D3D11_TEXTURE_ADDRESS_MIRROR_ONCE));
                 rb_define_const(module, "ADDRESS_CLAMP", INT2FIX(D3D11_TEXTURE_ADDRESS_CLAMP));
                 rb_define_const(module, "ADDRESS_BORDER", INT2FIX(D3D11_TEXTURE_ADDRESS_BORDER));
+
+                //blender
+                klass_blender = rb_define_class_under(module, "Blender", rb_cObject);
+                rb_define_alloc_func(klass_blender, [](VALUE k) -> VALUE{
+                    Blender *b = new Blender;
+                    b->AddRefer();
+                    return Data_Wrap_Struct(k, nullptr, DeleteBlender, b);
+                });
+                rb_define_method(klass_blender, "initialize", (rubyfunc)initialize, 0);
+                rb_define_method(klass_blender, "create_state", (rubyfunc)create_state<Blender>, 1);
+                rb_define_method(klass_blender, "use_default", (rubyfunc)use_default<Blender>, 0);
+                rb_define_method(klass_blender, "enable", (rubyfunc)blender_enable, 1);
+                rb_define_method(klass_blender, "set_blend_factor", (rubyfunc)set_blend_factor, 1);
+                rb_define_method(klass_blender, "dump_description",
+                    (rubyfunc)dump_description<Blender, D3D11_BLEND_DESC>, 0);
+                rb_define_method(klass_blender, "load_description",
+                    (rubyfunc)load_description<Blender, D3D11_BLEND_DESC>, 1);
+                rb_define_method(klass_blender, "set_color_blend", (rubyfunc)set_color_blend, 3);
+                rb_define_method(klass_blender, "set_alpha_blend", (rubyfunc)set_alpha_blend, 3);
+                rb_define_method(klass_blender, "set_mask", (rubyfunc)set_mask, 1);
+
+                /*
+                D3D11_BLEND_ZERO = 1
+                D3D11_BLEND_ONE = 2
+                D3D11_BLEND_SRC_COLOR = 3
+                D3D11_BLEND_INV_SRC_COLOR = 4
+                D3D11_BLEND_SRC_ALPHA = 5
+                D3D11_BLEND_INV_SRC_ALPHA = 6
+                D3D11_BLEND_DEST_ALPHA = 7
+                D3D11_BLEND_INV_DEST_ALPHA = 8
+                D3D11_BLEND_DEST_COLOR = 9
+                D3D11_BLEND_INV_DEST_COLOR = 10
+                D3D11_BLEND_SRC_ALPHA_SAT = 11
+                D3D11_BLEND_BLEND_FACTOR = 14
+                D3D11_BLEND_INV_BLEND_FACTOR = 15
+                D3D11_BLEND_SRC1_COLOR = 16
+                D3D11_BLEND_INV_SRC1_COLOR = 17
+                D3D11_BLEND_SRC1_ALPHA = 18
+                D3D11_BLEND_INV_SRC1_ALPHA = 19
+                */
+                rb_define_const(module, "BLEND_ZERO", INT2FIX(1));
+                rb_define_const(module, "BLEND_ONE", INT2FIX(2));
+                rb_define_const(module, "BLEND_SRC_COLOR", INT2FIX(3));
+                rb_define_const(module, "BLEND_INV_SRC_COLOR", INT2FIX(4));
+                rb_define_const(module, "BLEND_SRC_ALPHA", INT2FIX(5));
+                rb_define_const(module, "BLEND_INV_SRC_ALPHA", INT2FIX(6));
+                rb_define_const(module, "BLEND_DEST_ALPHA", INT2FIX(7));
+                rb_define_const(module, "BLEND_INV_DEST_ALPHA", INT2FIX(8));
+                rb_define_const(module, "BLEND_DEST_COLOR", INT2FIX(9));
+                rb_define_const(module, "BLEND_INV_DEST_COLOR", INT2FIX(10));
+                rb_define_const(module, "BLEND_SRC_ALPHA_SAT", INT2FIX(11));
+                rb_define_const(module, "BLEND_BLEND_FACTOR", INT2FIX(14));
+                rb_define_const(module, "BLEND_FACTOR", INT2FIX(14)); //alias
+                rb_define_const(module, "BLEND_INV_BLEND_FACTOR", INT2FIX(15));
+                rb_define_const(module, "BLEND_INV_FACTOR", INT2FIX(15)); //alias
+                rb_define_const(module, "BLEND_SRC1_COLOR", INT2FIX(16));
+                rb_define_const(module, "BLEND_INV_SRC1_COLOR", INT2FIX(17));
+                rb_define_const(module, "BLEND_SRC1_ALPHA", INT2FIX(18));
+                rb_define_const(module, "BLEND_INV_SRC1_ALPHA", INT2FIX(19));
+
+                /*
+                 D3D11_BLEND_OP_ADD = 1,
+                 D3D11_BLEND_OP_SUBTRACT = 2,
+                 D3D11_BLEND_OP_REV_SUBTRACT = 3,
+                 D3D11_BLEND_OP_MIN = 4,
+                 D3D11_BLEND_OP_MAX = 5,
+                */
+                rb_define_const(module, "BLEND_OP_ADD", INT2FIX(1));
+                rb_define_const(module, "BLEND_OP_SUBTRACT", INT2FIX(2));
+                rb_define_const(module, "BLEND_OP_REV_SUBTRACT", INT2FIX(3));
+                rb_define_const(module, "BLEND_OP_MIN", INT2FIX(4));
+                rb_define_const(module, "BLEND_OP_MAX", INT2FIX(5));
+
+                /*
+                    D3D11_COLOR_WRITE_ENABLE_RED     = 1,  
+                    D3D11_COLOR_WRITE_ENABLE_GREEN   = 2,  
+                    D3D11_COLOR_WRITE_ENABLE_BLUE    = 4,  
+                    D3D11_COLOR_WRITE_ENABLE_ALPHA   = 8,  
+                    D3D11_COLOR_WRITE_ENABLE_ALL     =   
+      ( D3D11_COLOR_WRITE_ENABLE_RED | D3D11_COLOR_WRITE_ENABLE_GREEN |    
+        D3D11_COLOR_WRITE_ENABLE_BLUE | D3D11_COLOR_WRITE_ENABLE_ALPHA )   
+                */
+                rb_define_const(module, "COLOR_WRITE_ENABLE_RED", INT2FIX(1));
+                rb_define_const(module, "COLOR_WRITE_ENABLE_GREEN", INT2FIX(2));
+                rb_define_const(module, "COLOR_WRITE_ENABLE_BLUE", INT2FIX(4));
+                rb_define_const(module, "COLOR_WRITE_ENABLE_ALPHA", INT2FIX(8));
+                rb_define_const(module, "COLOR_WRITE_ENABLE_ALL", INT2FIX(D3D11_COLOR_WRITE_ENABLE_ALL));
             }
         }
     }
