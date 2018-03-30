@@ -73,6 +73,7 @@ class SamplerGenerator < Generator
 	
 end
 
+#BlenderGenerator
 class BlenderGenerator < Generator
 	@@valid_area = :ResourceGenerator
 	
@@ -82,16 +83,11 @@ class BlenderGenerator < Generator
 	end
 end
 
-#ConstantBufferGenerator
-class ConstantBufferGenerator < Generator
-	@@valid_area = :ResourceGenerator
-
+#Base abstract for BufferGenerators
+class BufferGeneratorBase < Generator
 	attr_reader :size
 	attr_reader :init_data
 	def set_size(s)
-		if s % 16 != 0
-			raise ArgumentError, "set_size : size should be able to be dived by 16"
-		end
 		@size = s
 	end
 	def set_init_data(d)
@@ -107,6 +103,18 @@ class ConstantBufferGenerator < Generator
 	
 end
 
+#ConstantBufferGenerator
+class ConstantBufferGenerator < BufferGeneratorBase
+	@@valid_area = :ResourceGenerator
+	
+	def set_size(s)
+		if s % 16 != 0
+			raise ArgumentError, "ConstantBuffer::set_size : size should be able to be dived by 16"
+		end
+		super(s)
+	end
+end
+
 #ResourceGenerator
 class ResourceGenerator < Generator
 	@@valid_area = :ProgramGenerator
@@ -115,6 +123,30 @@ end
 #InputLayoutGenerator
 class InputLayoutGenerator < Generator
 	@@valid_area = :ProgramGenerator
+	
+	attr_reader :idents
+	attr_reader :formats
+	
+	def initialize(name)
+		super(name)
+		@idents = []
+		@formats = []
+	end
+	
+	define_method(:Format) {|ident, format|
+		@idents.push ident
+		@formats.push format
+	}
+end
+
+#VertexBufferGenerator
+class VertexBufferGenerator < BufferGeneratorBase
+	@@valid_area = :ProgramGenerator
+end
+
+#IndexBufferGenerator
+class IndexBufferGenerator < BufferGeneratorBase
+	@@valid_area = :ProgramGenerator
 end
 
 #SectionGenerator
@@ -122,6 +154,25 @@ class SectionGenerator < Generator
 	@@valid_area = :ProgramGenerator
 	
 	attr_reader :vs, :ps
+	CBUFFER_INFO = Struct.new(:stage, :cb, :slot)
+	attr_reader :sets
+	
+	def initialize(name)
+		super(name)
+		@sets = []
+	end
+	
+	def set_input_layout(ly)
+	
+	end
+	
+	def set_vbuffer(vb)
+	
+	end
+	
+	def set_ibuffer(ib)
+	
+	end
 	
 	def set_vshader(s)
 		@vs = s
@@ -132,10 +183,18 @@ class SectionGenerator < Generator
 	end
 	
 	def set_vs_cbuffer(b, slot = 0)
-		
+		@sets.push CBUFFER_INFO.new(:vs, b, slot)
 	end
 	
 	def set_ps_cbuffer(b, slot = 0)
+		@sets.push CBUFFER_INFO.new(:ps, b, slot)
+	end
+	
+	def draw(start, count)
+	
+	end
+	
+	def draw_index(start, count)
 	
 	end
 end
@@ -163,7 +222,6 @@ class Compiler < Generator
 			x.instance_eval(code)
 		rescue Exception => e
 			puts e.message
-			puts $@
 		end
 		return x
 	end
