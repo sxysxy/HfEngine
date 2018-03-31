@@ -13,12 +13,6 @@ Program("Draw") { #定义一个叫做Draw的Program
 	InputLayout("layout") {  
 		Format "POSITION", DX::R32G32B32_FLOAT 
 	}
-	VertexBuffer("vb1"){
-		set_size 4*4*4
-	}
-	IndexBuffer("ib1"){
-		set_size 4*4
-	}
 	Resource("res") { #资源段
 		Sampler("color_sampler") {
 			set_filter DX::FILTER_MIN_MAG_MIP_LINEAR, 0  #三线性
@@ -36,13 +30,8 @@ Program("Draw") { #定义一个叫做Draw的Program
 	}
 	Section("preset") { #Section 设置
 		set_input_layout("layout")
-		set_vbuffer("vb1")
-		set_ibuffer("ib1")
 		set_ps_cbuffer("param")
 		set_vshader("VS")
 		set_pshader("PS")
-	}
-	Section("render") { #Section 执行渲染
-		draw_index(0, 4)
 	}
 }

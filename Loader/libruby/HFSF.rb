@@ -12,12 +12,14 @@ end
 
 class Generator
 	
-	attr_accessor :list
+	attr_reader :list		    #parsed data
+	attr_reader :complied       #complid data
 	
 	attr_accessor :name		    #optional, but most of them have.
 	attr_reader :native_objcet  #optional 
 	def initialize(name, nobj_klass = nil)
 		@list = []
+		@complied = []
 		@name = name
 		@native_objcet = nobj_klass.new if nobj_klass
 	end
@@ -58,6 +60,10 @@ class Generator
 			raise e
 		end
 		
+	end
+	
+	def compile(context)
+		@compiled = @list.map {|x| x.compile(context << self)}
 	end
 end
 
@@ -139,16 +145,6 @@ class InputLayoutGenerator < Generator
 	}
 end
 
-#VertexBufferGenerator
-class VertexBufferGenerator < BufferGeneratorBase
-	@@valid_area = :ProgramGenerator
-end
-
-#IndexBufferGenerator
-class IndexBufferGenerator < BufferGeneratorBase
-	@@valid_area = :ProgramGenerator
-end
-
 #SectionGenerator
 class SectionGenerator < Generator
 	@@valid_area = :ProgramGenerator
@@ -208,22 +204,35 @@ class ProgramGenerator < Generator
 	define_method(:Code) {|c|
 		@code = c
 	}
+	
 end
 
 #Compiler
+class CompilerError < Exception
+end
+
 class Compiler < Generator
 	def initialize
 		super("HFSF Compiler v0.1")
 	end
 	
-	def self.compile_code(code)
+	def self.parse_code(code)
 		x = self.new
 		begin
-			x.instance_eval(code)
+			if code.is_a?(String)
+				x.instance_eval(code)
+			elsif code.is_a?(Proc)
+				x.instance_exec &code
+			end
 		rescue Exception => e
 			puts e.message
 		end
 		return x
+	end
+	
+	def self.compile_code(code = nil, &block)
+		data = parse_code(code || block)
+		comp = data.compile([self])
 	end
 	def self.compile_file(filename)
 		compile_code(File.read(filename))
