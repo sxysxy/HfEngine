@@ -261,18 +261,28 @@ namespace Ext {
                 auto native = GetNativeObject<NativeClass>(self);
                 NativeDesc d;
                 native->DumpDescription(&d); 
-                VALUE data = rb_str_buf_new(sizeof d);
-                memcpy(rb_string_value_cstr(&data), &d, sizeof d);
+                char *pd = reinterpret_cast<char*>(&d);
+                VALUE data = rb_ary_new_capa(sizeof(d));
+                rb_ary_resize(data, sizeof d);
+                VALUE *p = RARRAY_PTR(data);
+                for (int i = 0; i < sizeof d; i++) {
+                    p[i] = INT2FIX(pd[i]);
+                }
                 return data;
             }
             template<class NativeClass, class NativeDesc>
             static VALUE load_description(VALUE self, VALUE s) {
-                if (!rb_obj_is_kind_of(s, rb_cString)) {
+                if (!rb_obj_is_kind_of(s, rb_cArray)) {
                     rb_raise(rb_eArgError, "Load Description : Param should be a String");
                 }
                 auto native = GetNativeObject<NativeClass>(self);
-                NativeDesc *d = reinterpret_cast<NativeDesc*>(rb_string_value_cstr(&s));
-                native->LoadDescription(d);
+                NativeDesc x;
+                char *pd = reinterpret_cast<char*>(&x);
+                const VALUE *p = rb_array_const_ptr(s);
+                for (int i = 0; i < sizeof x; i++) {
+                    pd[i] = FIX2INT(p[i]);
+                }
+                native->LoadDescription(&x);
                 return self;
             }
 

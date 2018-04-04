@@ -54,7 +54,7 @@
     <ClCompile Include="DX\D3DDevice.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Include\Shaders.cpp">
+    <ClCompile Include="DX\Shaders.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

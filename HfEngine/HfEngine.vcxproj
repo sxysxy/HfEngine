@@ -164,10 +164,10 @@
     <ClCompile Include="DX\Input.cpp" />
     <ClCompile Include="DX\RenderPipeline.cpp" />
     <ClCompile Include="DX\Renderer.cpp" />
+    <ClCompile Include="DX\Shaders.cpp" />
     <ClCompile Include="DX\Texture2D.cpp" />
     <ClCompile Include="extension.cpp" />
     <ClCompile Include="HFWindow.cpp" />
-    <ClCompile Include="Include\Shaders.cpp" />
     <ClCompile Include="libmsvcrt.cpp" />
     <ClCompile Include="Entry.cpp" />
     <ClCompile Include="stdafx.cpp" />

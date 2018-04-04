@@ -42,6 +42,9 @@ public:
     void SetPSSampler(int slot, Sampler *sampler);
     void SetPSCBuffer(int slot, ConstantBuffer *cbuffer);
     void SetPSResource(int slot, Texture2D *tex);
+    void SetTopology(D3D11_PRIMITIVE_TOPOLOGY topo) {
+        native_context->IASetPrimitiveTopology(topo);
+    }
 
     void Draw(int start_pos, int count) {
         native_context->Draw(count, start_pos);

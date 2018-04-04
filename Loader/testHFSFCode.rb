@@ -10,7 +10,7 @@ Program("Draw") { #定义一个叫做Draw的Program
 		return color;
 	}
 	}) #HLSL代码
-	InputLayout("layout") {  
+	InputLayout {  
 		Format "POSITION", DX::R32G32B32_FLOAT 
 	}
 	Resource("res") { #资源段
@@ -20,6 +20,7 @@ Program("Draw") { #定义一个叫做Draw的Program
 		}
 		ConstantBuffer("param") {
 			set_size 16
+			set_init_data [1.0, 0.0, 0.0, 0.0].pack("f*")
 		}
 		Blender("blender") {
 			enable true
@@ -29,7 +30,6 @@ Program("Draw") { #定义一个叫做Draw的Program
 		}
 	}
 	Section("preset") { #Section 设置
-		set_input_layout("layout")
 		set_ps_cbuffer("param")
 		set_vshader("VS")
 		set_pshader("PS")
