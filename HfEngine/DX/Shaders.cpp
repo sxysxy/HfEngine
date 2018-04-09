@@ -197,6 +197,19 @@ namespace Ext {
                 return Qnil;
             }
 
+            static VALUE byte_code(VALUE self) {
+                auto s = GetNativeObject<::Shader>(self);
+                size_t size = s->byte_code->GetBufferSize();
+                VALUE a = rb_ary_new();
+                rb_ary_resize(a, size);
+                VALUE *p = RARRAY_PTR(a);
+                char *pcode = (char *)s->byte_code->GetBufferPointer();
+                for (size_t i = 0; i < size; i++) {
+                    p[i] = INT2FIX(pcode[i]);
+                }
+                return a;
+            }
+
             //sampler
             static void DeleteSampler(Sampler *s) {
                 s->SubRefer();
@@ -314,7 +327,11 @@ namespace Ext {
                     rb_raise(rb_eArgError, "Blender::set_blend_factor : the param should be an HFColorRGBA");
                 }
                 b->SetBlendFactor(*GetNativeObject<Utility::Color>(f));
+                rb_iv_set(self, "@blend_factor", f);
                 return self;
+            }
+            static VALUE blend_factor(VALUE self) {
+                return rb_iv_get(self, "@blend_factor");
             }
             static void DeleteBlender(Blender *b) {
                 b->SubRefer();
@@ -335,6 +352,7 @@ namespace Ext {
                 rb_define_method(klass_vshader, "create_from_hlsl", (rubyfunc)create_from_hlsl, -1);
                 rb_define_method(klass_vshader, "create_from_binfile", (rubyfunc)create_from_binfile, -1);
                 rb_define_method(klass_vshader, "create_from_string", (rubyfunc)create_from_string, -1);
+                rb_define_method(klass_vshader, "byte_code", (rubyfunc)byte_code, 0);
                                                                                                       //¡ü
                 klass_pshader = rb_define_class_under(module, "PixelShader", klass);                   //
                 rb_define_alloc_func(klass_pshader, [](VALUE k)->VALUE {                               //
@@ -347,6 +365,7 @@ namespace Ext {
                 rb_define_method(klass_pshader, "create_from_hlsl", (rubyfunc)create_from_hlsl, -1);
                 rb_define_method(klass_pshader, "create_from_binfile", (rubyfunc)create_from_binfile, -1);
                 rb_define_method(klass_pshader, "create_from_string", (rubyfunc)create_from_string, -1);
+                rb_define_method(klass_pshader, "byte_code", (rubyfunc)byte_code, 0);
 
                 //sampler
                 klass_sampler = rb_define_class_under(module, "Sampler", rb_cObject);
@@ -426,6 +445,7 @@ namespace Ext {
                 rb_define_method(klass_blender, "use_default", (rubyfunc)use_default<Blender>, 0);
                 rb_define_method(klass_blender, "enable", (rubyfunc)blender_enable, 1);
                 rb_define_method(klass_blender, "set_blend_factor", (rubyfunc)set_blend_factor, 1);
+                rb_define_method(klass_blender, "blend_factor", (rubyfunc)blend_factor, 0);
                 rb_define_method(klass_blender, "dump_description",
                     (rubyfunc)dump_description<Blender, D3D11_BLEND_DESC>, 0);
                 rb_define_method(klass_blender, "load_description",

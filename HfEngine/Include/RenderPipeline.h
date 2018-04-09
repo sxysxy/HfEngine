@@ -13,11 +13,11 @@ public:
     //drawing renderer pipeline
     ComPtr<ID3D11InputLayout> native_input_layout;
     Utility::ReferPtr<VertexBuffer> vbuffer;
-    //vertex-shader:
+
+    //
     Utility::ReferPtr<VertexShader> vshader;
-    
-    //pixel-shader:
     Utility::ReferPtr<PixelShader> pshader;
+   
     void Initialize(D3DDevice *device) {
         device->native_device->CreateDeferredContext(0, &native_context);
     }
@@ -31,6 +31,7 @@ public:
         SetInputLayout(device, idents.begin(), formats.begin(), len1);
     }
     void SetVertexBuffer(VertexBuffer *vb);
+    void SetIndexBuffer(IndexBuffer *ib);
 
     //VS
     void SetVertexShader(VertexShader *vs);
@@ -42,6 +43,8 @@ public:
     void SetPSSampler(int slot, Sampler *sampler);
     void SetPSCBuffer(int slot, ConstantBuffer *cbuffer);
     void SetPSResource(int slot, Texture2D *tex);
+
+
     void SetTopology(D3D11_PRIMITIVE_TOPOLOGY topo) {
         native_context->IASetPrimitiveTopology(topo);
     }
@@ -49,13 +52,14 @@ public:
     void Draw(int start_pos, int count) {
         native_context->Draw(count, start_pos);
     }
+    void DrawIndex(int start_pos, int count) {
+        native_context->DrawIndexed(count, start_pos, 0);
+    }
 
     void UnInitialize() {
         native_context.ReleaseAndGetAddressOf();
         native_input_layout.ReleaseAndGetAddressOf();
         vbuffer.Release();
-        vshader.Release();
-        pshader.Release();
     }
     virtual void Release() {
         UnInitialize();

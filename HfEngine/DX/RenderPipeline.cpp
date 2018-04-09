@@ -21,6 +21,9 @@ void RenderPipeline::SetVertexBuffer(VertexBuffer *vb) {
     UINT offset = 0;
     native_context->IASetVertexBuffers(0, 1, vbuffer->native_buffer.GetAddressOf(), &stride, &offset);
 }
+void RenderPipeline::SetIndexBuffer(IndexBuffer *ib) {
+    native_context->IASetIndexBuffer(ib->native_buffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+}
 
 //VS
 void RenderPipeline::SetVertexShader(VertexShader *vs) {
@@ -104,6 +107,7 @@ namespace Ext {
                 }
                 return self;
             }
+            
             static VALUE set_vshader(VALUE self, VALUE s) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 auto sd = GetNativeObject<::VertexShader>(s);
@@ -124,9 +128,20 @@ namespace Ext {
             static VALUE pshader(VALUE self) {
                 return rb_iv_get(self, "@pshader");
             }
+
             static VALUE set_topology(VALUE self, VALUE t) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 rp->SetTopology((D3D11_PRIMITIVE_TOPOLOGY)(FIX2INT(t)));
+                return self;
+            }
+            static VALUE set_vbuffer(VALUE self, VALUE vb) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                rp->SetVertexBuffer(GetNativeObject<VertexBuffer>(vb));
+                return self;
+            }
+            static VALUE set_ibuffer(VALUE self, VALUE ib) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                rp->SetIndexBuffer(GetNativeObject<IndexBuffer>(ib));
                 return self;
             }
 
@@ -136,11 +151,15 @@ namespace Ext {
                 rb_define_alloc_func(klass, new_rp);
                 rb_define_method(klass, "initialize", (rubyfunc)initialize, 1);
                 rb_define_method(klass, "set_input_layout", (rubyfunc)set_input_layout, 3);
+                rb_define_method(klass, "set_vbuffer", (rubyfunc)set_vbuffer, 1);
+                rb_define_method(klass, "set_ibuffer", (rubyfunc)set_ibuffer, 1);
+
                 rb_define_method(klass, "set_vshader", (rubyfunc)set_vshader, 1);
                 rb_define_method(klass, "vshader", (rubyfunc)vshader, 0);
 
                 rb_define_method(klass, "set_pshader", (rubyfunc)set_pshader, 1);
                 rb_define_method(klass, "pshader", (rubyfunc)pshader, 0);
+
 
                 rb_define_const(module, "R32G32B32A32_FLOAT", INT2FIX(DXGI_FORMAT_R32G32B32A32_FLOAT));
                 rb_define_const(module, "R32G32B32_FLOAT", INT2FIX(DXGI_FORMAT_R32G32B32_FLOAT));

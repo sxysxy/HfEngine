@@ -22,6 +22,7 @@ namespace Ext {
         namespace D3DBuffer {
             VALUE klass;
             VALUE klass_vbuffer;
+            VALUE klass_ibuffer;
             VALUE klass_cbuffer;
 
             static VALUE initialize_d3dbuffer(int argc, VALUE *argv, VALUE self) {
@@ -73,11 +74,43 @@ namespace Ext {
                 return self;
             }
 
+            VALUE ibuffer_initialize(int argc, VALUE *argv, VALUE self) {
+                if(argc < 2 || argc > 3)rb_raise(rb_eArgError,
+                    "IndexBuffer::initialize:Wrong number of arguments. expecting (2..3) but got %d", argc);
+                if (!rb_obj_is_kind_of(argv[0], Ext::DX::D3DDevice::klass)) {
+                    rb_raise(rb_eArgError, "IndexBuffer::initialize:The first param 'device' should be a DX::D3DDevice");
+                }
+                void *init_data = nullptr;
+                if (argc == 3) {
+                    if (rb_obj_is_kind_of(argv[2], rb_cInteger)) {
+                        init_data = (void *)FIX2PTR(argv[2]);
+
+                    }
+                    else if (rb_obj_is_kind_of(argv[2], rb_cString)) {
+                        init_data = (void *)rb_string_value_ptr(&argv[2]);
+                    }
+                    else {
+                        rb_raise(rb_eArgError,
+                            "IndexBuffer::initialize: The third param(initial data) could be a String(providing a buffer) \
+                            or a Integer(providing an address. e.g from Fiddle::Pointer).");
+                    }
+                }
+                auto buf = GetNativeObject<IndexBuffer>(self);
+                auto device = GetNativeObject<::D3DDevice>(argv[0]);
+                try {
+                    buf->Initialize(device, FIX2INT(argv[1]), init_data);
+                }
+                catch (std::runtime_error re) {
+                    rb_raise(rb_eRuntimeError, re.what());
+                }
+                return self;
+            }
+
             VALUE cbuffer_initialize(int argc, VALUE *argv, VALUE self) {
                 if (argc < 2 || argc > 3)rb_raise(rb_eArgError,
                     "ConstantBuffer::initialize:Wrong number of arguments. expecting (2..3) but got %d", argc);
                 if (!rb_obj_is_kind_of(argv[0], Ext::DX::D3DDevice::klass)) {
-                    rb_raise(rb_eArgError, "D3D...Buffer::initialize:The first param 'device' should be a DX::D3DDevice");
+                    rb_raise(rb_eArgError, "ConstantBuffer::initialize:The first param 'device' should be a DX::D3DDevice");
                 }
                 void *init_data = nullptr;
                 if (argc == 3) {
@@ -112,6 +145,9 @@ namespace Ext {
                 klass_vbuffer = rb_define_class_under(module, "VertexBuffer", klass);
                 rb_define_alloc_func(klass_vbuffer, New<::VertexBuffer>);
                 rb_define_method(klass_vbuffer, "initialize", (rubyfunc)vbuffer_initialize, -1);
+
+                klass_ibuffer = rb_define_class_under(module, "IndexBuffer", klass);
+                rb_define_alloc_func(klass_ibuffer, New<::IndexBuffer>);
 
                 klass_cbuffer = rb_define_class_under(module, "ConstantBuffer", klass);
                 rb_define_alloc_func(klass_cbuffer, New<::ConstantBuffer>);

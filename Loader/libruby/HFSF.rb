@@ -85,6 +85,15 @@ SamplerGenerator = ResourcesBase.new(DX::Sampler)
 
 #BlenderGenerator *
 BlenderGenerator = ResourcesBase.new(DX::Blender)
+class BlenderGenerator < Generator
+	alias :old_compile :compile
+	def compile(context)
+		d = old_compile(context)
+		c = @native_object.blend_factor
+		d[:blend_factor] = c ? ([c.r, c.g, c.b, c.a]) : [0.0, 0.0, 0.0, 0.0]
+		return d
+	end
+end
 
 #Base abstract for BufferGenerators 
 class BufferGeneratorBase < Generator
@@ -192,6 +201,7 @@ class ProgramGenerator < Generator
 	@@valid_area = :Compiler
 	
 	attr_reader :code
+	attr_reader :code_line_number
 	attr_reader :tobe_compiled
 	
 	def initialize(*arg)
@@ -209,8 +219,21 @@ class ProgramGenerator < Generator
 	
 	def compile(context)
 		x = super(context)
+		if !@code
+			raise GeneratingLogicError, "No HLSL Code, compile failed"
+		end
+		cp = context[0]
+		if !cp.is_a?(Compiler)
+			raise "Big bug, please report..."
+		end
+		
 		x[:code] = @code
 		x[:tobe_compiled] = @tobe_compiled
+		
+		x[:compiled] = {}
+		@tobe_compiled.each do |emm|
+			x[:compiled][emm[0].to_sym] = DX::Shader.load_string(cp.device, @code, emm[1], emm[0]).byte_code
+		end
 		return x
 	end
 end
@@ -231,7 +254,11 @@ class Compiled
 				@text += "#{retract}#{value[0].to_s} #{key.to_s} {\n"
 				format_inspect_imp(value[1], retract+"  ")
 				@text += "#{retract}}\n"
-			elsif 
+			elsif value.is_a?(Hash)
+				@text += "#{key.to_s} => {\n"
+				format_inspect_imp(value, retract+"  ")
+				@text += "#{retract}}\n"
+			else
 				@text += "#{retract}#{key.to_s} => #{value.to_s} \n"
 			end
 		}
@@ -267,8 +294,10 @@ class Compiler < Generator
 		super(VERSION)
 	end
 	
+	attr_accessor :device
 	def self.parse_code(code)
 		x = self.new
+		x.device = DX::D3DDevice.new(DX::HARDWARE_DEVICE)
 		begin
 			if code.is_a?(String)
 				x.instance_eval(code)

@@ -42,11 +42,24 @@ public:
     }
 };
 
+class IndexBuffer : public D3DBuffer {
+public:
+    IndexBuffer() {}
+    IndexBuffer(D3DDevice *device, size_t numof_indexes, const void *init_data = nullptr) {
+        Initialize(device, numof_indexes, init_data);
+    }
+    void Initialize(D3DDevice *device, size_t numof_indexes, const void *init_data = nullptr) {
+        D3DBuffer::Initialize(device, D3D11_USAGE_DEFAULT, D3D11_BIND_INDEX_BUFFER, 
+            numof_indexes * sizeof(int32_t), init_data);
+    }
+};
+
 namespace Ext {
     namespace DX {
         namespace D3DBuffer {
             extern VALUE klass;
             extern VALUE klass_vbuffer;
+            extern VALUE klass_ibuffer;
             extern VALUE klass_cbuffer;
             void Init();
         }
