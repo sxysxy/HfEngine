@@ -80,14 +80,14 @@ namespace Ext {
                 if (!rb_obj_is_kind_of(argv[0], Ext::DX::D3DDevice::klass)) {
                     rb_raise(rb_eArgError, "IndexBuffer::initialize:The first param 'device' should be a DX::D3DDevice");
                 }
-                void *init_data = nullptr;
+                int32_t *init_data = nullptr;
                 if (argc == 3) {
                     if (rb_obj_is_kind_of(argv[2], rb_cInteger)) {
-                        init_data = (void *)FIX2PTR(argv[2]);
+                        init_data = (int32_t *)FIX2PTR(argv[2]);
 
                     }
                     else if (rb_obj_is_kind_of(argv[2], rb_cString)) {
-                        init_data = (void *)rb_string_value_ptr(&argv[2]);
+                        init_data = (int32_t *)rb_string_value_ptr(&argv[2]);
                     }
                     else {
                         rb_raise(rb_eArgError,

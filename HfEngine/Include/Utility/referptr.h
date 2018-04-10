@@ -54,6 +54,10 @@ public:
 	ReferPtr(const ReferPtr &_optr) :ReferPtr() {
 		(*this) = _optr;
 	}
+    ReferPtr(ReferPtr && _optr) {
+        _optr.Get()->AddRefer();
+        _ptr = _optr.Get(); 
+    }
 	~ReferPtr() {
 		Release();
 	}

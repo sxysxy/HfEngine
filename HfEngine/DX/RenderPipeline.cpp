@@ -53,6 +53,11 @@ void RenderPipeline::SetPSCBuffer(int slot, ConstantBuffer * cbuffer) {
 void RenderPipeline::SetPSResource(int slot, Texture2D *tex) {
     native_context->PSSetShaderResources(slot, 1, tex->native_shader_resource_view.GetAddressOf());
 }
+void RenderPipeline::ExecuteRender() {
+    ID3D11CommandList *list;
+    native_context->FinishCommandList(true, &list);
+    device->native_immcontext->ExecuteCommandList(list, false);
+}
 
 namespace Ext {
     namespace DX {
@@ -145,6 +150,56 @@ namespace Ext {
                 return self;
             }
 
+            static VALUE set_vs_sampler(VALUE self, VALUE slot, VALUE s) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                if (!rb_obj_is_kind_of(s, Ext::DX::Shader::klass_sampler)) {
+                    rb_raise(rb_eArgError, "set_sampler : the second param should be a Sampler");
+                }
+                rp->SetVSSampler(FIX2INT(slot), GetNativeObject<::Sampler>(s));
+                return self;
+            }
+            static VALUE set_vs_cbuffer(VALUE self, VALUE slot, VALUE cb) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                if (!rb_obj_is_kind_of(cb, Ext::DX::D3DBuffer::klass_cbuffer)) {
+                    rb_raise(rb_eArgError, "set_sampler : the second param should be a ConstantBuffer");
+                }
+                rp->SetVSCBuffer(FIX2INT(slot), GetNativeObject<::ConstantBuffer>(cb));
+                return self;
+            }
+            /*
+            static VALUE set_vs_resource(VALUE self, VALUE slot, VALUE res) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                if (!rb_obj_is_kind_of(s, Ext::DX::)) {
+                    rb_raise(rb_eArgError, "set_sampler : the second param should be a Sampler");
+                }
+                rp->SetVSSampler(FIX2INT(slot), GetNativeObject<::Sampler>(s));
+                return self;
+            }
+            */
+
+            static VALUE set_ps_sampler(VALUE self, VALUE slot, VALUE s) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                if (!rb_obj_is_kind_of(s, Ext::DX::Shader::klass_sampler)) {
+                    rb_raise(rb_eArgError, "set_sampler : the second param should be a Sampler");
+                }
+                rp->SetPSSampler(FIX2INT(slot), GetNativeObject<::Sampler>(s));
+                return self;
+            }
+            static VALUE set_ps_cbuffer(VALUE self, VALUE slot, VALUE cb) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                if (!rb_obj_is_kind_of(cb, Ext::DX::D3DBuffer::klass_cbuffer)) {
+                    rb_raise(rb_eArgError, "set_sampler : the second param should be a ConstantBuffer");
+                }
+                rp->SetPSCBuffer(FIX2INT(slot), GetNativeObject<::ConstantBuffer>(cb));
+                return self;
+            }
+
+            static VALUE execute_render(VALUE self) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                rp->ExecuteRender();
+                return self;
+            }
+
             void Init() {
                 klass = rb_define_class_under(module, "RenderPipeline", rb_cObject);
 
@@ -154,13 +209,21 @@ namespace Ext {
                 rb_define_method(klass, "set_vbuffer", (rubyfunc)set_vbuffer, 1);
                 rb_define_method(klass, "set_ibuffer", (rubyfunc)set_ibuffer, 1);
 
+                //vs
                 rb_define_method(klass, "set_vshader", (rubyfunc)set_vshader, 1);
                 rb_define_method(klass, "vshader", (rubyfunc)vshader, 0);
+                rb_define_method(klass, "set_vs_sampler", (rubyfunc)set_vs_sampler, 2);
+                rb_define_method(klass, "set_vs_cbuffer", (rubyfunc)set_vs_cbuffer, 2);
 
+                //ps
                 rb_define_method(klass, "set_pshader", (rubyfunc)set_pshader, 1);
                 rb_define_method(klass, "pshader", (rubyfunc)pshader, 0);
+                rb_define_method(klass, "set_ps_sampler", (rubyfunc)set_ps_sampler, 2);
+                rb_define_method(klass, "set_ps_cbuffer", (rubyfunc)set_ps_cbuffer, 2);
 
+                rb_define_method(klass, "execute_render", (rubyfunc)execute_render, 0);
 
+                //dxgi formats 
                 rb_define_const(module, "R32G32B32A32_FLOAT", INT2FIX(DXGI_FORMAT_R32G32B32A32_FLOAT));
                 rb_define_const(module, "R32G32B32_FLOAT", INT2FIX(DXGI_FORMAT_R32G32B32_FLOAT));
                 rb_define_const(module, "R32G32_FLOAT", INT2FIX(DXGI_FORMAT_R32G32_FLOAT));
@@ -168,6 +231,7 @@ namespace Ext {
                 rb_define_const(module, "D32_FLOAT", INT2FIX(DXGI_FORMAT_D32_FLOAT));
                 rb_define_const(module, "R8G8B8A8_UINT", INT2FIX(DXGI_FORMAT_R8G8B8A8_UINT));
 
+                //primitive topology
                 rb_define_const(module, "TOPOLOGY_TRIANGLELIST", INT2FIX(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST));
                 rb_define_const(module, "TOPOLOGY_TRIANGLESTRIP", INT2FIX(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP));
                 rb_define_const(module, "TOPOLOGY_TRIANGLELIST_ADJ", INT2FIX(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST_ADJ));

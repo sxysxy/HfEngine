@@ -21,10 +21,12 @@ public:
 class ConstantBuffer : public D3DBuffer {
 public:
     ConstantBuffer() {}
-    ConstantBuffer(D3DDevice *device, size_t sz, const void *init_data = nullptr) { Initialize(device, sz, init_data); }
-    void Initialize(D3DDevice *device, size_t sz, const void *init_data = nullptr) {
+    template<class T>
+    ConstantBuffer(D3DDevice *device, size_t sz, const T *init_data = nullptr) { Initialize(device, sz, init_data); }
+    template<class T>
+    void Initialize(D3DDevice *device, size_t sz, const T *init_data = nullptr) {
         if (sz % 16)throw std::invalid_argument("ConstantBuffer::Initialize: size should can be devied by 16");
-        D3DBuffer::Initialize(device, D3D11_USAGE_DEFAULT, D3D11_BIND_CONSTANT_BUFFER, sz, init_data);
+        D3DBuffer::Initialize(device, D3D11_USAGE_DEFAULT, D3D11_BIND_CONSTANT_BUFFER, sz, (void *)init_data);
     }
 };
 
@@ -33,24 +35,27 @@ class VertexBuffer : public D3DBuffer {
 public:
     const size_t &size_per_vertex = _size_per_vertex;
     VertexBuffer() {}
-    VertexBuffer(D3DDevice *device, size_t per_vertex, size_t num_vertex, const void *init_data = nullptr) { 
+    template<class T>
+    VertexBuffer(D3DDevice *device, size_t per_vertex, size_t num_vertex, const T *init_data = nullptr) { 
         Initialize(device, per_vertex, num_vertex, init_data); 
     }
-    void Initialize(D3DDevice *device, size_t per_vertex, size_t num_vertex, const void *init_data = nullptr) {
+    template<class T>
+    void Initialize(D3DDevice *device, size_t per_vertex, size_t num_vertex, const T *init_data = nullptr) {
         _size_per_vertex = per_vertex;
-        D3DBuffer::Initialize(device, D3D11_USAGE_DEFAULT, D3D11_BIND_VERTEX_BUFFER, per_vertex * num_vertex, init_data);
+        D3DBuffer::Initialize(device, D3D11_USAGE_DEFAULT, D3D11_BIND_VERTEX_BUFFER, 
+            per_vertex * num_vertex, (void *)init_data);
     }
 };
 
 class IndexBuffer : public D3DBuffer {
 public:
     IndexBuffer() {}
-    IndexBuffer(D3DDevice *device, size_t numof_indexes, const void *init_data = nullptr) {
+    IndexBuffer(D3DDevice *device, size_t numof_indexes, const int32_t *init_data = nullptr) {
         Initialize(device, numof_indexes, init_data);
     }
-    void Initialize(D3DDevice *device, size_t numof_indexes, const void *init_data = nullptr) {
+    void Initialize(D3DDevice *device, size_t numof_indexes, const int32_t *init_data = nullptr) {
         D3DBuffer::Initialize(device, D3D11_USAGE_DEFAULT, D3D11_BIND_INDEX_BUFFER, 
-            numof_indexes * sizeof(int32_t), init_data);
+            numof_indexes * sizeof(int32_t), (void*)init_data);
     }
 };
 

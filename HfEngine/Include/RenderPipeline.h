@@ -8,6 +8,7 @@
 
 class RenderPipeline : public Utility::ReferredObject {
 public:
+    Utility::ReferPtr<D3DDevice> device;
     ComPtr<ID3D11DeviceContext> native_context;
 
     //drawing renderer pipeline
@@ -18,7 +19,8 @@ public:
     Utility::ReferPtr<VertexShader> vshader;
     Utility::ReferPtr<PixelShader> pshader;
    
-    void Initialize(D3DDevice *device) {
+    void Initialize(D3DDevice *d) {
+        device = d;
         device->native_device->CreateDeferredContext(0, &native_context);
     }
     void SetInputLayout(D3DDevice *device, const std::string *idents, const DXGI_FORMAT *formats, int count);
@@ -45,15 +47,21 @@ public:
     void SetPSResource(int slot, Texture2D *tex);
 
 
-    void SetTopology(D3D11_PRIMITIVE_TOPOLOGY topo) {
+    inline void SetTopology(D3D11_PRIMITIVE_TOPOLOGY topo) {
         native_context->IASetPrimitiveTopology(topo);
     }
 
-    void Draw(int start_pos, int count) {
+    inline void Draw(int start_pos, int count) {
         native_context->Draw(count, start_pos);
     }
-    void DrawIndex(int start_pos, int count) {
+    inline void DrawIndex(int start_pos, int count) {
         native_context->DrawIndexed(count, start_pos, 0);
+    }
+    void ExecuteRender();
+
+    template<class T>
+    void UpdateSubResource(D3DBuffer *bf, const T *data) {
+        native_context->UpdateSubresource(bf->native_buffer.Get(), 0, 0, (void*)data, 0, 0);
     }
 
     void UnInitialize() {
@@ -76,3 +84,4 @@ namespace Ext {
         }
     }
 }
+

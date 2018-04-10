@@ -46,6 +46,13 @@ std::vector<std::wstring> D3DDevice::EnumAdapters() {
     return outputs;
 }
 
+void D3DDevice::AcquireImmdiateContext(bool occupy) {
+    if (occupy) {
+        immcontext_lock.lock();
+    }
+    else immcontext_lock.unlock();
+}
+
 
 
 namespace Ext {
@@ -110,6 +117,12 @@ namespace Ext {
                 return arr;
             }
 
+            static VALUE acquire_immcontext(VALUE self, VALUE occupy) {
+                auto d = GetNativeObject<::D3DDevice>(self);
+                d->AcquireImmdiateContext(occupy == Qtrue);
+                return self;
+            }
+
             void Init() {
                 klass = rb_define_class_under(module, "D3DDevice", rb_cObject);
                 rb_define_alloc_func(klass, New);
@@ -118,6 +131,7 @@ namespace Ext {
                 rb_define_method(klass, "initialize", (rubyfunc)initialize, -1);
                 rb_define_method(klass, "query_adapter_info", (rubyfunc)query_adapter_info, 0);
                 rb_define_method(klass, "enum_adapters", (rubyfunc)enum_adapters, 0);
+                rb_define_method(klass, "acquire_immcontext", (rubyfunc)acquire_immcontext, 1);
             }
         }
     }

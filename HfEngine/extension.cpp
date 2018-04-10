@@ -13,12 +13,21 @@ namespace Ext {
         return Qnil;
     }
     VALUE show_console(VALUE self) {
-        AllocConsole();
+        HWND hwnd = FindWindow(TEXT("ConsoleWindowClass"), NULL);
+        if(!hwnd)
+            AllocConsole();
+        else ShowWindowAsync(hwnd, SW_SHOWNORMAL);
         int s = 0;
         rb_eval_string_protect("STDIN.reopen('CON'); STDOUT.reopen('CON'); STDERR.reopen('CON');", &s);
         if (s) {
             rb_raise(rb_eException, "Error when reopening STDIO to this console.");
         }
+        return Qnil;
+    }
+    VALUE hide_console(VALUE self) {
+        HWND hwnd = FindWindow(TEXT("ConsoleWindowClass"), NULL);
+        if (hwnd)
+            ShowWindowAsync(hwnd, SW_HIDE);
         return Qnil;
     }
     VALUE dummy(VALUE self, ...) {
@@ -32,11 +41,11 @@ namespace Ext {
     void BasicExtensions() {
         rb_define_module_function(rb_mKernel, "msgbox", (rubyfunc)__msgbox__, 1);
         rb_define_module_function(rb_mKernel, "show_console", (rubyfunc)show_console, 0);
+        rb_define_module_function(rb_mKernel, "hide_console", (rubyfunc)hide_console, 0);
         rb_define_module_function(rb_mKernel, "exit_process", (rubyfunc)exit_process, 1);
+        
     }
 
-   
-    
     VALUE messageloop(VALUE self) {
         MSG msg;
         while(true){
