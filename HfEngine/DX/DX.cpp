@@ -6,6 +6,7 @@
 #include "D3DBuffer.h"
 #include "RenderPipeline.h"
 #include "Texture2D.h"
+#include "SwapChain.h"
 
 namespace Ext{
     namespace DX{
@@ -170,6 +171,7 @@ namespace Ext{
             Ext::DX::D3DBuffer::Init();
             Ext::DX::Texture::Init();
             Ext::DX::RenderPipeline::Init();
+            Ext::DX::SwapChain::Init();
         }
        
     }

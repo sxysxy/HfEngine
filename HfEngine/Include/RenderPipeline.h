@@ -18,6 +18,10 @@ public:
     //
     Utility::ReferPtr<VertexShader> vshader;
     Utility::ReferPtr<PixelShader> pshader;
+
+    //OM data
+    Utility::ReferPtr<Blender> blender;
+    Utility::ReferPtr<RTT> rtt_target;
    
     void Initialize(D3DDevice *d) {
         device = d;
@@ -46,6 +50,12 @@ public:
     void SetPSCBuffer(int slot, ConstantBuffer *cbuffer);
     void SetPSResource(int slot, Texture2D *tex);
 
+    //RS 
+    void SetViewport(const Utility::Rect &rect, float min_deep = 0.0f, float max_deep = 1.0f);
+
+    //OM 
+    void SetBlender(Blender *b);
+    void SetTarget(RTT *rtt);
 
     inline void SetTopology(D3D11_PRIMITIVE_TOPOLOGY topo) {
         native_context->IASetPrimitiveTopology(topo);
@@ -57,11 +67,15 @@ public:
     inline void DrawIndex(int start_pos, int count) {
         native_context->DrawIndexed(count, start_pos, 0);
     }
-    void ExecuteRender();
+    void ImmdiateRender();
 
     template<class T>
     void UpdateSubResource(D3DBuffer *bf, const T *data) {
         native_context->UpdateSubresource(bf->native_buffer.Get(), 0, 0, (void*)data, 0, 0);
+    }
+    void Clear(const Utility::Color &color) {
+        native_context->ClearRenderTargetView(rtt_target->native_rtt_view.Get() , 
+            reinterpret_cast<const FLOAT *>(&color));
     }
 
     void UnInitialize() {

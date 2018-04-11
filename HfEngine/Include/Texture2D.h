@@ -40,6 +40,7 @@ public:
     ComPtr<ID3D11DepthStencilView> native_stencil_view;
 
     void Initialize(Texture2D *tex);
+    void CreateFromNativeTexture2D(ID3D11Texture2D *t); //only used in swap chain...
     void UnInitialize() {
         &native_rtt_view;
         &native_stencil_buffer;

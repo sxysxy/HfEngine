@@ -163,8 +163,8 @@
     <ClCompile Include="DX\DX.cpp" />
     <ClCompile Include="DX\Input.cpp" />
     <ClCompile Include="DX\RenderPipeline.cpp" />
-    <ClCompile Include="DX\Renderer.cpp" />
     <ClCompile Include="DX\Shaders.cpp" />
+    <ClCompile Include="DX\SwapChain.cpp" />
     <ClCompile Include="DX\Texture2D.cpp" />
     <ClCompile Include="extension.cpp" />
     <ClCompile Include="HFWindow.cpp" />
@@ -184,8 +184,8 @@
     <ClInclude Include="Include\libmsvcrt.h" />
     <ClInclude Include="Include\RenderPipeline.h" />
     <ClInclude Include="Include\Shaders.h" />
-    <ClInclude Include="Include\Renderer.h" />
     <ClInclude Include="Include\stdafx.h" />
+    <ClInclude Include="Include\SwapChain.h" />
     <ClInclude Include="Include\Tests.h" />
     <ClInclude Include="Include\Texture2D.h" />
   </ItemGroup>

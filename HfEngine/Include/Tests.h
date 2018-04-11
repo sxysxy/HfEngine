@@ -4,4 +4,6 @@ namespace Tests {
     void TestHFWindow();
 
     void TestShaderBasic();
+
+    void TestSimpleRender();
 };

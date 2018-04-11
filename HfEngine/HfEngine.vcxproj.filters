@@ -48,13 +48,13 @@
     <ClCompile Include="Tests.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="DX\Renderer.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="DX\D3DDevice.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="DX\Shaders.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DX\SwapChain.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -95,10 +95,10 @@
     <ClInclude Include="Include\Tests.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Include\Renderer.h">
+    <ClInclude Include="Include\D3DDevice.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Include\D3DDevice.h">
+    <ClInclude Include="Include\SwapChain.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

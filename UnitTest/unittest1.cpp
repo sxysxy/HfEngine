@@ -25,6 +25,10 @@ namespace UnitTest{
         TEST_METHOD(TestShader) {
             Tests::TestShaderBasic();
         }
+
+        TEST_METHOD(TestSimpleRender) {
+            Tests::TestSimpleRender();
+        }
     };
 
 }

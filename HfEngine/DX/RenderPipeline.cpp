@@ -2,6 +2,9 @@
 
 void RenderPipeline::SetInputLayout(D3DDevice *device, const std::string *idents, 
                                            const DXGI_FORMAT *formats, int count) {
+    if (!vshader) {
+        throw std::runtime_error("No vertex shader provided, you can not set input layout now");
+    }
     std::vector<D3D11_INPUT_ELEMENT_DESC> ied;
     for (int i = 0; i < count; i++) {
         ied.push_back(D3D11_INPUT_ELEMENT_DESC{ idents[i].c_str(), 0, formats[i], 0,
@@ -53,7 +56,21 @@ void RenderPipeline::SetPSCBuffer(int slot, ConstantBuffer * cbuffer) {
 void RenderPipeline::SetPSResource(int slot, Texture2D *tex) {
     native_context->PSSetShaderResources(slot, 1, tex->native_shader_resource_view.GetAddressOf());
 }
-void RenderPipeline::ExecuteRender() {
+void RenderPipeline::SetBlender(Blender * b) {
+    blender = b;
+    native_context->OMSetBlendState(b->native_blender.Get(), 
+        reinterpret_cast<const FLOAT *>(&b->blend_factor), 0xffffffff);
+}
+void RenderPipeline::SetViewport(const Utility::Rect &rect, float min_deep, float max_deep) {
+    D3D11_VIEWPORT vp{ (float)rect.x, (float)rect.y, (float)rect.w, (float)rect.h, min_deep, max_deep };
+    native_context->RSSetViewports(1, &vp);
+}
+void RenderPipeline::SetTarget(RTT *rtt) {
+    rtt_target = rtt;
+    native_context->OMSetRenderTargets(1, rtt->native_rtt_view.GetAddressOf(), rtt->native_stencil_view.Get());
+}
+
+void RenderPipeline::ImmdiateRender() {
     ID3D11CommandList *list;
     native_context->FinishCommandList(true, &list);
     device->native_immcontext->ExecuteCommandList(list, false);
@@ -150,6 +167,8 @@ namespace Ext {
                 return self;
             }
 
+
+            //-----
             static VALUE set_vs_sampler(VALUE self, VALUE slot, VALUE s) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 if (!rb_obj_is_kind_of(s, Ext::DX::Shader::klass_sampler)) {
@@ -161,22 +180,23 @@ namespace Ext {
             static VALUE set_vs_cbuffer(VALUE self, VALUE slot, VALUE cb) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 if (!rb_obj_is_kind_of(cb, Ext::DX::D3DBuffer::klass_cbuffer)) {
-                    rb_raise(rb_eArgError, "set_sampler : the second param should be a ConstantBuffer");
+                    rb_raise(rb_eArgError, "set_cbuffer : the second param should be a ConstantBuffer");
                 }
                 rp->SetVSCBuffer(FIX2INT(slot), GetNativeObject<::ConstantBuffer>(cb));
                 return self;
             }
-            /*
+            
             static VALUE set_vs_resource(VALUE self, VALUE slot, VALUE res) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
-                if (!rb_obj_is_kind_of(s, Ext::DX::)) {
-                    rb_raise(rb_eArgError, "set_sampler : the second param should be a Sampler");
+                if (!rb_obj_is_kind_of(res, Ext::DX::Texture::klass_texture2d)) {
+                    rb_raise(rb_eArgError, "set_resource : the second param should be a Texture2D");
                 }
-                rp->SetVSSampler(FIX2INT(slot), GetNativeObject<::Sampler>(s));
+                rp->SetVSResource(FIX2INT(slot), GetNativeObject<::Texture2D>(res));
                 return self;
             }
-            */
-
+            
+            
+            //-----
             static VALUE set_ps_sampler(VALUE self, VALUE slot, VALUE s) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 if (!rb_obj_is_kind_of(s, Ext::DX::Shader::klass_sampler)) {
@@ -188,15 +208,62 @@ namespace Ext {
             static VALUE set_ps_cbuffer(VALUE self, VALUE slot, VALUE cb) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 if (!rb_obj_is_kind_of(cb, Ext::DX::D3DBuffer::klass_cbuffer)) {
-                    rb_raise(rb_eArgError, "set_sampler : the second param should be a ConstantBuffer");
+                    rb_raise(rb_eArgError, "set_cbuffer : the second param should be a ConstantBuffer");
                 }
                 rp->SetPSCBuffer(FIX2INT(slot), GetNativeObject<::ConstantBuffer>(cb));
                 return self;
             }
-
-            static VALUE execute_render(VALUE self) {
+            static VALUE set_ps_resource(VALUE self, VALUE slot, VALUE res) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
-                rp->ExecuteRender();
+                if (!rb_obj_is_kind_of(res, Ext::DX::Texture::klass_texture2d)) {
+                    rb_raise(rb_eArgError, "set_resource : the second param should be a Texture2D");
+                }
+                rp->SetPSResource(FIX2INT(slot), GetNativeObject<::Texture2D>(res));
+                return self;
+            }
+
+            static VALUE set_viewport(int argc, VALUE *argv, VALUE self) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                if (argc == 1) {
+                    auto rect = GetNativeObject<::Utility::Rect>(argv[0]);
+                    rp->SetViewport(*rect);
+                }
+                else if (argc == 3) {
+                    auto rect = GetNativeObject<::Utility::Rect>(argv[0]);
+                    rp->SetViewport(*rect, (float)rb_float_value(argv[1]), (float)rb_float_value(argv[2]));
+                }
+                else {
+                    rb_raise(rb_eArgError, "RenderPipeline::set_viewport : expecting 1 or 3 arg but got %d", argc);
+                }
+                rb_iv_set(self, "@viewport", argv[0]);
+                return self;
+            }
+            static VALUE get_viewport(VALUE self) {
+                return rb_iv_get(self, "@viewport");
+            }
+            static VALUE set_target(VALUE self, VALUE tar) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                rp->SetTarget(GetNativeObject<RTT>(tar));
+                rb_iv_set(self, "@target", tar);
+                return self;
+            }
+            static VALUE get_target(VALUE self) {
+                return rb_iv_get(self, "@target");
+            }
+            static VALUE set_blender(VALUE self, VALUE b) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                rp->SetBlender(GetNativeObject<Blender>(b));
+                rb_iv_set(self, "@blender", b);
+                return self;
+            }
+            static VALUE get_blender(VALUE self) {
+                return rb_iv_get(self, "@blender");
+            }
+
+            //---
+            static VALUE immdiate_render(VALUE self) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                rp->ImmdiateRender();
                 return self;
             }
 
@@ -214,14 +281,26 @@ namespace Ext {
                 rb_define_method(klass, "vshader", (rubyfunc)vshader, 0);
                 rb_define_method(klass, "set_vs_sampler", (rubyfunc)set_vs_sampler, 2);
                 rb_define_method(klass, "set_vs_cbuffer", (rubyfunc)set_vs_cbuffer, 2);
+                rb_define_method(klass, "set_vs_resource", (rubyfunc)set_vs_resource, 2);
 
                 //ps
                 rb_define_method(klass, "set_pshader", (rubyfunc)set_pshader, 1);
                 rb_define_method(klass, "pshader", (rubyfunc)pshader, 0);
                 rb_define_method(klass, "set_ps_sampler", (rubyfunc)set_ps_sampler, 2);
                 rb_define_method(klass, "set_ps_cbuffer", (rubyfunc)set_ps_cbuffer, 2);
+                rb_define_method(klass, "set_ps_resource", (rubyfunc)set_ps_resource, 2);
 
-                rb_define_method(klass, "execute_render", (rubyfunc)execute_render, 0);
+                //rs
+                rb_define_method(klass, "set_viewport", (rubyfunc)set_viewport, -1);
+                rb_define_method(klass, "viewport", (rubyfunc)get_viewport, 0);
+
+                //om
+                rb_define_method(klass, "set_target", (rubyfunc)set_target, 1);
+                rb_define_method(klass, "target", (rubyfunc)get_target, 0);
+                rb_define_method(klass, "set_blender", (rubyfunc)set_blender, 1);
+                rb_define_method(klass, "blender", (rubyfunc)get_blender, 0);
+
+                rb_define_method(klass, "immdiate_render", (rubyfunc)immdiate_render, 0);
 
                 //dxgi formats 
                 rb_define_const(module, "R32G32B32A32_FLOAT", INT2FIX(DXGI_FORMAT_R32G32B32A32_FLOAT));
