@@ -7,7 +7,7 @@
 #include "Texture2D.h"
 
 class SwapChain : public Utility::ReferredObject {
-    RTT backrtt;
+    Utility::ReferPtr<RTT> backrtt;
 public:
     ComPtr<IDXGISwapChain> native_swap_chain;
 
@@ -22,7 +22,7 @@ public:
         native_swap_chain.ReleaseAndGetAddressOf();
         //do not need to release native_device. delete operation will do it automacailly.
         //UnIntialize dose not entirely equal to Destructor. eg. You can Uninitalize an object and then call Initialize.
-
+        backrtt.Release();
     }
     ~SwapChain() {
         UnInitialize();
@@ -40,7 +40,7 @@ public:
         native_swap_chain->SetFullscreenState(fullscreen, nullptr);
     }
     inline RTT *GetRTT() {
-        return &backrtt;
+        return backrtt.Get();
     }
 
     void Resize(int w, int h);

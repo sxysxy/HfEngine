@@ -18,8 +18,8 @@ public:
     void Initialize(D3DDevice *deivce, int w, int h);
 
     void UnInitialize() {
-        &native_texture2d; //ComPtr & operator will call release...
-        &native_shader_resource_view;
+        native_texture2d.ReleaseAndGetAddressOf(); //ComPtr & operator will call release...
+        native_shader_resource_view.ReleaseAndGetAddressOf();
     }
     virtual void Release() {
         UnInitialize();
@@ -39,12 +39,13 @@ public:
     ComPtr<ID3D11Texture2D> native_stencil_buffer;
     ComPtr<ID3D11DepthStencilView> native_stencil_view;
 
+    void Initialize() {}
     void Initialize(Texture2D *tex);
     void CreateFromNativeTexture2D(ID3D11Texture2D *t); //only used in swap chain...
     void UnInitialize() {
-        &native_rtt_view;
-        &native_stencil_buffer;
-        &native_stencil_view;
+        native_rtt_view.ReleaseAndGetAddressOf();
+        native_stencil_buffer.ReleaseAndGetAddressOf();
+        native_stencil_view.ReleaseAndGetAddressOf();
     }
     Texture2D *GetTexture2D() {
         return texture.Get();

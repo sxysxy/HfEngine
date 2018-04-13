@@ -74,6 +74,7 @@ void RenderPipeline::ImmdiateRender() {
     ID3D11CommandList *list;
     native_context->FinishCommandList(true, &list);
     device->native_immcontext->ExecuteCommandList(list, false);
+    list->Release();
 }
 
 namespace Ext {

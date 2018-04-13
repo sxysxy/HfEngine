@@ -29,14 +29,14 @@ void SwapChain::Initialize(D3DDevice * device, HFWindow * wnd, bool fullscreen) 
     //Usually cause a _com_error because of DXGI_STATUS_OCCLUDED.
     //See https://msdn.microsoft.com/en-us/library/windows/desktop/cc308061(v=vs.85).aspx
 
-    backrtt.AddRefer();
     Resize(wnd->width, wnd->height);
     if (fullscreen)
         SetFullScreen(fullscreen);
 }
 
 void SwapChain::Resize(int w, int h) {
-    backrtt.UnInitialize(); //Must be placed before ResizeBuffers, otherwise ResizeBuffers will fail.
+    backrtt.Release(); //Must be placed before ResizeBuffers, otherwise ResizeBuffers will fail.
+    backrtt = Utility::ReferPtr<RTT>::New();
 
     HRESULT hr = native_swap_chain->ResizeBuffers(1, w, h,
         DXGI_FORMAT_R8G8B8A8_UNORM, 0);
@@ -51,7 +51,7 @@ void SwapChain::Resize(int w, int h) {
         MAKE_ERRMSG<std::runtime_error>("Fail to get swapchain buffers, Error code:", hr);
     }
     
-    backrtt.CreateFromNativeTexture2D(native_backbuffer.Get());
+    backrtt->CreateFromNativeTexture2D(native_backbuffer.Get());
 }
 
 namespace Ext {

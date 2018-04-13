@@ -36,14 +36,14 @@ public:
     const size_t &size_per_vertex = _size_per_vertex;
     VertexBuffer() {}
     template<class T>
-    VertexBuffer(D3DDevice *device, size_t per_vertex, size_t num_vertex, const T *init_data = nullptr) { 
-        Initialize(device, per_vertex, num_vertex, init_data); 
+    VertexBuffer(D3DDevice *device, size_t sizeof_per_vertex, size_t numof_vertex, const T *init_data = nullptr) { 
+        Initialize(device, sizeof_per_vertex, numof_vertex, init_data); 
     }
     template<class T>
-    void Initialize(D3DDevice *device, size_t per_vertex, size_t num_vertex, const T *init_data = nullptr) {
-        _size_per_vertex = per_vertex;
+    void Initialize(D3DDevice *device, size_t sizeof_per_vertex, size_t numof_vertex, const T *init_data = nullptr) {
+        _size_per_vertex = sizeof_per_vertex;
         D3DBuffer::Initialize(device, D3D11_USAGE_DEFAULT, D3D11_BIND_VERTEX_BUFFER, 
-            per_vertex * num_vertex, (void *)init_data);
+            sizeof_per_vertex * numof_vertex, (void *)init_data);
     }
 };
 

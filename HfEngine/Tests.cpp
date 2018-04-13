@@ -60,6 +60,7 @@ namespace Tests {
             vs_output opt;                                        \n  \
             opt.color = color;                                    \n  \
             opt.pos = pos;                                        \n  \
+                                                  \n  \
             return opt;                                           \n  \
     }                                                             \n  \
 ";
@@ -105,23 +106,35 @@ namespace Tests {
             float pos[3], color[4];
         };
         vertex vecs[] = {
-            { {-0.5, -0.5, 0.0},{0.0, 1.0, 0.0, 1.0} },
-            { {-0.5, 0.5, 0.0}, {0.0, 0.0, 1.0, 1.0} },
-            { {0.5, -0.5, 0.0}, {1.0, 0.0, 1.0, 1.0} },
-            { {0.5, 0.5, 0.0},  {0.0, 1.0, 1.0, 1.0} },
+            { {-0.5, -0.5, 0.5},{0.0, 1.0, 0.0, 1.0} },   //前左下
+            { {-0.5, 0.5, 0.5}, {0.0, 0.0, 1.0, 1.0} },   //前左上
+            { {0.5, -0.5, 0.5}, {1.0, 0.0, 1.0, 1.0} },   //前右下
+            { {0.5, 0.5, 0.5},  {0.0, 1.0, 1.0, 1.0} },   //前右上
+            { { -0.5, -0.5, -0.5 },{ 0.0, 1.0, 0.0, 1.0 } },   //后左下
+            { { -0.5, 0.5, -0.5 },{ 0.0, 0.0, 1.0, 1.0 } },    //后左上
+            { { 0.5, -0.5, -0.5 },{ 1.0, 0.0, 1.0, 1.0 } },    //后右下
+            { { 0.5, 0.5, -0.5 },{ 0.0, 1.0, 1.0, 1.0 } },     //后右上
         };
         auto vbuffer = Utility::ReferPtr<VertexBuffer>::New(device.Get(), sizeof vertex, 4, vecs);
         rp->SetVertexBuffer(vbuffer.Get());
-        rp->SetTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-        rp->SetViewport({0, 0, window->width, window->height});
-        auto swapchain =  Utility::ReferPtr<SwapChain>::New(device.Get(), window.Get());
+        int indexs[] = { 0, 1, 2, 1, 2, 3, //front 
+                        4, 5, 6, 5, 6, 7,  //back
+                        0, 1, 5, 5, 4, 0,  //left
+                        2, 3, 7, 7, 6, 3,  //right
+        };
+        auto ibuffer = Utility::ReferPtr<IndexBuffer>::New(device.Get(), sizeof(indexs) / sizeof(int));
+        rp->SetIndexBuffer(ibuffer.Get());
+        rp->SetTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        auto swapchain = Utility::ReferPtr<SwapChain>::New(device.Get(), window.Get());
         rp->SetTarget(swapchain->GetRTT());
+        rp->SetViewport({0, 0, window->width, window->height});
 
         MessageLoop(60, [&](){
             rp->Clear({0.0f, 0.0f, 0.0f, 0.0f});
-            rp->Draw(0, 4);
+            rp->DrawIndex(0, sizeof(indexs) / sizeof(int));
             rp->ImmdiateRender();
             swapchain->Present();
         });
+      
     }
 }

@@ -73,14 +73,22 @@ public:
     void UpdateSubResource(D3DBuffer *bf, const T *data) {
         native_context->UpdateSubresource(bf->native_buffer.Get(), 0, 0, (void*)data, 0, 0);
     }
-    void Clear(const Utility::Color &color) {
+    void Clear(const Utility::Color &color, float depth = 1.0f) {
+        float c[] = {color.r, color.g, color.b, color.a};
         native_context->ClearRenderTargetView(rtt_target->native_rtt_view.Get() , 
-            reinterpret_cast<const FLOAT *>(&color));
+            c);
+        native_context->ClearDepthStencilView(rtt_target->native_stencil_view.Get(), 
+            D3D11_CLEAR_STENCIL | D3D11_CLEAR_DEPTH, depth, 0);
     }
 
     void UnInitialize() {
         native_context.ReleaseAndGetAddressOf();
         native_input_layout.ReleaseAndGetAddressOf();
+        device.Release();
+        vshader.Release();
+        pshader.Release();
+        blender.Release();
+        rtt_target.Release();
         vbuffer.Release();
     }
     virtual void Release() {

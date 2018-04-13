@@ -42,6 +42,7 @@ namespace Ext {
                 return Data_Wrap_Struct(k, nullptr, Delete<T>, b);
             }
 
+            //VertexBuffer#initailize(device, sizeof_per_vertex, number_of_vertex, [init_data]);
             VALUE vbuffer_initialize(int argc, VALUE *argv, VALUE self) {
                 if (argc < 3 || argc > 4)rb_raise(rb_eArgError,
                     "VertexBuffer::initialize:Wrong number of arguments. expecting (3..4) but got %d", argc);
@@ -74,6 +75,7 @@ namespace Ext {
                 return self;
             }
 
+            //IndexBuffer#initialize(device, number_of_index, [init_data](String | Array | Integet))
             VALUE ibuffer_initialize(int argc, VALUE *argv, VALUE self) {
                 if(argc < 2 || argc > 3)rb_raise(rb_eArgError,
                     "IndexBuffer::initialize:Wrong number of arguments. expecting (2..3) but got %d", argc);
@@ -81,6 +83,7 @@ namespace Ext {
                     rb_raise(rb_eArgError, "IndexBuffer::initialize:The first param 'device' should be a DX::D3DDevice");
                 }
                 int32_t *init_data = nullptr;
+                std::unique_ptr<int[]> p; //RAII is good
                 if (argc == 3) {
                     if (rb_obj_is_kind_of(argv[2], rb_cInteger)) {
                         init_data = (int32_t *)FIX2PTR(argv[2]);
@@ -89,20 +92,29 @@ namespace Ext {
                     else if (rb_obj_is_kind_of(argv[2], rb_cString)) {
                         init_data = (int32_t *)rb_string_value_ptr(&argv[2]);
                     }
+                    else if (rb_obj_is_kind_of(argv[2], rb_cArray)) {
+                        int len = RARRAY_LENINT(argv[2]);
+                        p.reset(new int[RARRAY_LENINT(argv[2])]);
+                        
+                        VALUE *pa = RARRAY_PTR(argv[2]);
+                        for(int i = 0; i < len; i++)
+                            p[i] = FIX2INT(pa[i]);
+                    }
                     else {
                         rb_raise(rb_eArgError,
-                            "IndexBuffer::initialize: The third param(initial data) could be a String(providing a buffer) \
+                            "IndexBuffer::initialize: The third param(initial data) could be an Array, or a String(providing a buffer) \
                             or a Integer(providing an address. e.g from Fiddle::Pointer).");
                     }
                 }
                 auto buf = GetNativeObject<IndexBuffer>(self);
                 auto device = GetNativeObject<::D3DDevice>(argv[0]);
                 try {
-                    buf->Initialize(device, FIX2INT(argv[1]), init_data);
+                    buf->Initialize(device, FIX2INT(argv[1]), p ? p.get() : init_data);
                 }
                 catch (std::runtime_error re) {
                     rb_raise(rb_eRuntimeError, re.what());
                 }
+                p.release();
                 return self;
             }
 
