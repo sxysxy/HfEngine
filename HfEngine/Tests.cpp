@@ -5,8 +5,10 @@
 #include <Shaders.h>
 #include <RenderPipeline.h>
 #include <SwapChain.h>
+#include <DirectXMath.h>
 using namespace std;
 using namespace Utility;
+using namespace DirectX;
 
 namespace Tests {
     void TestHelloWorld() {
@@ -52,14 +54,18 @@ namespace Tests {
 ";
 
     static const char *draw_rect_vs = " \
+    cbuffer wvpm : register(b0) {  \n \
+        float4x4 wvp;               \n \
+    }; \n \
     struct vs_output {             \n     \
         float4 pos : SV_POSITION;  \n     \
         float4 color : COLOR;      \n     \
     };                             \n     \
-    vs_output main(float4 pos : POSITION, float4 color : COLOR) { \n  \
+    vs_output main(float3 pos : POSITION, float4 color : COLOR) { \n  \
             vs_output opt;                                        \n  \
             opt.color = color;                                    \n  \
-            opt.pos = pos;                                        \n  \
+            //pos \= 2.0f;                \n \
+            opt.pos = mul(float4(pos, 1.0f), wvp);                \n  \
                                                   \n  \
             return opt;                                           \n  \
     }                                                             \n  \
@@ -103,32 +109,67 @@ namespace Tests {
         rp->SetInputLayout(device.Get(), { "POSITION", "COLOR" }, 
                                     { DXGI_FORMAT_R32G32B32_FLOAT,  DXGI_FORMAT_R32G32B32A32_FLOAT });
         struct vertex {
-            float pos[3], color[4];
+            XMFLOAT3 pos;
+            XMFLOAT4 color;
         };
         vertex vecs[] = {
-            { {-0.5, -0.5, 0.5},{0.0, 1.0, 0.0, 1.0} },   //前左下
-            { {-0.5, 0.5, 0.5}, {0.0, 0.0, 1.0, 1.0} },   //前左上
-            { {0.5, -0.5, 0.5}, {1.0, 0.0, 1.0, 1.0} },   //前右下
-            { {0.5, 0.5, 0.5},  {0.0, 1.0, 1.0, 1.0} },   //前右上
-            { { -0.5, -0.5, -0.5 },{ 0.0, 1.0, 0.0, 1.0 } },   //后左下
-            { { -0.5, 0.5, -0.5 },{ 0.0, 0.0, 1.0, 1.0 } },    //后左上
-            { { 0.5, -0.5, -0.5 },{ 1.0, 0.0, 1.0, 1.0 } },    //后右下
-            { { 0.5, 0.5, -0.5 },{ 0.0, 1.0, 1.0, 1.0 } },     //后右上
+            { XMFLOAT3(-0.5f, -0.5f, -0.5f), XMFLOAT4(1.0, 1.0, 1.0, 1.0) },//white
+            { XMFLOAT3(-0.5f, +0.5f, -0.5f), XMFLOAT4(0.0, 0.0, 0.0, 1.0) },//black
+            { XMFLOAT3(+0.5f, +0.5f, -0.5f), XMFLOAT4(1.0, 0.0, 0.0, 1.0) },//red
+            { XMFLOAT3(+0.5f, -0.5f, -0.5f), XMFLOAT4(1.0, 1.0, 0.0, 1.0) },//green
+            { XMFLOAT3(-0.5f, -0.5f, +0.5f), XMFLOAT4(0.0, 0.0, 1.0, 1.0) },//blue
+            { XMFLOAT3(-0.5f, +0.5f, +0.5f), XMFLOAT4(1.0, 1.0, 0.0, 1.0) },//yellow
+            { XMFLOAT3(+0.5f, +0.5f, +0.5f), XMFLOAT4(0.0, 1.0, 1.0, 1.0) },//cyan
+            { XMFLOAT3(+0.5f, -0.5f, +0.5f), XMFLOAT4(1.0, 0.0, 1.0, 1.0) }//magenta
         };
-        auto vbuffer = Utility::ReferPtr<VertexBuffer>::New(device.Get(), sizeof vertex, 4, vecs);
+        auto vbuffer = Utility::ReferPtr<VertexBuffer>::New(device.Get(), sizeof vertex, 
+                sizeof(vecs) / sizeof(vertex), vecs);
         rp->SetVertexBuffer(vbuffer.Get());
-        int indexs[] = { 0, 1, 2, 3};
-        auto ibuffer = Utility::ReferPtr<IndexBuffer>::New(device.Get(), sizeof(indexs) / sizeof(int));
+        int indexs[] = {      
+            // front face
+            0, 1, 2,
+            0, 2, 3,
+            // back face
+            4, 6, 5,
+            4, 7, 6,
+            // left face
+            4, 5, 1,
+            4, 1, 0,
+            // right face
+            3, 2, 6,
+            3, 6, 7,
+            // top face
+            1, 5, 6,
+            1, 6, 2,
+            // bottom face
+            4, 0, 3,
+            4, 3, 7
+        };
+        auto ibuffer = Utility::ReferPtr<IndexBuffer>::New(device.Get(), sizeof(indexs) / sizeof(int), indexs);
         rp->SetIndexBuffer(ibuffer.Get());
-        rp->SetTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+        auto cb = Utility::ReferPtr<ConstantBuffer>::New(device.Get(), sizeof XMMATRIX);
+        rp->SetVSCBuffer(0, cb.Get());
+        auto update = [&](int t) {
+            XMVECTOR eyepos = XMVectorSet(0.0, 0.0, -5.0, 1.0);
+            XMVECTOR target = XMVectorSet(0.0, 0.0, 0.0, 1.0);
+            XMVECTOR up = XMVectorSet(0.0, 1.0, 0.0, 1.0);
+            
+            XMMATRIX V = XMMatrixLookAtLH(eyepos, target, up);
+            XMMATRIX P = XMMatrixPerspectiveFovLH(XM_PIDIV4, 1.0f * window->width / window->height, 1.0f, 1000.0f);
+            XMMATRIX W = XMMatrixRotationY(t * XM_PI * 0.0125f);
+            XMMATRIX wvp = W*V*P;
+            rp->UpdateSubResource(cb.Get(), reinterpret_cast<float*>(&wvp));
+        };
+        rp->SetTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         auto swapchain = Utility::ReferPtr<SwapChain>::New(device.Get(), window.Get());
         rp->SetTarget(swapchain->GetRTT());
         rp->SetViewport({0, 0, window->width, window->height});
 
+        int t = 0;
         MessageLoop(60, [&](){
             rp->Clear({0.0f, 0.0f, 0.0f, 0.0f});
-            //rp->DrawIndex(0, sizeof(indexs) / sizeof(int));
-            rp->Draw(0, 4);
+            update(t++);
+            rp->DrawIndex(0, sizeof(indexs) / sizeof(int));
             rp->ImmdiateRender();
             swapchain->Present();
         });

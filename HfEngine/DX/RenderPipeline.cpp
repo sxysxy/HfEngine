@@ -67,7 +67,8 @@ void RenderPipeline::SetViewport(const Utility::Rect &rect, float min_deep, floa
 }
 void RenderPipeline::SetTarget(RTT *rtt) {
     rtt_target = rtt;
-    native_context->OMSetRenderTargets(1, rtt->native_rtt_view.GetAddressOf(), rtt->native_stencil_view.Get());
+    native_context->OMSetRenderTargets(1, rtt->native_rtt_view.GetAddressOf(),
+         rtt->native_stencil_view.Get());
 }
 
 void RenderPipeline::ImmdiateRender() {

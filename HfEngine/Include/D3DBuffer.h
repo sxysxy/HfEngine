@@ -21,9 +21,9 @@ public:
 class ConstantBuffer : public D3DBuffer {
 public:
     ConstantBuffer() {}
-    template<class T>
+    template<class T = void>
     ConstantBuffer(D3DDevice *device, size_t sz, const T *init_data = nullptr) { Initialize(device, sz, init_data); }
-    template<class T>
+    template<class T = void>
     void Initialize(D3DDevice *device, size_t sz, const T *init_data = nullptr) {
         if (sz % 16)throw std::invalid_argument("ConstantBuffer::Initialize: size should can be devied by 16");
         D3DBuffer::Initialize(device, D3D11_USAGE_DEFAULT, D3D11_BIND_CONSTANT_BUFFER, sz, (void *)init_data);
@@ -35,11 +35,11 @@ class VertexBuffer : public D3DBuffer {
 public:
     const size_t &size_per_vertex = _size_per_vertex;
     VertexBuffer() {}
-    template<class T>
+    template<class T = void>
     VertexBuffer(D3DDevice *device, size_t sizeof_per_vertex, size_t numof_vertex, const T *init_data = nullptr) { 
         Initialize(device, sizeof_per_vertex, numof_vertex, init_data); 
     }
-    template<class T>
+    template<class T = void>
     void Initialize(D3DDevice *device, size_t sizeof_per_vertex, size_t numof_vertex, const T *init_data = nullptr) {
         _size_per_vertex = sizeof_per_vertex;
         D3DBuffer::Initialize(device, D3D11_USAGE_DEFAULT, D3D11_BIND_VERTEX_BUFFER, 
