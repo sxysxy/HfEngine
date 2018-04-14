@@ -117,21 +117,18 @@ namespace Tests {
         };
         auto vbuffer = Utility::ReferPtr<VertexBuffer>::New(device.Get(), sizeof vertex, 4, vecs);
         rp->SetVertexBuffer(vbuffer.Get());
-        int indexs[] = { 0, 1, 2, 1, 2, 3, //front 
-                        4, 5, 6, 5, 6, 7,  //back
-                        0, 1, 5, 5, 4, 0,  //left
-                        2, 3, 7, 7, 6, 3,  //right
-        };
+        int indexs[] = { 0, 1, 2, 3};
         auto ibuffer = Utility::ReferPtr<IndexBuffer>::New(device.Get(), sizeof(indexs) / sizeof(int));
         rp->SetIndexBuffer(ibuffer.Get());
-        rp->SetTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        rp->SetTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
         auto swapchain = Utility::ReferPtr<SwapChain>::New(device.Get(), window.Get());
         rp->SetTarget(swapchain->GetRTT());
         rp->SetViewport({0, 0, window->width, window->height});
 
         MessageLoop(60, [&](){
             rp->Clear({0.0f, 0.0f, 0.0f, 0.0f});
-            rp->DrawIndex(0, sizeof(indexs) / sizeof(int));
+            //rp->DrawIndex(0, sizeof(indexs) / sizeof(int));
+            rp->Draw(0, 4);
             rp->ImmdiateRender();
             swapchain->Present();
         });

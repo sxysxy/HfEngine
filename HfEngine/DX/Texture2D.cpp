@@ -131,7 +131,29 @@ namespace Ext { namespace DX{
         static VALUE T2D_initialize(int argc, VALUE *argv, VALUE self) {
             if(argc < 2 || argc > 3)
                 rb_raise(rb_eArgError, "Texutre2D::initialize : expected (2..3) args( (device, filename) or (device, width, height)) but got %d", argc);
-            
+            auto tex = GetNativeObject<::Texture2D>(self);
+            if ((!rb_obj_is_kind_of(argv[0], Ext::DX::D3DDevice::klass))) {
+                rb_raise(rb_eArgError,
+                    "Texture2D::initialize: First param should be a DX::D3DDevice");
+            }
+            auto device = GetNativeObject<::D3DDevice>(argv[0]);
+            try {
+                if (rb_obj_is_kind_of(argv[1], rb_cString)) {
+                    std::wstring filename;
+                    U8ToU16(rb_string_value_cstr(&argv[1]), filename, CP_UTF8);
+                    tex->Initialize(device, filename);
+                }
+                else {
+
+                    tex->Initialize(device, FIX2INT(argv[1]), FIX2INT(argv[2]));
+                }
+            }
+            catch (LoadTextureFailed le) {
+                rb_raise(rb_eRuntimeError, le.what());
+            }
+            catch (std::runtime_error re) {
+                rb_raise(rb_eRuntimeError, re.what());
+            }
             return self;
         }
         static VALUE T2D_width(VALUE self) {

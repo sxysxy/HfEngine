@@ -260,11 +260,46 @@ namespace Ext {
             static VALUE get_blender(VALUE self) {
                 return rb_iv_get(self, "@blender");
             }
+            static VALUE clear_target(int argc, VALUE *argv, VALUE self) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                if(argc < 1 || argc > 2)rb_raise(rb_eArgError, "RenderPipeline::clear_target(color, [depth]): expecting(1..2) args but got %d", argc);
+                auto color = GetNativeObject<Utility::Color>(argv[0]);
+                if(argc == 2)
+                    rp->Clear(*color, (float)rb_float_value(argv[1]));
+                else rp->Clear(*color);
+                return self;
+            }
+            static VALUE draw(VALUE self, VALUE s, VALUE c) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                rp->Draw(FIX2INT(s), FIX2INT(c));
+                return self;
+            }
+            static VALUE draw_index(VALUE self, VALUE s, VALUE c) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                rp->DrawIndex(FIX2INT(s), FIX2INT(c));
+                return self;
+            }
 
             //---
             static VALUE immdiate_render(VALUE self) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 rp->ImmdiateRender();
+                return self;
+            }
+
+            //--
+            static VALUE update_subresource(VALUE self, VALUE buf, VALUE d) {
+                if (!rb_obj_is_kind_of(buf, Ext::DX::D3DBuffer::klass))
+                    rb_raise(rb_eArgError, "D3DDeviceContext::update_subresource: The first param should be a DX::D3DBuffer");
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                auto buffer = GetNativeObject<::D3DBuffer>(buf);
+                if (rb_obj_is_kind_of(d, rb_cString)) {
+                    void *ptr = rb_string_value_ptr(&d);
+                    rp->UpdateSubResource(buffer, ptr);
+                }
+                else if (rb_obj_is_kind_of(d, rb_cInteger)) {
+                    rp->UpdateSubResource(buffer, (void*)FIX2PTR(d));
+                }
                 return self;
             }
 
@@ -301,7 +336,16 @@ namespace Ext {
                 rb_define_method(klass, "set_blender", (rubyfunc)set_blender, 1);
                 rb_define_method(klass, "blender", (rubyfunc)get_blender, 0);
 
+                //Draw
+                rb_define_method(klass, "clear", (rubyfunc)clear_target, -1);
+                rb_define_method(klass, "draw", (rubyfunc)draw, 2);
+                rb_define_method(klass, "draw_index", (rubyfunc)draw_index, 2);
+
+                //
                 rb_define_method(klass, "immdiate_render", (rubyfunc)immdiate_render, 0);
+                
+                //
+                rb_define_method(klass, "update_subresource", (rubyfunc)update_subresource, 2);
 
                 //dxgi formats 
                 rb_define_const(module, "R32G32B32A32_FLOAT", INT2FIX(DXGI_FORMAT_R32G32B32A32_FLOAT));

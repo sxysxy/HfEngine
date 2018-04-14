@@ -1,46 +1,32 @@
 #encoding: utf-8
 require 'libcore.rb'
+include DX
+CURRENT_PATH = File.dirname(__FILE__)
+SHADER_FILENAME = File.join(CURRENT_PATH, "shaders.shader")
 HFWindow.new("Demo", 500, 500) { 
     show
-    window = self
-    set_handler(:on_closed) {exit_mainloop}
-    device = DX::D3DDevice.new(DX::HARDWARE_DEVICE);
-    swap_chain = DX::SwapChain.new(device, window)
-    context = device.immcontext.bind_pipeline(DX::RenderPipeline.new {
-        set_vshader DX::VertexShader.load_string(device, RSDSL.generate {
-			struct(:vs_output) {
-				declare :pos, :float4, :SV_POSITION
-				declare :color, :float4, :COLOR
-			}
-			defunc(:main, :vs_output, [:pos, :float4, :POSITION], [:color, :float4, :COLOR]) {
-				dvar :opt, :vs_output
-				p "opt.color = color, opt.pos = pos;"
-				creturn {p :opt}
-			}
-		})
-        set_pshader DX::PixelShader.load_string(device, RSDSL.generate {
-			defunc(:main, :float4, [:pos, :float4, :SV_POSITION], [:color, :float4, :COLOR], :SV_TARGET) {
-				creturn {p "color"}
-			}
-		})
-        set_input_layout device, ["POSITION", "COLOR"], [DX::R32G32B32_FLOAT, DX::R32G32B32A32_FLOAT]
-    }).instance_eval {
-        vecs = [[-0.5, -0.5, 0.0], [0.0, 1.0, 0.0, 1.0],
-                [-0.5, 0.5, 0.0],  [1.0, 0.0, 1.0, 1.0],
-                [0.5, -0.5, 0.0],  [0.0, 0.0, 1.0, 1.0],
-                [0.5, 0.5, 0.0],   [0.0, 1.0, 1.0, 1.0]].flatten.pack("f*")
-        bind_vbuffer(0, DX::D3DVertexBuffer.new(device, vecs.size, vecs), 4*7)
-        set_topology(DX::TOPOLOGY_TRIANGLESTRIP)
-        set_viewport(HFRect.new(0, 0, window.width, window.height), 0.0, 1.0)
-        set_render_target(swap_chain.back_buffer)
-		self
-    }
-	timer = FPSTimer.new(30)
-    messageloop {
-        context.clear_render_target(swap_chain.back_buffer, HFColorRGBA.new(0.0, 0.0, 0.0, 0.0));
-        context.draw(0, 4)
-		swap_chain.present
-        timer.await
-    }
+	set_handler(:on_closed) {exit_mainloop}
+    device = D3DDevice.new(HARDWARE_DEVICE)
+	swapchain = SwapChain.new(device, self)
+	vs = VertexShader.load_hlsl(device, SHADER_FILENAME, "VS")
+	ps = PixelShader.load_hlsl(device, SHADER_FILENAME, "PS")
+	vecs = [[-0.5, -0.5, 0.0], [0.0, 1.0, 0.0, 1.0],
+			[-0.5, 0.5, 0.0],  [0.0, 0.0, 1.0, 1.0],
+			[0.5, -0.5, 0.0],  [1.0, 1.0, 0.0, 1.0],
+			[0.5, 0.5, 0.0],   [1.0, 0.0, 1.0, 1.0]].flatten.pack("f*")
+	vb = VertexBuffer.new(device, 7*4, 4, vecs)
+	rp = RenderPipeline.new(device).set_vshader(vs).set_pshader(ps).set_topology(TOPOLOGY_TRIANGLESTRIP)\
+	 .set_target(swapchain.rtt).set_input_layout(device, ["POSITION", "COLOR"], 
+						[R32G32B32_FLOAT, R32G32B32A32_FLOAT]).set_viewport(HFRect(0, 0, width, height))\
+						.set_vbuffer(vb)
+	
+	timer = FPSTimer.new(60);
+	messageloop{
+		rp.clear(HFColorRGBA(1.0, 1.0, 1.0, 1.0))
+		rp.draw(0, 4)
+		rp.immdiate_render
+		swapchain.present
+		timer.await
+	}
 }
 
