@@ -33,7 +33,6 @@ namespace Ext {
     }
 
 	namespace DX {
-		extern VALUE module;
 		
 	}
 }

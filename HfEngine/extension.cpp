@@ -1,7 +1,8 @@
-#include "stdafx.h"
-#include "extension.h"
-#include "HFWindow.h"
-#include "DX.h"
+#include "Include/stdafx.h"
+#include "Include/extension.h"
+#include "Include/HFWindow.h"
+#include "Include/DX.h"
+#include "Include\MathTool.h"
 
 namespace Ext {
 
@@ -113,7 +114,7 @@ namespace Ext {
         rb_define_module_function(rb_mKernel, "exit_mainloop", (rubyfunc)exit_mainloop, 0);
 		Ext::DX::Init();
         Ext::FPSTimer::Init();
-        //Ext::G2D::Renderer::Init();
+        Ext::MathTool::Init();
 
 	}
 }

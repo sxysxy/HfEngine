@@ -50,7 +50,13 @@ void VertexShader::CreateFromString(D3DDevice * device, const std::string & code
         MAKE_ERRMSG<std::runtime_error>("Fail to Create VertexShader, Error code:", hr);
 }
 
-void VertexShader::CreateFromBinary(D3DDevice * device, void *, int size){
+void VertexShader::CreateFromBinary(D3DDevice * device, void *bc, int size) {
+    try{
+        device->native_device->CreateVertexShader(bc, size, 0, &native_vshader);
+    }
+    catch (std::exception) {
+        native_vshader = nullptr;
+    }
 }
 
 void PixelShader::CreateFromHLSLFile(D3DDevice * device, const std::wstring & filename, const std::string &entry){
@@ -63,7 +69,7 @@ void PixelShader::CreateFromHLSLFile(D3DDevice * device, const std::wstring & fi
         std::string msg;
         Ext::U16ToU8(filename.c_str(), msg);
         if (errmsg) {
-            msg.append(":Compiler Message:\n");
+            msg.append("PixelShader Compile Error :Compiler Message:\n");
             msg.append((LPCSTR)errmsg->GetBufferPointer());
             throw ShaderCompileError(msg);
         }
@@ -85,7 +91,7 @@ void PixelShader::CreateFromString(D3DDevice * device, const std::string & code,
     if (FAILED(hr)) {
         if (errmsg) {
             std::string msg;
-            msg.append(":Compiler Message:\n");
+            msg.append("PixelShader Compile Error :Compiler Message:\n");
             msg.append((LPCSTR)errmsg->GetBufferPointer());
             throw ShaderCompileError(msg);
         }
@@ -100,8 +106,13 @@ void PixelShader::CreateFromString(D3DDevice * device, const std::string & code,
         MAKE_ERRMSG<std::runtime_error>("Fail to Create PixelShader, Error code:", hr);
 }
 
-void PixelShader::CreateFromBinary(D3DDevice * device, void *, int size){
-
+void PixelShader::CreateFromBinary(D3DDevice * device, void *bc, int size){
+    try {
+        device->native_device->CreatePixelShader(bc, size, 0, &native_pshader);
+    }
+    catch (std::exception) {
+        native_pshader = nullptr;
+    }
 }
 
 namespace Ext {
@@ -129,11 +140,11 @@ namespace Ext {
                 VALUE _device = argv[0];
                 VALUE _filename = argv[1];
                 VALUE entry = 0;
-                if(argc == 3)
+                if (argc == 3)
                     entry = argv[2];
                 auto shader = GetNativeObject<::Shader>(self);
                 if (!rb_obj_is_kind_of(_device, Ext::DX::D3DDevice::klass) ||
-                    !rb_obj_is_kind_of(_filename, rb_cString) || 
+                    !rb_obj_is_kind_of(_filename, rb_cString) ||
                     !rb_obj_is_kind_of(entry, rb_cString)) {
                     rb_raise(rb_eArgError, "Shader::create_from_hlsl: Usage:(device, filename, [entry = \"main\"])");
                 }
@@ -141,7 +152,7 @@ namespace Ext {
                 cstring filename;
                 U8ToU16(rb_string_value_cstr(&_filename), filename);
                 try {
-                    if(entry)
+                    if (entry)
                         shader->CreateFromHLSLFile(device, filename, rb_string_value_cstr(&entry));
                     else
                         shader->CreateFromHLSLFile(device, filename);
@@ -152,11 +163,6 @@ namespace Ext {
                 catch (std::runtime_error re) {
                     rb_raise(rb_eRuntimeError, re.what());
                 }
-                return self;
-            }
-
-            static VALUE create_from_binfile(VALUE self, VALUE _device, VALUE _filename) {
-                rb_raise(rb_eNotImpError, "Shader::create_from_binfile implement is still not supported");
                 return self;
             }
 
@@ -189,6 +195,31 @@ namespace Ext {
                 catch (std::runtime_error re) {
                     rb_raise(rb_eRuntimeError, re.what());
                 }
+                return self;
+            }
+
+            static VALUE create_from_binary(VALUE self, VALUE device, VALUE s, VALUE sz) {
+                auto shader = GetNativeObject<::Shader>(self);
+                std::unique_ptr<char[]> acode;
+                void *p = nullptr;
+                if (rb_obj_is_kind_of(s, rb_cString)) {
+                    p = (void*)rb_string_value_ptr(&s);
+                }
+                else if (rb_obj_is_kind_of(s, rb_cArray)) {
+                    acode.reset(new char[FIX2INT(sz)]);
+                    VALUE *pa = RARRAY_PTR(s);
+                    for (size_t i = 0; i < sz; i++) {
+                        acode[i] = (char)FIX2INT(pa[i]);
+                    }
+                }
+                else {
+                    rb_raise(rb_eArgError, "Shader::create_from_binary(device, code, size), code should be a String or an Array");
+                }
+                if (!rb_obj_is_kind_of(device, Ext::DX::D3DDevice::klass)) {
+                    rb_raise(rb_eArgError, "Shader::create_from_binary(device, code, size): first param should be a DX::D3DDevice");
+                }
+                shader->CreateFromBinary(GetNativeObject<::D3DDevice>(device), 
+                    acode ? acode.get() : p, FIX2INT(sz));
                 return self;
             }
 
@@ -340,19 +371,19 @@ namespace Ext {
             void Init() {
                 klass_eShaderCompileError = rb_define_class_under(module, "ShaderCompileError", rb_eException);
                 klass = rb_define_class_under(module, "Shader", rb_cObject);
-                rb_define_method(klass, "initialize", (rubyfunc)shader_initialize, -1);
+                //rb_define_method(klass, "initialize", (rubyfunc)shader_initialize, -1);
+                rb_define_method(klass, "initialize", (rubyfunc)initialize, 0);
+                rb_define_method(klass, "create_from_hlsl", (rubyfunc)create_from_hlsl, -1);
+                rb_define_method(klass, "create_from_binary", (rubyfunc)create_from_binary, 3);
+                rb_define_method(klass, "create_from_string", (rubyfunc)create_from_string, -1);
+                rb_define_method(klass, "byte_code", (rubyfunc)byte_code, 0);
 
-                klass_vshader = rb_define_class_under(module, "VertexShader", rb_cObject);
+                klass_vshader = rb_define_class_under(module, "VertexShader", klass);
                 rb_define_alloc_func(klass_vshader, [](VALUE k)->VALUE {
                     auto s = new ::VertexShader;
                     s->AddRefer();
                     return Data_Wrap_Struct(k, nullptr, DeleteShader<::VertexShader>, s);
                 });
-                rb_define_method(klass_vshader, "initialize", (rubyfunc)initialize, 0);
-                rb_define_method(klass_vshader, "create_from_hlsl", (rubyfunc)create_from_hlsl, -1);
-                rb_define_method(klass_vshader, "create_from_binfile", (rubyfunc)create_from_binfile, -1);
-                rb_define_method(klass_vshader, "create_from_string", (rubyfunc)create_from_string, -1);
-                rb_define_method(klass_vshader, "byte_code", (rubyfunc)byte_code, 0);
                                                                                                       //¡ü
                 klass_pshader = rb_define_class_under(module, "PixelShader", klass);                   //
                 rb_define_alloc_func(klass_pshader, [](VALUE k)->VALUE {                               //
@@ -360,12 +391,7 @@ namespace Ext {
                     s->AddRefer();                                                                     //
                     return Data_Wrap_Struct(k, nullptr, DeleteShader<::PixelShader>, s);               //
                 });                                                                                    //
-                //Please use Ctrl-C and Ctrl-V                          --------------------------------|                                    
-                rb_define_method(klass_pshader, "initialize", (rubyfunc)initialize, 0);
-                rb_define_method(klass_pshader, "create_from_hlsl", (rubyfunc)create_from_hlsl, -1);
-                rb_define_method(klass_pshader, "create_from_binfile", (rubyfunc)create_from_binfile, -1);
-                rb_define_method(klass_pshader, "create_from_string", (rubyfunc)create_from_string, -1);
-                rb_define_method(klass_pshader, "byte_code", (rubyfunc)byte_code, 0);
+                //------------------------------------------------------------------------------
 
                 //sampler
                 klass_sampler = rb_define_class_under(module, "Sampler", rb_cObject);

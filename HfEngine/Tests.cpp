@@ -64,7 +64,7 @@ namespace Tests {
     vs_output main(float3 pos : POSITION, float4 color : COLOR) { \n  \
             vs_output opt;                                        \n  \
             opt.color = color;                                    \n  \
-            //pos \= 2.0f;                \n \
+                \n \
             opt.pos = mul(float4(pos, 1.0f), wvp);                \n  \
                                                   \n  \
             return opt;                                           \n  \
@@ -150,15 +150,17 @@ namespace Tests {
         auto cb = Utility::ReferPtr<ConstantBuffer>::New(device.Get(), sizeof XMMATRIX);
         rp->SetVSCBuffer(0, cb.Get());
         auto update = [&](int t) {
-            XMVECTOR eyepos = XMVectorSet(0.0, 0.0, -5.0, 1.0);
-            XMVECTOR target = XMVectorSet(0.0, 0.0, 0.0, 1.0);
-            XMVECTOR up = XMVectorSet(0.0, 1.0, 0.0, 1.0);
-            
-            XMMATRIX V = XMMatrixLookAtLH(eyepos, target, up);
-            XMMATRIX P = XMMatrixPerspectiveFovLH(XM_PIDIV4, 1.0f * window->width / window->height, 1.0f, 1000.0f);
-            XMMATRIX W = XMMatrixRotationY(t * XM_PI * 0.0125f);
-            XMMATRIX wvp = W*V*P;
-            rp->UpdateSubResource(cb.Get(), reinterpret_cast<float*>(&wvp));
+            XMVECTOR eyepos = XMVectorSet(0.0, 3.0, -8.0, 0.0);  //眼睛位置
+            XMVECTOR target = XMVectorSet(0.0, 0.0, 0.0, 0.0);   //目标位置
+            XMVECTOR up = XMVectorSet(0.0, 1.0, 0.0, 0.0);       //"上"方向向量
+
+            XMMATRIX W = XMMatrixRotationY(t * XM_PI * 0.0125f);  //Local Space -> World Space 绕Y轴旋转
+            XMMATRIX V = XMMatrixLookAtLH(eyepos, target, up);    //观察矩阵 View
+            XMMATRIX P = XMMatrixPerspectiveFovLH(XM_PIDIV4, 1.0f * window->width / window->height, 1.0f, 1000.0f); 
+                                                    //透视投影(场视角, 宽高比, 近平面, 远平面)
+            XMMATRIX wvp = W*V*P;      
+            auto wvpt = XMMatrixTranspose(wvp);  //hlsl特(bu)性(g)，需要转置一下
+            rp->UpdateSubResource(cb.Get(), reinterpret_cast<float*>(&wvpt));
         };
         rp->SetTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         auto swapchain = Utility::ReferPtr<SwapChain>::New(device.Get(), window.Get());
@@ -166,7 +168,7 @@ namespace Tests {
         rp->SetViewport({0, 0, window->width, window->height});
 
         int t = 0;
-        MessageLoop(60, [&](){
+        MessageLoop(30, [&](){
             rp->Clear({0.0f, 0.0f, 0.0f, 0.0f});
             update(t++);
             rp->DrawIndex(0, sizeof(indexs) / sizeof(int));

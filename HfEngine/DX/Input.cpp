@@ -1,6 +1,7 @@
-#include "Input.h"
-#include "../HFWindow.h"
-#include "../extension.h"
+#include "../Include/Input.h"
+#include "../Include/HFWindow.h"
+#include "../Include/extension.h"
+#include "../Include/DX.h"
 #pragma comment(lib, "dinput8.lib")
 #pragma comment(lib, "dxguid.lib")
 

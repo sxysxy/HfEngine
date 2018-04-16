@@ -11,9 +11,9 @@ class Shader
         s.create_from_string(device, str, entry)
         return s
     end
-    def self.load_binfile(device, filename, klass)
-        s = klass.new
-        s.create_from_binfile(device, filename)
+    def self.load_binary(device, x, size, klass)
+		s = klass.new
+		s.create_from_binary(device, x, size)
         return s
     end
 end
@@ -25,6 +25,9 @@ end
 		end
 		def self.load_string(device, str, entry = "main")
 			Shader.load_string(device, str, self, entry)
+		end
+		def self.load_binary(device, x, size)
+			Shader.load_binary(device, x, size, self)
 		end
 	}
 }

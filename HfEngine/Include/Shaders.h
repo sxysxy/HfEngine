@@ -33,6 +33,13 @@ public:
         ptr->CreateFromString(device, str, entry);
         return ptr;
     }
+
+    template<class ShaderT, class DataT = void>
+    static Utility::ReferPtr<ShaderT> LoadBinaryCode(D3DDevice *device, DataT *pdata, size_t size) {
+        auto ptr = ReferPtr<ShaderT>::New();
+        ptr->CreatFromBinary(device, (void*)pdata, size);
+        return ptr;
+    }
 };
 
 class VertexShader : public Shader {

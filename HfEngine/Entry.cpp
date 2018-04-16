@@ -1,7 +1,7 @@
-﻿#include "stdafx.h"
-#include "extension.h"
-#include "HFWindow.h"
-#include "Input.h"
+﻿#include "Include/stdafx.h"
+#include "Include/extension.h"
+#include "Include/HFWindow.h"
+#include "Include/Input.h"
 #include <regex>
 using namespace Utility;
 

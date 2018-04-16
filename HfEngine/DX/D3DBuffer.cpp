@@ -1,4 +1,4 @@
-#include "D3DBuffer.h"
+#include "../Include/D3DBuffer.h"
 
 void D3DBuffer::Initialize(D3DDevice *device, UINT usage, UINT flag, size_t size, const void *init_data) {
     D3D11_BUFFER_DESC bd;

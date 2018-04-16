@@ -1,12 +1,12 @@
 #include "../Include/DX.h"
 #include "../Include/Input.h"
 #include "../Include/extension.h"
-#include "D3DDevice.h"
-#include "Shaders.h"
-#include "D3DBuffer.h"
-#include "RenderPipeline.h"
-#include "Texture2D.h"
-#include "SwapChain.h"
+#include "../Include/D3DDevice.h"
+#include "../Include/Shaders.h"
+#include "../Include/D3DBuffer.h"
+#include "../Include/RenderPipeline.h"
+#include "../Include/Texture2D.h"
+#include "../Include/SwapChain.h"
 
 namespace Ext{
     namespace DX{
