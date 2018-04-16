@@ -13,8 +13,21 @@ namespace Ext {
         MessageBoxW(0, s.c_str(), L"MessageBox", MB_OK);
         return Qnil;
     }
-    VALUE show_console(VALUE self) {
+    HWND get_console_window() {
         HWND hwnd = FindWindow(TEXT("ConsoleWindowClass"), NULL);
+        if(!hwnd)return 0;
+        DWORD pid = GetCurrentProcessId();
+        DWORD wpid = 0;    
+        GetWindowThreadProcessId(hwnd, &wpid);
+        while (wpid != pid) {
+            hwnd = GetNextWindow(hwnd, GW_HWNDNEXT);
+            if(!hwnd)break;
+            GetWindowThreadProcessId(hwnd, &wpid);
+        }
+        return hwnd;
+    }
+    VALUE show_console(VALUE self) {
+        auto hwnd = get_console_window();
         if(!hwnd)
             AllocConsole();
         else ShowWindowAsync(hwnd, SW_SHOWNORMAL);
@@ -26,7 +39,7 @@ namespace Ext {
         return Qnil;
     }
     VALUE hide_console(VALUE self) {
-        HWND hwnd = FindWindow(TEXT("ConsoleWindowClass"), NULL);
+        HWND hwnd = get_console_window();
         if (hwnd)
             ShowWindowAsync(hwnd, SW_HIDE);
         return Qnil;
