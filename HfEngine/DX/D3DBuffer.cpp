@@ -160,6 +160,7 @@ namespace Ext {
 
                 klass_ibuffer = rb_define_class_under(module, "IndexBuffer", klass);
                 rb_define_alloc_func(klass_ibuffer, New<::IndexBuffer>);
+                rb_define_method(klass_ibuffer, "initialize", (rubyfunc)ibuffer_initialize, -1);
 
                 klass_cbuffer = rb_define_class_under(module, "ConstantBuffer", klass);
                 rb_define_alloc_func(klass_cbuffer, New<::ConstantBuffer>);

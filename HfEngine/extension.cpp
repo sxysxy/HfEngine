@@ -28,14 +28,15 @@ namespace Ext {
     }
     VALUE show_console(VALUE self) {
         auto hwnd = get_console_window();
-        if(!hwnd)
+        if (!hwnd) {
             AllocConsole();
-        else ShowWindowAsync(hwnd, SW_SHOWNORMAL);
-        int s = 0;
-        rb_eval_string_protect("STDIN.reopen('CON'); STDOUT.reopen('CON'); STDERR.reopen('CON');", &s);
-        if (s) {
-            rb_raise(rb_eException, "Error when reopening STDIO to this console.");
+            int s = 0;
+            rb_eval_string_protect("STDIN.reopen('CON'); STDOUT.reopen('CON'); STDERR.reopen('CON');", &s);
+            if (s) {
+                rb_raise(rb_eException, "Error when reopening STDIO to this console.");
+            }
         }
+        else ShowWindowAsync(hwnd, SW_SHOWNORMAL);
         return Qnil;
     }
     VALUE hide_console(VALUE self) {
