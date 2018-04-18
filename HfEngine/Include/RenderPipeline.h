@@ -30,8 +30,8 @@ public:
     void SetInputLayout(D3DDevice *device, const std::string *idents, const DXGI_FORMAT *formats, int count);
     void SetInputLayout(D3DDevice *device, const std::initializer_list<std::string> &idents,
         const std::initializer_list<DXGI_FORMAT> &formats) {
-        int len1 = idents.end() - idents.begin();
-        int len2 = formats.end() - formats.begin();
+        int len1 = (int)(idents.end() - idents.begin());
+        int len2 = (int)(formats.end() - formats.begin());
         if(len1 != len2)
             throw std::runtime_error("RenderPipeline::SetInputLayout: idents and formats should be in the same length");
         SetInputLayout(device, idents.begin(), formats.begin(), len1);

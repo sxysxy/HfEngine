@@ -5,6 +5,7 @@
 #include "Include\MathTool.h"
 
 namespace Ext {
+    VALUE rb_mModule;
 
     VALUE __msgbox__(VALUE self, VALUE msg) {
         msg = rb_funcall(msg, rb_intern("to_s"), 0);
@@ -54,6 +55,7 @@ namespace Ext {
     }
 
     void BasicExtensions() {
+        rb_mModule = CLASS_OF(rb_mMath);
         rb_define_module_function(rb_mKernel, "msgbox", (rubyfunc)__msgbox__, 1);
         rb_define_module_function(rb_mKernel, "show_console", (rubyfunc)show_console, 0);
         rb_define_module_function(rb_mKernel, "hide_console", (rubyfunc)hide_console, 0);

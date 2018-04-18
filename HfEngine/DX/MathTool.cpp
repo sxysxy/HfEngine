@@ -12,7 +12,7 @@ namespace Ext {
         VALUE module;
         VALUE klass_matrix4x4;
         VALUE klass_vector4;
-        
+
         template<class T>
         void Delete(T *t) {
             delete t;
@@ -23,8 +23,7 @@ namespace Ext {
             auto p = new T;
             return Data_Wrap_Struct(k, nullptr, Delete<T>, p);
         }
-
-        static VALUE M_identity(VALUE self) {
+        static VALUE M_initialize(VALUE self) {
             auto m = GetNativeObject<XMFLOAT4X4>(self);
             XMStoreFloat4x4(m, XMMatrixIdentity());
             return self;
@@ -86,6 +85,15 @@ namespace Ext {
             memcpy(p, m, sizeof T);
             return d;
         }
+        template<class T>
+        static VALUE M_row_data_ptr(VALUE self) {
+            auto m = GetNativeObject<T>(self);
+#ifdef _WIN64
+            return ULL2NUM((INT64)m);
+#else
+            return INT2NUM((int)m);
+#endif
+        }
 
         static VALUE M_array_data(VALUE self) {
             auto m = GetNativeObject<XMFLOAT4X4>(self);
@@ -111,9 +119,16 @@ namespace Ext {
 
 
         //
-
+        static VALUE identity(VALUE self) {
+            auto obj = self == module ? New<XMFLOAT4X4>(klass_matrix4x4) : self;
+            auto m = GetNativeObject<XMFLOAT4X4>(obj);
+            XMStoreFloat4x4(m, XMMatrixIdentity());
+            return self;
+        }
         static VALUE perspective(VALUE self, VALUE fovangleY, VALUE aspect, VALUE znear, VALUE zfar) {
-            auto obj = New<XMFLOAT4X4>(klass_matrix4x4);
+            // if you called MathTool.perspective, it returns a new matrix4x4
+            // if you called Matrix4x4#perspective!, it change the object it self
+            auto obj = self == module ? New<XMFLOAT4X4>(klass_matrix4x4) : self;
             auto nobj = GetNativeObject<XMFLOAT4X4>(obj);
             auto m = XMMatrixPerspectiveFovLH(RFLOAT_VALUE(fovangleY), RFLOAT_VALUE(aspect), 
                 RFLOAT_VALUE(znear), RFLOAT_VALUE(zfar));
@@ -137,7 +152,7 @@ namespace Ext {
             VALUE eyepos = argv[0];
             VALUE target = argv[1];
             VALUE up = argc == 3? argv[2] : 0;
-            auto obj = New<XMFLOAT4X4>(klass_matrix4x4);
+            auto obj = self == module ? New<XMFLOAT4X4>(klass_matrix4x4) : self;
             auto nobj = GetNativeObject<XMFLOAT4X4>(obj);
             XMMATRIX m;
             if(up)
@@ -148,36 +163,36 @@ namespace Ext {
             return obj;
         }
         static VALUE rotate_round(VALUE self, VALUE vector, VALUE angle) {
-            auto obj = New<XMFLOAT4X4>(klass_matrix4x4);
+            auto obj = self == module ? New<XMFLOAT4X4>(klass_matrix4x4) : self;
             auto nobj = GetNativeObject<XMFLOAT4X4>(obj);
             auto m =XMMatrixRotationAxis(ary2vec4(vector), RFLOAT_VALUE(angle));
             XMStoreFloat4x4(nobj, m);
             return obj;
         }
         static VALUE rotateX(VALUE self, VALUE angle) {
-            auto obj = New<XMFLOAT4X4>(klass_matrix4x4);
+            auto obj = self == module ? New<XMFLOAT4X4>(klass_matrix4x4) : self;
             auto nobj = GetNativeObject<XMFLOAT4X4>(obj);
             auto m = XMMatrixRotationX(RFLOAT_VALUE(angle));
             XMStoreFloat4x4(nobj, m);
             return obj;
         }
         static VALUE rotateY(VALUE self, VALUE angle) {
-            auto obj = New<XMFLOAT4X4>(klass_matrix4x4);
+            auto obj = self == module ? New<XMFLOAT4X4>(klass_matrix4x4) : self;
             auto nobj = GetNativeObject<XMFLOAT4X4>(obj);
             auto m = XMMatrixRotationY(RFLOAT_VALUE(angle));
             XMStoreFloat4x4(nobj, m);
             return obj;
         }
         static VALUE rotateZ(VALUE self, VALUE angle) {
-            auto obj = New<XMFLOAT4X4>(klass_matrix4x4);
+            auto obj = self == module ? New<XMFLOAT4X4>(klass_matrix4x4) : self;
             auto nobj = GetNativeObject<XMFLOAT4X4>(obj);
             auto m = XMMatrixRotationZ(RFLOAT_VALUE(angle));
             XMStoreFloat4x4(nobj, m);
             return obj;
         }
         static VALUE move(VALUE self, VALUE mx, VALUE my, VALUE mz) {
-            auto obj = New<XMFLOAT4X4>(klass_matrix4x4);
-            M_identity(obj);
+            auto obj = self == module ? New<XMFLOAT4X4>(klass_matrix4x4) : self;
+            identity(obj);
             auto nobj = GetNativeObject<XMFLOAT4X4>(obj);
             nobj->_41 = RFLOAT_VALUE(mx);
             nobj->_42 = RFLOAT_VALUE(my);
@@ -185,8 +200,8 @@ namespace Ext {
             return obj;
         }
         static VALUE zoom(VALUE self, VALUE zoomx, VALUE zoomy, VALUE zoomz) {
-            auto obj = New<XMFLOAT4X4>(klass_matrix4x4);
-            M_identity(obj);
+            auto obj = self == module ? New<XMFLOAT4X4>(klass_matrix4x4) : self;
+            identity(obj);
             auto nobj = GetNativeObject<XMFLOAT4X4>(obj);
             nobj->_11 = RFLOAT_VALUE(zoomx);
             nobj->_22 = RFLOAT_VALUE(zoomy);
@@ -194,16 +209,22 @@ namespace Ext {
             return obj;
         }
 
+        /*
         template<class T>
         inline void defmtfunc(const char *name, T f, int argc) {
             rb_define_module_function(module, name, (rubyfunc)f, argc);
+            rb_define_method(module, name, (rubyfunc)f, argc);
         };
+        */
+#define defmtfunc(name, f, argc) \
+        rb_define_module_function(module, name, (rubyfunc)f, argc); \
+        rb_define_method(klass_matrix4x4, name##"!", (rubyfunc)f, argc);
+
         void Init() {
             module = rb_define_module("MathTool");
             klass_matrix4x4 = rb_define_class_under(module, "Matrix4x4", rb_cObject);
             rb_define_alloc_func(klass_matrix4x4, New<XMFLOAT4X4>);
-            rb_define_method(klass_matrix4x4, "initialize", (rubyfunc)M_identity, 0);
-            rb_define_method(klass_matrix4x4, "identity!", (rubyfunc)M_identity, 0);
+            rb_define_method(klass_matrix4x4, "initialize", (rubyfunc)M_initialize, 0);
             rb_define_method(klass_matrix4x4, "tranpose", (rubyfunc)M_tranpose, 0);
             rb_define_method(klass_matrix4x4, "tranpose!", (rubyfunc)M_tranpose_to, 0);
             rb_define_method(klass_matrix4x4, "*=", (rubyfunc)M_matrix_mul_to, 1);
@@ -212,6 +233,7 @@ namespace Ext {
             rb_define_method(klass_matrix4x4, "[]=", (rubyfunc)M_set, 3);
             rb_define_method(klass_matrix4x4, "[]", (rubyfunc)M_get, 2);
             rb_define_method(klass_matrix4x4, "row_data", (rubyfunc)M_row_data<XMFLOAT4X4>, 0);
+            rb_define_method(klass_matrix4x4, "row_data_ptr", (rubyfunc)M_row_data_ptr<XMFLOAT4X4>, 0);
             rb_define_method(klass_matrix4x4, "array_data", (rubyfunc)M_array_data, 0);
 
             //
@@ -219,6 +241,7 @@ namespace Ext {
             rb_define_const(module, "PIDIV2", rb_float_new(XM_PIDIV2));
             rb_define_const(module, "PIDIV4", rb_float_new(XM_PIDIV4));
             
+            defmtfunc("identity", identity, 0);
             defmtfunc("perspective", perspective, 4);
             defmtfunc("lookat", lookat, -1);
             defmtfunc("rotate_round", rotate_round, 2);
@@ -227,9 +250,11 @@ namespace Ext {
             defmtfunc("rotateZ", rotateZ, 1);
             defmtfunc("move", move, 3);
             defmtfunc("zoom", zoom, 3);
-
+#undef defmtfunc
             //klass_vector4 = rb_define_class_under(module, "Vector4", rb_cObject);
             //rb_define_alloc_func(klass_vector4, New<XMFLOAT4>);
+
+            
         }
     }
 }

@@ -108,8 +108,8 @@ void HFWindow::Create(const cstring &_title, int w, int h) {
 		WNDCLASS wc;
 		RtlZeroMemory(&wc, sizeof(wc));
 		wc.hbrBackground = (HBRUSH)(GetStockObject(BLACK_BRUSH));
-		wc.hCursor = LoadCursor(instance, IDC_ARROW);
-		wc.hIcon = LoadIcon(instance, IDI_WINLOGO);
+		wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+		wc.hIcon = LoadIcon(nullptr, IDI_WINLOGO);
 		wc.hInstance = instance;
 		wc.lpfnWndProc = _WndProc;
 		wc.lpszClassName = TEXT("23333");

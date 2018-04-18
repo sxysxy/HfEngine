@@ -285,6 +285,7 @@ class Compiled
 		}
 		return x
 	end
+	
 end
 
 class Compiler < Generator
@@ -295,9 +296,13 @@ class Compiler < Generator
 	end
 	
 	attr_accessor :device
-	def self.parse_code(code)
-		x = self.new
-		x.device = DX::D3DDevice.new(DX::HARDWARE_DEVICE)
+	def self.parse_code(*arg)
+		if(arg.size < 1 || arg.size > 2)
+			raise ArgumentError, "Compiler.parse_code(code) or Compiler.parse_code(device, code), expecting 2 args but got #{arg.size}"
+		end
+		x = self.new 
+		x.device = arg.size == 2 ? arg[1] : DX::D3DDevice.new(DX::HARDWARE_DEVICE)
+		code = arg[0]
 		begin
 			if code.is_a?(String)
 				x.instance_eval(code)
@@ -313,7 +318,7 @@ class Compiler < Generator
 	def self.compile_code(code = nil, &block)
 		data = parse_code(code || block)	
 		begin
-			compd = Compiled.new(data.compile([]), "#{VERSION} #{Time.now}")
+			return compd = Compiled.new(data.compile([]), "#{VERSION} #{Time.now}")
 		rescue Exception => e
 			raise e.message
 		end
@@ -321,6 +326,94 @@ class Compiler < Generator
 	def self.compile_file(filename)
 		compile_code(File.read(filename))
 	end
+end
+
+class SFData
+	attr_accessor :name
+end
+
+class SFProgram < SFData
+	attr_accessor :code
+	attr_accessor :byte_code
+	attr_accessor :resource
+	attr_accessor :section
+	attr_accessor :input_layout
+end
+
+class SFResource < SFData
+	attr_accessor :blender
+	attr_accessor :sampler
+	attr_accessor :cbuffer
+end
+
+class SFSection < SFData
+	attr_accessor :vs
+	attr_accessor :ps
+	
+	def apply(rp)
+	
+	end
+end
+
+class SFInputLayout < SFData
+	attr_reader :idents, :formats
+end
+
+#-------------
+
+def self.load_section(device, program, sdata)
+
+end
+
+def self.load_resource(device, program, rdata)
+
+end
+
+def self.load_program(device, p)
+	program = SFProgram.new
+	
+	#hlsl
+	program.code = p[:code]
+	
+	#byte code
+	program.byte_code = {}
+	p[:tobe_compiled].each {|info|
+		program.byte_code[info[0].to_sym] = p[:compiled][info[0].to_sym].pack("C*") 
+	}
+	#input layout
+	program.input_layout = SFInputLayout.new
+	if p[:input_layout][1]
+		program.input_layout.idents = p[:input_layout][1][:idents]
+		program.input_layout.formats = p[:input_layout][1][:formats]
+	end
+	
+	#other
+	program.section = {}
+	program.resource = {}
+	p.each {|name, element|
+		
+	}
+	return program
+end
+
+def self.loadsf(device, compd)
+	
+	#from top level
+	a = []
+	compd.row_data.each {|name, element|
+		p = self.load_program device, element[1]
+		p.name = name
+		a << p
+	}
+	return a
+end
+
+def self.loadsf_file(device, filename)
+	self.loadsf(device, Compiler.compile_file(filename))
+end
+
+def self.loadsf_code(device, &block)
+	self.loadsf(device, Compiler.compile_code(&block))
 end
 
 end #end of namespace HFSF

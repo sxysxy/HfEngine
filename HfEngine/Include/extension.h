@@ -35,4 +35,6 @@ namespace Ext {
 	namespace DX {
 		
 	}
+    
+    extern VALUE rb_mModule;
 }
