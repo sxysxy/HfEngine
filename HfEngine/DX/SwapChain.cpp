@@ -116,6 +116,7 @@ namespace Ext {
             static VALUE resize(VALUE self, VALUE w, VALUE h) {  ///why doesn't work...
                 auto sc = GetNativeObject<::SwapChain>(self);
                 sc->Resize(FIX2INT(w), FIX2INT(h));
+                rb_iv_set(self, "@rtt", Data_Wrap_Struct(Ext::DX::Texture::klass_rtt, nullptr, nullptr, sc->GetRTT()));
                 return self;
             }
 

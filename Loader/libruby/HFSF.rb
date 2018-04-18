@@ -344,6 +344,11 @@ class SFResource < SFData
 	attr_accessor :blender
 	attr_accessor :sampler
 	attr_accessor :cbuffer
+	def initialize
+		@blender = {}
+		@sampler = {}
+		@cbuffer = {}
+	end
 end
 
 class SFSection < SFData
@@ -356,17 +361,49 @@ class SFSection < SFData
 end
 
 class SFInputLayout < SFData
-	attr_reader :idents, :formats
+	attr_accessor :idents, :formats
 end
 
 #-------------
 
 def self.load_section(device, program, sdata)
-
+	section = SFSection.new
+	
+	return section
 end
 
 def self.load_resource(device, program, rdata)
+	resource = SFResource.new
+	rdata.each {|name, element|
+		#p = nil
+		if element[0] == BlenderGenerator
+			s = DX::Blender.new
+			s.load_description element[1][:row_data]
+			c = element[1][:blend_factor]
+			s.set_blend_factor HFColorRGBA(c[0], c[1], c[2], c[3])
+			s.create_state(device)
+			resource.blender[name.to_sym] = s
+		elsif element[0] == ConstantBufferGenerator
+			cb = DX::ConstantBuffer.new(device, element[1][:size], 
+						element[1][:init_data] ? element[1][:init_data].pack("C*") : 0)
+			resource.cbuffer[name.to_sym] = cb
+		elsif element[0] == SamplerGenerator
+			s = DX::Sampler.new
+			s.load_description element[1][:row_data]
+			s.create_state(device)
+			resource.sampler[name.to_sym] = s
+		else
+		
+		end
+	}
+	return resource
+end
 
+def self.load_input_layout(device, program, iadata)
+	x = SFInputLayout.new
+	x.idents = iadata[:indents]
+	x.formats = iadata[:formats]
+	return x
 end
 
 def self.load_program(device, p)
@@ -380,18 +417,26 @@ def self.load_program(device, p)
 	p[:tobe_compiled].each {|info|
 		program.byte_code[info[0].to_sym] = p[:compiled][info[0].to_sym].pack("C*") 
 	}
-	#input layout
-	program.input_layout = SFInputLayout.new
-	if p[:input_layout][1]
-		program.input_layout.idents = p[:input_layout][1][:idents]
-		program.input_layout.formats = p[:input_layout][1][:formats]
-	end
-	
 	#other
 	program.section = {}
 	program.resource = {}
 	p.each {|name, element|
-		
+		p = nil
+
+		if element[0] == HFSF::InputLayoutGenerator
+			p = self.load_input_layout(device, program, element[1])
+			program.input_layout = p
+		elsif element[0] == HFSF::ResourceGenerator
+			p = self.load_resource(device, program, element[1])
+			program.resource[name.to_sym] = p
+		elsif element[0] == HFSF::SectionGenerator
+			p = self.load_section(device, program, element[1])
+			program.section[name.to_sym] = p
+		else
+			#msgbox element[0]
+			#raise GeneratingLogicError, "Unknown : #{element[0]}"
+		end
+		p.name = name.to_s if p
 	}
 	return program
 end
@@ -401,8 +446,11 @@ def self.loadsf(device, compd)
 	#from top level
 	a = []
 	compd.row_data.each {|name, element|
+		#if element[0] != HFSF::ProgramGenerator
+			#emm
+		#end
 		p = self.load_program device, element[1]
-		p.name = name
+		p.name = name.to_s
 		a << p
 	}
 	return a
