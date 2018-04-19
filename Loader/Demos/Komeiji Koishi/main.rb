@@ -2,7 +2,7 @@
 require 'libcore.rb'
 include DX
 CURRENT_PATH = File.dirname(__FILE__)
-SHADER_FILENAME = File.join(CURRENT_PATH, "shaders.shader")
+SHADER_FILENAME = File.join(CURRENT_PATH, "shaders.rb")
 KOISHI_FILENAME = File.join(CURRENT_PATH, "300px-Komeiji Koishi.jpg")
 YUKARI_FILENAME = File.join(CURRENT_PATH, "250px-Yukari.jpg")
 
@@ -11,25 +11,24 @@ HFWindow.new("恋恋 VS 紫妈", 300, 300) {
     set_handler(:on_closed) {exit_mainloop}
     device = D3DDevice.new(HARDWARE_DEVICE);
     swapchain = SwapChain.new(device, self)
-	vs = VertexShader.load_hlsl(device, SHADER_FILENAME, "VS")
-	ps = PixelShader.load_hlsl(device, SHADER_FILENAME, "PS")
 	vecs = [[-1.0, -1.0], [0.0, 1.0],
             [-1.0, 1.0],  [0.0, 0.0],
             [1.0, -1.0],  [1.0, 1.0],
             [1.0, 1.0],   [1.0, 0.0]].flatten.pack("f*")
 	vb = VertexBuffer.new(device, 4*4, 4, vecs)
-	rp = RenderPipeline.new(device).set_vshader(vs).set_pshader(ps).set_topology(TOPOLOGY_TRIANGLESTRIP)\
-	 .set_target(swapchain.rtt).set_input_layout(["POSITION", "TEXCOORD"], 
-						[R32G32_FLOAT, R32G32_FLOAT]).set_viewport(HFRect(0, 0, width, height))\
+	rp = RenderPipeline.new(device).set_topology(TOPOLOGY_TRIANGLESTRIP)\
+	 .set_target(swapchain.rtt).set_viewport(HFRect(0, 0, width, height))\
 						.set_vbuffer(vb)
+	sf = HFSF::loadsf_file(device, SHADER_FILENAME)[0]
+	sf.section[:set].apply(rp) 
+	sf.input_layout.apply(rp)  
+	pcbuffer = sf.resource.cbuffer[:param]  	
+	rp.update_subresource pcbuffer, [1.0, 0.0, 0.0, 0.0].pack("f*")	
+	
 	koishi = Texture2D.new(device, KOISHI_FILENAME)
 	yukari = Texture2D.new(device, YUKARI_FILENAME)					
-    rp.set_ps_resource(0, koishi).set_ps_resource(1, yukari).set_ps_sampler(0, Sampler.new{
-																		        	use_default
-																				    create_state(device)})
-	param = [1.0, 0.0, 0.0, 0.0].pack("f*")
-	pcbuffer = ConstantBuffer.new(device, param.size, param)
-	rp.set_ps_cbuffer(0, pcbuffer)
+    rp.set_ps_resource(0, koishi).set_ps_resource(1, yukari)
+	
 	keyboard = Input::Keyboard.new(self)
 	timer = FPSTimer.new(60)
     messageloop {
