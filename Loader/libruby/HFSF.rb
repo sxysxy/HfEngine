@@ -135,6 +135,10 @@ end
 #ResourceGenerator
 class ResourceGenerator < Generator
 	@@valid_area = :ProgramGenerator
+	
+	def initialize()
+		super("")
+	end
 end
 
 #InputLayoutGenerator *
@@ -165,7 +169,10 @@ class SectionGenerator < Generator
 	@@valid_area = :ProgramGenerator
 	
 	attr_reader :vs, :ps
-	CBUFFER_INFO = Struct.new(:stage, :cb, :slot)
+	CBUFFER_INFO = Struct.new(:stage, :cbuffer, :slot)
+	SAMPLER_INFO = Struct.new(:stage, :sampler, :slot)
+	
+	BLENDER_INFO = Struct.new(:blender)
 	attr_reader :sets
 	
 	def initialize(name)
@@ -181,8 +188,19 @@ class SectionGenerator < Generator
 	def set_vs_cbuffer(b, slot = 0)
 		@sets.push CBUFFER_INFO.new(:vs, b, slot)
 	end
+	def set_vs_sampler(s, slot = 0)
+		@sets.push SAMPLER_INFO.new(:vs, s, slot)
+	end
+	
 	def set_ps_cbuffer(b, slot = 0)
 		@sets.push CBUFFER_INFO.new(:ps, b, slot)
+	end
+	def set_ps_sampler(s, slot = 0)
+		@sets.push SAMPLER_INFO.new(:ps, s, slot)
+	end
+	
+	def set_blender(b)
+		@sets.push BLENDER_INFO.new(b)
 	end
 	
 	def compile(context)
@@ -242,9 +260,9 @@ end
 class CompilerError < Exception
 end
 class Compiled
-	attr_reader :row_data, :signature
+	attr_reader :row_hash, :signature
 	def initialize(r, s)
-		@row_data = r
+		@row_hash = r
 		@signature = s
 	end
 	
@@ -265,7 +283,7 @@ class Compiled
 	end
 	def format_inspect
 		@text = ""
-		format_inspect_imp(@row_data, "")
+		format_inspect_imp(@row_hash, "")
 		"#{signature} \n#{@text}"
 	end
 	def save_file(filename)
@@ -273,10 +291,16 @@ class Compiled
 			f.print format_inspect
 		}
 	end
-	def save_marshal_file(filename)
+	def save_sfm(filename)
+		if File.extname filename == ""
+			filename += ".sfm"
+		end
 		File.open(filename, "wb") {|f|
 			f.write Marshal.dump(self)
 		}
+	end
+	def save_sfo(filename)
+		raise "save_sfo, not imp"
 	end
 	def self.load_marshal_file(filename)
 		x = nil
@@ -334,7 +358,7 @@ end
 
 class SFProgram < SFData
 	attr_accessor :code
-	attr_accessor :byte_code
+	attr_accessor :shaders
 	attr_accessor :resource
 	attr_accessor :section
 	attr_accessor :input_layout
@@ -351,23 +375,58 @@ class SFResource < SFData
 	end
 end
 
-class SFSection < SFData
-	attr_accessor :vs
-	attr_accessor :ps
+class SFInputLayout < SFData
+	attr_accessor :idents, :formats
 	
 	def apply(rp)
-	
+		rp.set_input_layout(@idents, @formats)
 	end
 end
 
-class SFInputLayout < SFData
-	attr_accessor :idents, :formats
+class SFSection < SFData
+	attr_accessor :eval_code
+	
+	def initialize
+		@eval_code = ""
+	end
+	
+	def apply(rp)
+		rp.instance_eval(@eval_code)
+	end
 end
 
 #-------------
 
 def self.load_section(device, program, sdata)
 	section = SFSection.new
+	
+	#set vs
+	if sdata[:vshader]
+		section.eval_code += "set_vshader(ObjectSpace._id2ref(#{program.shaders[sdata[:vshader].to_sym].object_id})) \n"
+	end
+	
+	#set ps
+	if sdata[:pshader]
+		section.eval_code += "set_pshader(ObjectSpace._id2ref(#{program.shaders[sdata[:pshader].to_sym].object_id})) \n"
+	end
+	
+	#set other resources
+	sdata[:sets].each {|set|
+		case set
+		when SectionGenerator::CBUFFER_INFO
+			cb = program.resource.cbuffer[set.cbuffer.to_sym]
+			raise GeneratingLogicError, "#{set.cbuffer} is not a DX::ConstantBuffer" if !cb.is_a?(DX::ConstantBuffer)
+			section.eval_code += "set_#{set.stage.to_s}_cbuffer(#{set.slot}, ObjectSpace._id2ref(#{cb.object_id}))\n"
+		when SectionGenerator::BLENDER_INFO
+			b = program.resource.blender[set.blender.to_sym]
+			raise GeneratingLogicError, "#{set.blender} is not a DX::Blender" if !b.is_a?(DX::Blender)
+			section.eval_code += "set_blender(ObjectSpace._id2ref(#{b.object_id}))\n"
+		when SectionGenerator::SAMPLER_INFO
+			s = program.resource.sampler[set.sampler.to_sym]
+			raise GeneratingLogicError, "#{set.sampler} is not a DX::Sampler" if !s.is_a?(DX::Sampler)
+			section.eval_code += "set_#{set.stage.to_s}_sampler(#{set.slot}, ObjectSpace._id2ref(#{s.object_id}))\n"
+		end
+	}
 	
 	return section
 end
@@ -401,7 +460,7 @@ end
 
 def self.load_input_layout(device, program, iadata)
 	x = SFInputLayout.new
-	x.idents = iadata[:indents]
+	x.idents = iadata[:idents]
 	x.formats = iadata[:formats]
 	return x
 end
@@ -413,22 +472,32 @@ def self.load_program(device, p)
 	program.code = p[:code]
 	
 	#byte code
-	program.byte_code = {}
+	program.shaders = {}
 	p[:tobe_compiled].each {|info|
-		program.byte_code[info[0].to_sym] = p[:compiled][info[0].to_sym].pack("C*") 
+		#program.byte_code[info[0].to_sym] = p[:compiled][info[0].to_sym].pack("C*") 
+				#info[0] is shader entry's name, info[1] is the class(such as VertexShader)
+		a = p[:compiled][info[0].to_sym]
+		byte_code = a.pack("C*") 
+		program.shaders[info[0].to_sym] = info[1].load_binary(device, byte_code, a.size)
 	}
 	#other
+	
+	#load resource
+	resdata = p.find {|k, v| v[0] == HFSF::ResourceGenerator}
+	program.resource = self.load_resource(device, program, resdata[1][1])
+	
+	#after loading resources, load others
 	program.section = {}
-	program.resource = {}
 	p.each {|name, element|
 		p = nil
-
 		if element[0] == HFSF::InputLayoutGenerator
 			p = self.load_input_layout(device, program, element[1])
 			program.input_layout = p
+=begin
 		elsif element[0] == HFSF::ResourceGenerator
 			p = self.load_resource(device, program, element[1])
 			program.resource[name.to_sym] = p
+=end
 		elsif element[0] == HFSF::SectionGenerator
 			p = self.load_section(device, program, element[1])
 			program.section[name.to_sym] = p
@@ -445,7 +514,7 @@ def self.loadsf(device, compd)
 	
 	#from top level
 	a = []
-	compd.row_data.each {|name, element|
+	compd.row_hash.each {|name, element|
 		#if element[0] != HFSF::ProgramGenerator
 			#emm
 		#end

@@ -16,7 +16,7 @@ HFWindow.new("Demo", 500, 500) {
 			[0.5, 0.5, 0.0],   [1.0, 0.0, 1.0, 1.0]].flatten.pack("f*")
 	vb = VertexBuffer.new(device, 7*4, 4, vecs)
 	rp = RenderPipeline.new(device).set_vshader(vs).set_pshader(ps).set_topology(TOPOLOGY_TRIANGLESTRIP)\
-	 .set_target(swapchain.rtt).set_input_layout(device, ["POSITION", "COLOR"], 
+	 .set_target(swapchain.rtt).set_input_layout(["POSITION", "COLOR"], 
 						[R32G32B32_FLOAT, R32G32B32A32_FLOAT]).set_viewport(HFRect(0, 0, width, height))\
 						.set_vbuffer(vb)
 	

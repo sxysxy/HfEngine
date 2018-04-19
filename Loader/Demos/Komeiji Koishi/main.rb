@@ -19,7 +19,7 @@ HFWindow.new("恋恋 VS 紫妈", 300, 300) {
             [1.0, 1.0],   [1.0, 0.0]].flatten.pack("f*")
 	vb = VertexBuffer.new(device, 4*4, 4, vecs)
 	rp = RenderPipeline.new(device).set_vshader(vs).set_pshader(ps).set_topology(TOPOLOGY_TRIANGLESTRIP)\
-	 .set_target(swapchain.rtt).set_input_layout(device, ["POSITION", "TEXCOORD"], 
+	 .set_target(swapchain.rtt).set_input_layout(["POSITION", "TEXCOORD"], 
 						[R32G32_FLOAT, R32G32_FLOAT]).set_viewport(HFRect(0, 0, width, height))\
 						.set_vbuffer(vb)
 	koishi = Texture2D.new(device, KOISHI_FILENAME)
