@@ -28,11 +28,15 @@ Program("Draw"){
 		ConstantBuffer("wvpmatrix") {
 			set_size 64
 		}
+		Rasterizer("rs") {
+			use_default
+		}
 	}
 	Section("set") {
 		set_vshader("VS")
 		set_pshader("PS")
-		set_vs_cbuffer("wvpmatrix", 0)
+		set_rasterizer("rs")
+		set_vs_cbuffer(0, "wvpmatrix")
 	}
 }
 

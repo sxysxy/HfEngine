@@ -38,7 +38,6 @@ class Generator
 				if self.class != HFSF.const_get(new_area.class_variable_get(:@@valid_area))
 					raise GeneratingLogicError, "You should not create a #{g} in #{self.class}"
 				end
-			
 				generator = new_area.new(*arg)
 				generator.instance_eval(&block) if block
 				
@@ -48,8 +47,7 @@ class Generator
 			end
 		end
 		rescue Exception => e
-			puts "HFSF Compile Error in #{method_name.to_s} #{arg.to_s}" 
-			raise e
+			raise Exception, "HFSF Compile Error in #{method_name.to_s} #{arg.to_s}\n" + e.message
 		end
 		
 	end
@@ -94,6 +92,9 @@ class BlenderGenerator < Generator
 		return d
 	end
 end
+
+#RasterizerGenerator *
+RasterizerGenerator = ResourcesBase.new(DX::Rasterizer)
 
 #Base abstract for BufferGenerators 
 class BufferGeneratorBase < Generator
@@ -173,34 +174,47 @@ class SectionGenerator < Generator
 	SAMPLER_INFO = Struct.new(:stage, :sampler, :slot)
 	
 	BLENDER_INFO = Struct.new(:blender)
+	RASTERIZER_INFO = Struct.new(:rasterizer)
 	attr_reader :sets
 	
 	def initialize(name)
 		super(name)
 		@sets = []
+					
+		@vs = "" #remain state
+		@ps = ""
 	end
+	
+	#VS
 	def set_vshader(s)
 		@vs = s
 	end
-	def set_pshader(s)
-		@ps = s
-	end
-	def set_vs_cbuffer(b, slot = 0)
+	def set_vs_cbuffer(slot, b)
 		@sets.push CBUFFER_INFO.new(:vs, b, slot)
 	end
-	def set_vs_sampler(s, slot = 0)
+	def set_vs_sampler(slot, s)
 		@sets.push SAMPLER_INFO.new(:vs, s, slot)
 	end
 	
-	def set_ps_cbuffer(b, slot = 0)
+	#PS
+	def set_pshader(s)
+		@ps = s
+	end
+	def set_ps_cbuffer(slot, b)
 		@sets.push CBUFFER_INFO.new(:ps, b, slot)
 	end
-	def set_ps_sampler(s, slot = 0)
+	def set_ps_sampler(slot, s)
 		@sets.push SAMPLER_INFO.new(:ps, s, slot)
 	end
 	
+	#OM
 	def set_blender(b)
 		@sets.push BLENDER_INFO.new(b)
+	end
+	
+	#RS (Rasterizer)
+	def set_rasterizer(r)
+		@sets.push RASTERIZER_INFO.new(r)
 	end
 	
 	def compile(context)
@@ -327,14 +341,11 @@ class Compiler < Generator
 		x = self.new 
 		x.device = arg.size == 2 ? arg[1] : DX::D3DDevice.new(DX::HARDWARE_DEVICE)
 		code = arg[0]
-		begin
-			if code.is_a?(String)
-				x.instance_eval(code)
-			elsif code.is_a?(Proc)
-				x.instance_exec &code
-			end
-		rescue Exception => e
-			puts e.message
+		
+		if code.is_a?(String)
+			x.instance_eval(code)
+		elsif code.is_a?(Proc)
+			x.instance_exec &code
 		end
 		return x
 	end
@@ -342,9 +353,9 @@ class Compiler < Generator
 	def self.compile_code(code = nil, &block)
 		data = parse_code(code || block)	
 		begin
-			return compd = Compiled.new(data.compile([]), "#{VERSION} #{Time.now}")
+			return Compiled.new(data.compile([]), "#{VERSION} #{Time.now}")
 		rescue Exception => e
-			raise e.message
+			raise Exception, e.message
 		end
 	end
 	def self.compile_file(filename)
@@ -368,10 +379,12 @@ class SFResource < SFData
 	attr_accessor :blender
 	attr_accessor :sampler
 	attr_accessor :cbuffer
+	attr_accessor :rasterizer
 	def initialize
 		@blender = {}
 		@sampler = {}
 		@cbuffer = {}
+		@rasterizer = {}
 	end
 end
 
@@ -401,30 +414,55 @@ def self.load_section(device, program, sdata)
 	section = SFSection.new
 	
 	#set vs
-	if sdata[:vshader]
+	#set_vshader(nil) will disable the vertex_shader
+	if sdata[:vshader] && sdata[:vshader] != ""
 		section.eval_code += "set_vshader(ObjectSpace._id2ref(#{program.shaders[sdata[:vshader].to_sym].object_id})) \n"
+	elsif !sdata[:vshader]
+		section.eval_code += "set_vshader(nil)\n"
 	end
 	
 	#set ps
-	if sdata[:pshader]
+	if sdata[:pshader] && sdata[:pshader] != ""
 		section.eval_code += "set_pshader(ObjectSpace._id2ref(#{program.shaders[sdata[:pshader].to_sym].object_id})) \n"
+	elsif !sdata[:pshader]
+		section.eval_code += "set_pshader(nil)\n"
 	end
 	
 	#set other resources
 	sdata[:sets].each {|set|
 		case set
-		when SectionGenerator::CBUFFER_INFO
-			cb = program.resource.cbuffer[set.cbuffer.to_sym]
-			raise GeneratingLogicError, "#{set.cbuffer} is not a DX::ConstantBuffer" if !cb.is_a?(DX::ConstantBuffer)
-			section.eval_code += "set_#{set.stage.to_s}_cbuffer(#{set.slot}, ObjectSpace._id2ref(#{cb.object_id}))\n"
+		when SectionGenerator::CBUFFER_INFO 
+			if set.cbuffer.nil? #set to nullptr(example : set_ps_cbuffer(nil, 0), this will clear the cbuffer on slot 0
+				section.eval_code += "set_#{set.stage.to_s}_cbuffer(#{set.slot}, nil)\n"
+			else
+				cb = program.resource.cbuffer[set.cbuffer.to_sym]
+				raise GeneratingLogicError, "#{set.cbuffer} is not a DX::ConstantBuffer" if !cb.is_a?(DX::ConstantBuffer)
+				section.eval_code += "set_#{set.stage.to_s}_cbuffer(#{set.slot}, ObjectSpace._id2ref(#{cb.object_id}))\n"
+			end
 		when SectionGenerator::BLENDER_INFO
-			b = program.resource.blender[set.blender.to_sym]
-			raise GeneratingLogicError, "#{set.blender} is not a DX::Blender" if !b.is_a?(DX::Blender)
-			section.eval_code += "set_blender(ObjectSpace._id2ref(#{b.object_id}))\n"
+			if set.blender.nil?
+				section.eval_code += "set_blender(nil)\n"
+			else
+				b = program.resource.blender[set.blender.to_sym]
+				raise GeneratingLogicError, "#{set.blender} is not a DX::Blender" if !b.is_a?(DX::Blender)
+				section.eval_code += "set_blender(ObjectSpace._id2ref(#{b.object_id}))\n"
+			end
 		when SectionGenerator::SAMPLER_INFO
-			s = program.resource.sampler[set.sampler.to_sym]
-			raise GeneratingLogicError, "#{set.sampler} is not a DX::Sampler" if !s.is_a?(DX::Sampler)
-			section.eval_code += "set_#{set.stage.to_s}_sampler(#{set.slot}, ObjectSpace._id2ref(#{s.object_id}))\n"
+			if set.sampler.nil?
+				section.eval_code += "set_#{set.stage.to_s}_sampler(#{set.slot}, nil)\n"
+			else
+				s = program.resource.sampler[set.sampler.to_sym]
+				raise GeneratingLogicError, "#{set.sampler} is not a DX::Sampler" if !s.is_a?(DX::Sampler)
+				section.eval_code += "set_#{set.stage.to_s}_sampler(#{set.slot}, ObjectSpace._id2ref(#{s.object_id}))\n"
+			end
+		when SectionGenerator::RASTERIZER_INFO
+			if set.rasterizer.nil?
+				section.eval_code += "set_rasterizer(nil)\n"
+			else
+				r = program.resource.rasterizer[set.rasterizer.to_sym]
+				raise GeneratingLogicError, "#{set.rasterizer} is not a DX::Rasterizer" if !r.is_a?(DX::Rasterizer)
+				section.eval_code += "set_rasterizer(ObjectSpace._id2ref(#{r.object_id}))\n"
+			end
 		end
 	}
 	
@@ -437,7 +475,7 @@ def self.load_resource(device, program, rdata)
 		#p = nil
 		if element[0] == BlenderGenerator
 			s = DX::Blender.new
-			s.load_description element[1][:row_data]
+			s.load_description element[1][:row_data].pack("C*")
 			c = element[1][:blend_factor]
 			s.set_blend_factor HFColorRGBA(c[0], c[1], c[2], c[3])
 			s.create_state(device)
@@ -448,11 +486,14 @@ def self.load_resource(device, program, rdata)
 			resource.cbuffer[name.to_sym] = cb
 		elsif element[0] == SamplerGenerator
 			s = DX::Sampler.new
-			s.load_description element[1][:row_data]
+			s.load_description element[1][:row_data].pack("C*")
 			s.create_state(device)
 			resource.sampler[name.to_sym] = s
-		else
-		
+		elsif element[0] == RasterizerGenerator
+			r = DX::Rasterizer.new
+			r.load_description element[1][:row_data].pack("C*")
+			r.create_state(device)
+			resource.rasterizer[name.to_sym] = r
 		end
 	}
 	return resource
@@ -511,13 +552,9 @@ def self.load_program(device, p)
 end
 
 def self.loadsf(device, compd)
-	
 	#from top level
 	a = []
 	compd.row_hash.each {|name, element|
-		#if element[0] != HFSF::ProgramGenerator
-			#emm
-		#end
 		p = self.load_program device, element[1]
 		p.name = name.to_s
 		a << p
@@ -526,7 +563,11 @@ def self.loadsf(device, compd)
 end
 
 def self.loadsf_file(device, filename)
-	self.loadsf(device, Compiler.compile_file(filename))
+	compd = Compiler.compile_file(filename)
+	File.open(File.join(EXECUTIVE_DIRECTORY, "emm.txt"), "w") {|f|
+		f.print compd.format_inspect
+	}
+	self.loadsf(device, compd)
 end
 
 def self.loadsf_code(device, &block)

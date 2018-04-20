@@ -23,7 +23,6 @@ HFWindow.new("恋恋 VS 紫妈", 300, 300) {
 	sf.section[:set].apply(rp) 
 	sf.input_layout.apply(rp)  
 	pcbuffer = sf.resource.cbuffer[:param]  	
-	rp.update_subresource pcbuffer, [1.0, 0.0, 0.0, 0.0].pack("f*")	
 	
 	koishi = Texture2D.new(device, KOISHI_FILENAME)
 	yukari = Texture2D.new(device, YUKARI_FILENAME)					
@@ -38,7 +37,7 @@ HFWindow.new("恋恋 VS 紫妈", 300, 300) {
 		move_to(get_position[0]+10, get_position[1]) if keyboard.is_pressed_now(DX::DIK_D) 
 		move_to(get_position[0], get_position[1]+10) if keyboard.is_pressed_now(DX::DIK_S)
 		move_to(get_position[0], get_position[1]-10) if keyboard.is_pressed_now(DX::DIK_W)
-		$rate ||= 1.0
+		$rate ||= 0.5
 		if keyboard.is_pressed_now(DX::DIK_UP)
 			$rate += 0.01 if $rate < 1.0
 			rp.update_subresource pcbuffer, [$rate, 0.0, 0.0, 0.0].pack("f*")

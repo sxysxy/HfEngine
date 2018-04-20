@@ -1,6 +1,7 @@
 #include "Shaders.h"
 #include "stdafx.h"
 #pragma comment(lib, "d3dx11.lib")
+#pragma comment(lib, "d3d10.lib")
 
 void VertexShader::CreateFromHLSLFile(D3DDevice * device, const std::wstring & filename, const std::string &entry){
     ComPtr<ID3D10Blob> sbuffer, errmsg;
@@ -52,6 +53,8 @@ void VertexShader::CreateFromString(D3DDevice * device, const std::string & code
 
 void VertexShader::CreateFromBinary(D3DDevice * device, void *bc, int size) {
     try{
+        D3D10CreateBlob(size, &byte_code);
+        memcpy(byte_code->GetBufferPointer(), bc, size);
         device->native_device->CreateVertexShader(bc, size, 0, &native_vshader);
     }
     catch (std::exception) {
@@ -108,6 +111,8 @@ void PixelShader::CreateFromString(D3DDevice * device, const std::string & code,
 
 void PixelShader::CreateFromBinary(D3DDevice * device, void *bc, int size){
     try {
+        D3D10CreateBlob(size, &byte_code);
+        memcpy(byte_code->GetBufferPointer(), bc, size);
         device->native_device->CreatePixelShader(bc, size, 0, &native_pshader);
     }
     catch (std::exception) {
@@ -123,6 +128,7 @@ namespace Ext {
             VALUE klass_pshader;
             VALUE klass_sampler;
             VALUE klass_blender;
+            VALUE klass_rasterizer;
             VALUE klass_eShaderCompileError;
 
             template<class T>
@@ -316,17 +322,24 @@ namespace Ext {
             }
             template<class NativeClass, class NativeDesc>
             static VALUE load_description(VALUE self, VALUE s) {
-                if (!rb_obj_is_kind_of(s, rb_cArray)) {
+                //if (!rb_obj_is_kind_of(s, rb_cArray)) {
+                //    rb_raise(rb_eArgError, "Load Description : Param should be a String");
+                //}
+                //auto native = GetNativeObject<NativeClass>(self);
+                //NativeDesc x;
+                //char *pd = reinterpret_cast<char*>(&x);
+                //const VALUE *p = rb_array_const_ptr(s);
+                //for (int i = 0; i < sizeof x; i++) {
+                //    pd[i] = FIX2INT(p[i]);
+                //}
+                //native->LoadDescription(&x);
+                if (!rb_obj_is_kind_of(s, rb_cString)) {
                     rb_raise(rb_eArgError, "Load Description : Param should be a String");
                 }
                 auto native = GetNativeObject<NativeClass>(self);
-                NativeDesc x;
-                char *pd = reinterpret_cast<char*>(&x);
-                const VALUE *p = rb_array_const_ptr(s);
-                for (int i = 0; i < sizeof x; i++) {
-                    pd[i] = FIX2INT(p[i]);
-                }
-                native->LoadDescription(&x);
+                NativeDesc desc;
+                memcpy(&desc, rb_string_value_ptr(&s), sizeof NativeDesc);
+                native->LoadDescription(&desc);
                 return self;
             }
 
@@ -366,6 +379,11 @@ namespace Ext {
             }
             static void DeleteBlender(Blender *b) {
                 b->SubRefer();
+            }
+
+            //
+            static void DeleteRS(Rasterizer *r) {
+                r->SubRefer();
             }
 
             void Init() {
@@ -546,6 +564,20 @@ namespace Ext {
                 rb_define_const(module, "COLOR_WRITE_ENABLE_BLUE", INT2FIX(4));
                 rb_define_const(module, "COLOR_WRITE_ENABLE_ALPHA", INT2FIX(8));
                 rb_define_const(module, "COLOR_WRITE_ENABLE_ALL", INT2FIX(D3D11_COLOR_WRITE_ENABLE_ALL));
+
+                klass_rasterizer = rb_define_class_under(module, "Rasterizer", rb_cObject);
+                rb_define_alloc_func(klass_rasterizer, [](VALUE k)->VALUE {
+                    auto rs = new Rasterizer;
+                    rs->AddRefer();
+                    return Data_Wrap_Struct(k, nullptr, DeleteRS, rs);
+                });
+                rb_define_method(klass_rasterizer, "initialize", (rubyfunc)initialize, 0);
+                rb_define_method(klass_rasterizer, "use_default", (rubyfunc)use_default<Rasterizer>, 0);
+                rb_define_method(klass_rasterizer, "create_state", (rubyfunc)create_state<Rasterizer>, 1);
+                rb_define_method(klass_rasterizer, "dump_description",
+                    (rubyfunc)dump_description<Rasterizer, D3D11_RASTERIZER_DESC>, 0);
+                rb_define_method(klass_rasterizer, "load_description",
+                    (rubyfunc)load_description<Rasterizer, D3D11_RASTERIZER_DESC>, 1);
             }
         }
     }

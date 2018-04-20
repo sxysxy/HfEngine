@@ -31,39 +31,49 @@ void RenderPipeline::SetIndexBuffer(IndexBuffer *ib) {
 //VS
 void RenderPipeline::SetVertexShader(VertexShader *vs) {
     vshader = vs;
-    native_context->VSSetShader(vs->native_vshader.Get(), 0, 0);
+    native_context->VSSetShader(vs ? vs->native_vshader.Get() : nullptr, 0, 0);
 }
 void RenderPipeline::SetVSSampler(int slot, Sampler * sampler) {
-    native_context->VSSetSamplers(slot, 1, sampler->native_sampler.GetAddressOf());
+    native_context->VSSetSamplers(slot, 1, sampler ? sampler->native_sampler.GetAddressOf() : nullptr);
 }
 void RenderPipeline::SetVSCBuffer(int slot, ConstantBuffer * cbuffer) {
-    native_context->VSSetConstantBuffers(slot, 1, cbuffer->native_buffer.GetAddressOf());
+    native_context->VSSetConstantBuffers(slot, 1, cbuffer ? cbuffer->native_buffer.GetAddressOf() : nullptr);
 }
 void RenderPipeline::SetVSResource(int slot, Texture2D *tex) {
-    native_context->VSSetShaderResources(slot, 1, tex->native_shader_resource_view.GetAddressOf());
+    native_context->VSSetShaderResources(slot, 1, tex ? tex->native_shader_resource_view.GetAddressOf() : nullptr);
 }
+
 //PS
 void RenderPipeline::SetPixelShader(PixelShader *ps) {
     pshader = ps;
-    native_context->PSSetShader(ps->native_pshader.Get(), 0, 0);
+    native_context->PSSetShader(ps ? ps->native_pshader.Get() : nullptr, 0, 0);
 }
 void RenderPipeline::SetPSSampler(int slot, Sampler * sampler) {
-    native_context->PSSetSamplers(slot, 1, sampler->native_sampler.GetAddressOf());
+    native_context->PSSetSamplers(slot, 1, sampler ? sampler->native_sampler.GetAddressOf() : nullptr);
 }
 void RenderPipeline::SetPSCBuffer(int slot, ConstantBuffer * cbuffer) {
-    native_context->PSSetConstantBuffers(slot, 1, cbuffer->native_buffer.GetAddressOf());
+    native_context->PSSetConstantBuffers(slot, 1, cbuffer ? cbuffer->native_buffer.GetAddressOf() : nullptr);
 }
 void RenderPipeline::SetPSResource(int slot, Texture2D *tex) {
-    native_context->PSSetShaderResources(slot, 1, tex->native_shader_resource_view.GetAddressOf());
+    native_context->PSSetShaderResources(slot, 1, tex ? tex->native_shader_resource_view.GetAddressOf() : nullptr);
 }
+
+//OM
 void RenderPipeline::SetBlender(Blender * b) {
     blender = b;
+    if(b)
     native_context->OMSetBlendState(b->native_blender.Get(), 
         reinterpret_cast<const FLOAT *>(&b->blend_factor), 0xffffffff);
+    else native_context->OMSetBlendState(nullptr, nullptr, 0xffffffff);
 }
+
+//RS
 void RenderPipeline::SetViewport(const Utility::Rect &rect, float min_deep, float max_deep) {
     D3D11_VIEWPORT vp{ (float)rect.x, (float)rect.y, (float)rect.w, (float)rect.h, min_deep, max_deep };
     native_context->RSSetViewports(1, &vp);
+}
+void RenderPipeline::SetRasterizer(Rasterizer *rs) {
+    native_context->RSSetState(rs ? rs->native_rasterizer.Get() : nullptr);
 }
 void RenderPipeline::SetTarget(RTT *rtt) {
     rtt_target = rtt;
@@ -101,12 +111,16 @@ namespace Ext {
                 auto d = GetNativeObject<::D3DDevice>(device);
                 auto r = GetNativeObject<::RenderPipeline>(self);
                 r->Initialize(d);
+                rb_iv_set(self, "@device", device);
                 return self;
             }
 
-            static VALUE set_input_layout(VALUE self, VALUE _device, VALUE names, VALUE fmts) {
-                if (!rb_obj_is_kind_of(_device, Ext::DX::D3DDevice::klass))
-                    rb_raise(rb_eArgError, "RenderPipeline::set_input_layout: First param should be a DX::D3DDevice");
+            static VALUE get_device(VALUE self) {
+                return rb_iv_get(self, "@device");
+            }
+
+            static VALUE set_input_layout(VALUE self, VALUE names, VALUE fmts) {
+                VALUE _device = rb_iv_get(self, "@device");
                 if (!rb_obj_is_kind_of(names, rb_cArray) || !rb_obj_is_kind_of(fmts, rb_cArray))
                     rb_raise(rb_eArgError, "RenderPipeline::set_input_layout: 2nd and 3rd params should be Array");
                 VALUE *pnames = (VALUE *)RARRAY_PTR(names);
@@ -134,14 +148,14 @@ namespace Ext {
             
             static VALUE set_vshader(VALUE self, VALUE s) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
-                auto sd = GetNativeObject<::VertexShader>(s);
+                auto sd = GetNULLPTRableNativeObject<::VertexShader>(s);
                 rp->SetVertexShader(sd);
                 rb_iv_set(self, "@vshader", s);
                 return self;
             }
             static VALUE set_pshader(VALUE self, VALUE s) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
-                auto sd = GetNativeObject<::PixelShader>(s);
+                auto sd = GetNULLPTRableNativeObject<::PixelShader>(s);
                 rp->SetPixelShader(sd);
                 rb_iv_set(self, "@pshader", s);
                 return self;
@@ -176,7 +190,7 @@ namespace Ext {
                 if (!rb_obj_is_kind_of(s, Ext::DX::Shader::klass_sampler)) {
                     rb_raise(rb_eArgError, "set_sampler : the second param should be a Sampler");
                 }
-                rp->SetVSSampler(FIX2INT(slot), GetNativeObject<::Sampler>(s));
+                rp->SetVSSampler(FIX2INT(slot), GetNULLPTRableNativeObject<::Sampler>(s));
                 return self;
             }
             static VALUE set_vs_cbuffer(VALUE self, VALUE slot, VALUE cb) {
@@ -184,7 +198,7 @@ namespace Ext {
                 if (!rb_obj_is_kind_of(cb, Ext::DX::D3DBuffer::klass_cbuffer)) {
                     rb_raise(rb_eArgError, "set_cbuffer : the second param should be a ConstantBuffer");
                 }
-                rp->SetVSCBuffer(FIX2INT(slot), GetNativeObject<::ConstantBuffer>(cb));
+                rp->SetVSCBuffer(FIX2INT(slot), GetNULLPTRableNativeObject<::ConstantBuffer>(cb));
                 return self;
             }
             
@@ -193,7 +207,7 @@ namespace Ext {
                 if (!rb_obj_is_kind_of(res, Ext::DX::Texture::klass_texture2d)) {
                     rb_raise(rb_eArgError, "set_resource : the second param should be a Texture2D");
                 }
-                rp->SetVSResource(FIX2INT(slot), GetNativeObject<::Texture2D>(res));
+                rp->SetVSResource(FIX2INT(slot), GetNULLPTRableNativeObject<::Texture2D>(res));
                 return self;
             }
             
@@ -204,7 +218,7 @@ namespace Ext {
                 if (!rb_obj_is_kind_of(s, Ext::DX::Shader::klass_sampler)) {
                     rb_raise(rb_eArgError, "set_sampler : the second param should be a Sampler");
                 }
-                rp->SetPSSampler(FIX2INT(slot), GetNativeObject<::Sampler>(s));
+                rp->SetPSSampler(FIX2INT(slot), GetNULLPTRableNativeObject<::Sampler>(s));
                 return self;
             }
             static VALUE set_ps_cbuffer(VALUE self, VALUE slot, VALUE cb) {
@@ -212,7 +226,7 @@ namespace Ext {
                 if (!rb_obj_is_kind_of(cb, Ext::DX::D3DBuffer::klass_cbuffer)) {
                     rb_raise(rb_eArgError, "set_cbuffer : the second param should be a ConstantBuffer");
                 }
-                rp->SetPSCBuffer(FIX2INT(slot), GetNativeObject<::ConstantBuffer>(cb));
+                rp->SetPSCBuffer(FIX2INT(slot), GetNULLPTRableNativeObject<::ConstantBuffer>(cb));
                 return self;
             }
             static VALUE set_ps_resource(VALUE self, VALUE slot, VALUE res) {
@@ -220,7 +234,7 @@ namespace Ext {
                 if (!rb_obj_is_kind_of(res, Ext::DX::Texture::klass_texture2d)) {
                     rb_raise(rb_eArgError, "set_resource : the second param should be a Texture2D");
                 }
-                rp->SetPSResource(FIX2INT(slot), GetNativeObject<::Texture2D>(res));
+                rp->SetPSResource(FIX2INT(slot), GetNULLPTRableNativeObject<::Texture2D>(res));
                 return self;
             }
 
@@ -254,13 +268,23 @@ namespace Ext {
             }
             static VALUE set_blender(VALUE self, VALUE b) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
-                rp->SetBlender(GetNativeObject<Blender>(b));
+                rp->SetBlender(GetNULLPTRableNativeObject<Blender>(b));
                 rb_iv_set(self, "@blender", b);
                 return self;
             }
             static VALUE get_blender(VALUE self) {
                 return rb_iv_get(self, "@blender");
             }
+            static VALUE set_rasterizer(VALUE self, VALUE r) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                rp->SetRasterizer(GetNULLPTRableNativeObject<Rasterizer>(r));
+                rb_iv_set(self, "@rasterizer", r);
+                return self;
+            }
+            static VALUE get_rasterizer(VALUE self) {
+                return rb_iv_get(self, "@rasterizer");
+            }
+
             static VALUE clear_target(int argc, VALUE *argv, VALUE self) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 if(argc < 1 || argc > 2)rb_raise(rb_eArgError, "RenderPipeline::clear_target(color, [depth]): expecting(1..2) args but got %d", argc);
@@ -309,7 +333,8 @@ namespace Ext {
 
                 rb_define_alloc_func(klass, new_rp);
                 rb_define_method(klass, "initialize", (rubyfunc)initialize, 1);
-                rb_define_method(klass, "set_input_layout", (rubyfunc)set_input_layout, 3);
+                rb_define_method(klass, "device", (rubyfunc)get_device, 0);
+                rb_define_method(klass, "set_input_layout", (rubyfunc)set_input_layout, 2);
                 rb_define_method(klass, "set_vbuffer", (rubyfunc)set_vbuffer, 1);
                 rb_define_method(klass, "set_ibuffer", (rubyfunc)set_ibuffer, 1);
 
@@ -330,6 +355,8 @@ namespace Ext {
                 //rs
                 rb_define_method(klass, "set_viewport", (rubyfunc)set_viewport, -1);
                 rb_define_method(klass, "viewport", (rubyfunc)get_viewport, 0);
+                rb_define_method(klass, "set_rasterizer", (rubyfunc)set_rasterizer, 1);
+                rb_define_method(klass, "rasterizer", (rubyfunc)get_rasterizer, 0);
 
                 //om
                 rb_define_method(klass, "set_target", (rubyfunc)set_target, 1);

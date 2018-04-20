@@ -188,7 +188,30 @@ public:
     void UnInitialize() {
         native_blender.ReleaseAndGetAddressOf();
     }
-    void Release() {
+    virtual void Release() {
+        UnInitialize();
+    }
+};
+
+class Rasterizer : public Utility::ReferredObject, public WithDescriptionStruct<D3D11_RASTERIZER_DESC> {
+public:
+    ComPtr<ID3D11RasterizerState> native_rasterizer;
+
+    void UseDefault() {
+        desc.AntialiasedLineEnable = desc.MultisampleEnable = desc.ScissorEnable = desc.FrontCounterClockwise = false;
+        desc.DepthClipEnable = true;
+        desc.SlopeScaledDepthBias = desc.DepthBiasClamp = 0.0;
+        desc.DepthBias = 0;
+        desc.FillMode = D3D11_FILL_SOLID;
+        desc.CullMode = D3D11_CULL_BACK;
+    }
+    void CreateState(D3DDevice *device) {
+        device->native_device->CreateRasterizerState(&desc, &native_rasterizer);
+    }
+    void UnInitialize() {
+        native_rasterizer.ReleaseAndGetAddressOf();
+    }
+    virtual void Release() {
         UnInitialize();
     }
 };
@@ -201,6 +224,7 @@ namespace Ext {
             extern VALUE klass_pshader;
             extern VALUE klass_sampler;
             extern VALUE klass_blender;
+            extern VALUE klass_rasterizer;
             extern VALUE klass_eShaderCompileError;
 
             void Init();

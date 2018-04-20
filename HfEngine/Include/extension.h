@@ -26,10 +26,14 @@ namespace Ext {
 	}
 
     template<class T>
-    T *GetNativeObject(VALUE self) {
+    inline T *GetNativeObject(VALUE self) {
         T *obj;
         Data_Get_Struct(self, T, obj);
         return obj;
+    }
+    template<class T>
+    inline static T *GetNULLPTRableNativeObject(VALUE obj) {
+        return NIL_P(obj) ? nullptr : GetNativeObject<T>(obj);
     }
 
 	namespace DX {

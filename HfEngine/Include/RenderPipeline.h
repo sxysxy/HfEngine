@@ -52,6 +52,7 @@ public:
 
     //RS 
     void SetViewport(const Utility::Rect &rect, float min_deep = 0.0f, float max_deep = 1.0f);
+    void SetRasterizer(Rasterizer *rs);
 
     //OM 
     void SetBlender(Blender *b);

@@ -30,18 +30,32 @@ Program("Draw"){
 		Format "TEXCOORD", DX::R32G32_FLOAT
 	}
 	Resource {
-		Sampler("color_sampler") {
+		Sampler("linear_sampler") {
+			use_default
+		}
+		Sampler("point_sampler") {
+			use_default
+			set_filter DX::FILTER_MIN_MAG_MIP_POINT, 0
+		}
+		Blender("blender") {
+			use_default
+			enable true
+			set_mask COLOR_WRITE_ENABLE_ALL 
+		}
+		Rasterizer("rasterizer") {
 			use_default
 		}
 		ConstantBuffer("param") {
 			set_size 16
-			
+			set_init_data [0.5, 0.0, 0.0, 0.0].pack("f*")
 		}
 	}
 	Section("set") {
 		set_vshader("VS")
 		set_pshader("PS")
-		set_ps_cbuffer("param")
-		set_ps_sampler("color_sampler")
+		set_blender("blender")
+		set_rasterizer("rasterizer")
+		set_ps_cbuffer(0, "param")
+		set_ps_sampler(0, "linear_sampler")
 	}
 }
