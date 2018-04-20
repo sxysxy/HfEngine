@@ -58,6 +58,15 @@ void RenderPipeline::SetPSResource(int slot, Texture2D *tex) {
     native_context->PSSetShaderResources(slot, 1, tex ? tex->native_shader_resource_view.GetAddressOf() : nullptr);
 }
 
+//GS
+void RenderPipeline::SetGeometryShader(GeometryShader *gs) {
+    gshader = gs;
+    native_context->GSSetShader(gs ? gs->native_gshader.Get() : nullptr, 0, 0);
+}
+void RenderPipeline::SetGSCBuffer(int slot, ConstantBuffer *cb) {
+    native_context->GSSetConstantBuffers(slot, 1, cb ? cb->native_buffer.GetAddressOf() : nullptr);
+}
+
 //OM
 void RenderPipeline::SetBlender(Blender * b) {
     blender = b;
@@ -160,11 +169,21 @@ namespace Ext {
                 rb_iv_set(self, "@pshader", s);
                 return self;
             }
+            static VALUE set_gshader(VALUE self, VALUE s) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                auto sd = GetNULLPTRableNativeObject<::GeometryShader>(s);
+                rp->SetGeometryShader(sd);
+                rb_iv_set(self, "@gshader", s);
+                return self;
+            }
             static VALUE vshader(VALUE self) {
                 return rb_iv_get(self, "@vshader");
             }
             static VALUE pshader(VALUE self) {
                 return rb_iv_get(self, "@pshader");
+            }
+            static VALUE gshader(VALUE self) {
+                return rb_iv_get(self, "@gshader");
             }
 
             static VALUE set_topology(VALUE self, VALUE t) {
@@ -237,6 +256,9 @@ namespace Ext {
                 rp->SetPSResource(FIX2INT(slot), GetNULLPTRableNativeObject<::Texture2D>(res));
                 return self;
             }
+            
+            // --------
+
 
             static VALUE set_viewport(int argc, VALUE *argv, VALUE self) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
@@ -351,6 +373,10 @@ namespace Ext {
                 rb_define_method(klass, "set_ps_sampler", (rubyfunc)set_ps_sampler, 2);
                 rb_define_method(klass, "set_ps_cbuffer", (rubyfunc)set_ps_cbuffer, 2);
                 rb_define_method(klass, "set_ps_resource", (rubyfunc)set_ps_resource, 2);
+
+                //gs
+                rb_define_method(klass, "set_gshader", (rubyfunc)set_gshader, 1);
+                rb_define_method(klass, "gshader", (rubyfunc)gshader, 0);
 
                 //rs
                 rb_define_method(klass, "set_viewport", (rubyfunc)set_viewport, -1);

@@ -62,6 +62,65 @@ void VertexShader::CreateFromBinary(D3DDevice * device, void *bc, int size) {
     }
 }
 
+void GeometryShader::CreateFromHLSLFile(D3DDevice *device, const std::wstring & filename, const std::string & entry){
+    ComPtr<ID3D10Blob> sbuffer, errmsg;
+
+    HRESULT hr = D3DX11CompileFromFileW(filename.c_str(), nullptr, nullptr, entry.c_str(),
+        "gs_4_0", 0, 0, 0,
+        &sbuffer, &errmsg, nullptr); //cause a _com_error,,but why?, it returns S_OK...         
+
+    if (FAILED(hr)) {
+        std::string msg;
+        Ext::U16ToU8(filename.c_str(), msg);
+        if (errmsg) {
+            msg.append("GeometryShader :Compiler Message:\n");
+            msg.append((LPCSTR)errmsg->GetBufferPointer());
+            throw ShaderCompileError(msg);
+        }
+        else {
+            MAKE_ERRMSG<std::runtime_error>("Fail to Create Shader from hlsl file, Error code:", hr);
+        }
+    }
+    byte_code = sbuffer;
+    hr = device->native_device->CreateGeometryShader(byte_code->GetBufferPointer(),
+        byte_code->GetBufferSize(), 0, &native_gshader);
+    if (FAILED(hr))
+        MAKE_ERRMSG<std::runtime_error>("Fail to Create GeometryShader, Error code:", hr);
+}
+
+void GeometryShader::CreateFromString(D3DDevice * device, const std::string & code, const std::string & entry){
+    ComPtr<ID3D10Blob> sbuffer, errmsg;
+    HRESULT hr = D3DX11CompileFromMemory(code.c_str(), code.length(), 0, 0, 0, entry.c_str(),
+        "gs_4_0", 0, 0, 0, &sbuffer, &errmsg, 0);
+    if (FAILED(hr)) {
+        if (errmsg) {
+            std::string msg;
+            msg.append("GeometryShader :Compiler Message:\n");
+            msg.append((LPCSTR)errmsg->GetBufferPointer());
+            throw ShaderCompileError(msg);
+        }
+        else {
+            MAKE_ERRMSG<std::runtime_error>("Fail to Create Shader from string, Error code:", hr);
+        }
+    }
+    byte_code = sbuffer;
+    device->native_device->CreateGeometryShader(byte_code->GetBufferPointer(),
+        byte_code->GetBufferSize(), 0, &native_gshader);
+    if (FAILED(hr))
+        MAKE_ERRMSG<std::runtime_error>("Fail to Create GeometryShader, Error code:", hr);
+}
+
+void GeometryShader::CreateFromBinary(D3DDevice * device, void *bc, int size){
+    try {
+        D3D10CreateBlob(size, &byte_code);
+        memcpy(byte_code->GetBufferPointer(), bc, size);
+        device->native_device->CreateGeometryShader(bc, size, 0, &native_gshader);
+    }
+    catch (std::exception) {
+        native_gshader = nullptr;
+    }
+}
+
 void PixelShader::CreateFromHLSLFile(D3DDevice * device, const std::wstring & filename, const std::string &entry){
     ComPtr<ID3D10Blob> sbuffer, errmsg;
 
@@ -126,6 +185,7 @@ namespace Ext {
             VALUE klass;
             VALUE klass_vshader;
             VALUE klass_pshader;
+            VALUE klass_gshader;
             VALUE klass_sampler;
             VALUE klass_blender;
             VALUE klass_rasterizer;
@@ -409,6 +469,13 @@ namespace Ext {
                     s->AddRefer();                                                                     //
                     return Data_Wrap_Struct(k, nullptr, DeleteShader<::PixelShader>, s);               //
                 });                                                                                    //
+
+                klass_gshader = rb_define_class_under(module, "GeometryShader", klass);
+                rb_define_alloc_func(klass_gshader, [](VALUE k)->VALUE {
+                    auto s = new ::GeometryShader;
+                    s->AddRefer();
+                    return Data_Wrap_Struct(k, nullptr, DeleteShader<::GeometryShader>, s);
+                });
                 //------------------------------------------------------------------------------
 
                 //sampler
@@ -582,3 +649,4 @@ namespace Ext {
         }
     }
 }
+

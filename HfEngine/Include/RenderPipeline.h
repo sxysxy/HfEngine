@@ -18,6 +18,7 @@ public:
     //
     Utility::ReferPtr<VertexShader> vshader;
     Utility::ReferPtr<PixelShader> pshader;
+    Utility::ReferPtr<GeometryShader> gshader;
 
     //OM data
     Utility::ReferPtr<Blender> blender;
@@ -49,6 +50,9 @@ public:
     void SetPSSampler(int slot, Sampler *sampler);
     void SetPSCBuffer(int slot, ConstantBuffer *cbuffer);
     void SetPSResource(int slot, Texture2D *tex);
+    //GS
+    void SetGeometryShader(GeometryShader *gs);
+    void SetGSCBuffer(int slot, ConstantBuffer *cbuffer);
 
     //RS 
     void SetViewport(const Utility::Rect &rect, float min_deep = 0.0f, float max_deep = 1.0f);
@@ -88,6 +92,7 @@ public:
         device.Release();
         vshader.Release();
         pshader.Release();
+        gshader.Release();
         blender.Release();
         rtt_target.Release();
         vbuffer.Release();

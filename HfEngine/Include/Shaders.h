@@ -58,6 +58,22 @@ public:
     }
 };
 
+class GeometryShader : public Shader {
+public:
+    ComPtr<ID3D11GeometryShader> native_gshader;
+    void Initialize() {}
+    void CreateFromHLSLFile(D3DDevice *device, const std::wstring &filename, const std::string &entry = "main");
+    void CreateFromString(D3DDevice *device, const std::string &code, const std::string &entry = "main");
+    void CreateFromBinary(D3DDevice *device, void *, int size);
+    void UnInitialize() {
+        Shader::UnInitialize();
+        native_gshader.ReleaseAndGetAddressOf();
+    }
+    virtual void Release() {
+        UnInitialize();
+    }
+};
+
 class PixelShader : public Shader {
 public:
     ComPtr<ID3D11PixelShader> native_pshader;
@@ -222,6 +238,7 @@ namespace Ext {
             extern VALUE klass;
             extern VALUE klass_vshader;
             extern VALUE klass_pshader;
+            extern VALUE klass_gshader;
             extern VALUE klass_sampler;
             extern VALUE klass_blender;
             extern VALUE klass_rasterizer;
