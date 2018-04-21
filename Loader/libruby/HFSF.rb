@@ -169,7 +169,7 @@ end
 class SectionGenerator < Generator
 	@@valid_area = :ProgramGenerator
 	
-	attr_reader :vs, :ps
+	attr_reader :vs, :ps, :gs
 	CBUFFER_INFO = Struct.new(:stage, :cbuffer, :slot)
 	SAMPLER_INFO = Struct.new(:stage, :sampler, :slot)
 	
@@ -183,6 +183,7 @@ class SectionGenerator < Generator
 					
 		@vs = "" #remain state
 		@ps = ""
+		@gs = ""
 	end
 	
 	#VS
@@ -207,6 +208,17 @@ class SectionGenerator < Generator
 		@sets.push SAMPLER_INFO.new(:ps, s, slot)
 	end
 	
+	#GS
+	def set_gshader(s)
+		@gs = s
+	end
+	def set_gs_cbuffer(slot, b)
+		@sets.push CBUFFER_INFO.new(:gs, b, slot)
+	end
+	def set_gs_sampler(slot, s)
+		@sets.push SAMPLER_INFO.new(:gs, s, slot)
+	end
+	
 	#OM
 	def set_blender(b)
 		@sets.push BLENDER_INFO.new(b)
@@ -224,7 +236,8 @@ class SectionGenerator < Generator
 		end
 		pg.compile_code(@vs, DX::VertexShader)
 		pg.compile_code(@ps, DX::PixelShader)
-		return {:vshader => @vs, :pshader => @ps, :sets => @sets}
+		pg.compile_code(@gs, DX::GeometryShader)
+		return {:vshader => @vs, :pshader => @ps, :gshader => @gs, :sets => @sets}
 	end
 end
 
@@ -419,6 +432,13 @@ def self.load_section(device, program, sdata)
 		section.eval_code += "set_vshader(ObjectSpace._id2ref(#{program.shaders[sdata[:vshader].to_sym].object_id})) \n"
 	elsif !sdata[:vshader]
 		section.eval_code += "set_vshader(nil)\n"
+	end
+	
+	#set gs
+	if sdata[:gshader] && sdata[:gshader] != ""
+		section.eval_code += "set_gshader(ObjectSpace._id2ref(#{program.shaders[sdata[:gshader].to_sym].object_id})) \n"
+	elsif !sdata[:gshader]
+		section.eval_code += "set_gshader(nil)\n"
 	end
 	
 	#set ps

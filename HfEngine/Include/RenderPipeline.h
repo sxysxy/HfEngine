@@ -53,6 +53,8 @@ public:
     //GS
     void SetGeometryShader(GeometryShader *gs);
     void SetGSCBuffer(int slot, ConstantBuffer *cbuffer);
+    void SetGSResource(int slot, Texture2D *tex);
+    void SetGSSampler(int slot, Sampler *sampler);
 
     //RS 
     void SetViewport(const Utility::Rect &rect, float min_deep = 0.0f, float max_deep = 1.0f);

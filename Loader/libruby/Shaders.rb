@@ -18,7 +18,7 @@ class Shader
     end
 end
 
-[VertexShader, PixelShader].each {|klass|
+[VertexShader, PixelShader, GeometryShader].each {|klass|
 	klass.instance_exec {
 		def self.load_hlsl(device, filename, entry = "main")
 			Shader.load_hlsl(device, filename, self, entry)

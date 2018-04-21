@@ -66,6 +66,12 @@ void RenderPipeline::SetGeometryShader(GeometryShader *gs) {
 void RenderPipeline::SetGSCBuffer(int slot, ConstantBuffer *cb) {
     native_context->GSSetConstantBuffers(slot, 1, cb ? cb->native_buffer.GetAddressOf() : nullptr);
 }
+void RenderPipeline::SetGSResource(int slot, Texture2D * tex) {
+    native_context->GSSetShaderResources(slot, 1, tex ? tex->native_shader_resource_view.GetAddressOf() : nullptr);
+}
+void RenderPipeline::SetGSSampler(int slot, Sampler * sampler) {
+    native_context->GSSetSamplers(slot, 1, sampler ? sampler->native_sampler.GetAddressOf() : nullptr);
+}
 
 //OM
 void RenderPipeline::SetBlender(Blender * b) {
@@ -258,7 +264,31 @@ namespace Ext {
             }
             
             // --------
-
+            static VALUE set_gs_sampler(VALUE self, VALUE slot, VALUE s) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                if (!rb_obj_is_kind_of(s, Ext::DX::Shader::klass_sampler)) {
+                    rb_raise(rb_eArgError, "set_sampler : the second param should be a Sampler");
+                }
+                rp->SetGSSampler(FIX2INT(slot), GetNULLPTRableNativeObject<::Sampler>(s));
+                return self;
+            }
+            static VALUE set_gs_cbuffer(VALUE self, VALUE slot, VALUE cb) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                if (!rb_obj_is_kind_of(cb, Ext::DX::D3DBuffer::klass_cbuffer)) {
+                    rb_raise(rb_eArgError, "set_cbuffer : the second param should be a ConstantBuffer");
+                }
+                rp->SetGSCBuffer(FIX2INT(slot), GetNULLPTRableNativeObject<::ConstantBuffer>(cb));
+                return self;
+            }
+            static VALUE set_gs_resource(VALUE self, VALUE slot, VALUE res) {
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                if (!rb_obj_is_kind_of(res, Ext::DX::Texture::klass_texture2d)) {
+                    rb_raise(rb_eArgError, "set_resource : the second param should be a Texture2D");
+                }
+                rp->SetGSResource(FIX2INT(slot), GetNULLPTRableNativeObject<::Texture2D>(res));
+                return self;
+            }
+            //----
 
             static VALUE set_viewport(int argc, VALUE *argv, VALUE self) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
@@ -377,6 +407,9 @@ namespace Ext {
                 //gs
                 rb_define_method(klass, "set_gshader", (rubyfunc)set_gshader, 1);
                 rb_define_method(klass, "gshader", (rubyfunc)gshader, 0);
+                rb_define_method(klass, "set_gs_sampler", (rubyfunc)set_gs_sampler, 2);
+                rb_define_method(klass, "set_gs_cbuffer", (rubyfunc)set_gs_cbuffer, 2);
+                rb_define_method(klass, "set_gs_resource", (rubyfunc)set_gs_resource, 2);
 
                 //rs
                 rb_define_method(klass, "set_viewport", (rubyfunc)set_viewport, -1);
@@ -418,6 +451,7 @@ namespace Ext {
                 rb_define_const(module, "TOPOLOGY_LINESTRIP", INT2FIX(D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP));
                 rb_define_const(module, "TOPOLOGY_LINELIST_ADJ", INT2FIX(D3D11_PRIMITIVE_TOPOLOGY_LINELIST_ADJ));
                 rb_define_const(module, "TOPOLOGY_LINESTRIP_ADJ", INT2FIX(D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP_ADJ));
+                rb_define_const(module, "TOPOLOGY_POINTLIST", INT2FIX(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST));
                 rb_define_method(klass, "set_topology", (rubyfunc)set_topology, 1);
             }
         }
