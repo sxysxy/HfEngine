@@ -40,10 +40,11 @@ Program("emm") {
 			right.pos.z = pts[0].pos.z; right.pos.w = 1.0;
 			right.color = pts[0].color;
 			//in anti-clockwise
+			[unroll] 
+			opt.RestartStrip();
 			opt.Append(left);
 			opt.Append(right);
-			opt.Append(top);
-			opt.RestartStrip();
+			opt.Append(top);	
 		}
 		float4 PS(GSOut emm) : SV_TARGET {
 			return emm.color;

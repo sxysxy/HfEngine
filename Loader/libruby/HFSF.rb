@@ -584,9 +584,6 @@ end
 
 def self.loadsf_file(device, filename)
 	compd = Compiler.compile_file(filename)
-	File.open(File.join(EXECUTIVE_DIRECTORY, "emm.txt"), "w") {|f|
-		f.print compd.format_inspect
-	}
 	self.loadsf(device, compd)
 end
 
