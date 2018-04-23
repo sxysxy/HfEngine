@@ -234,9 +234,9 @@ class SectionGenerator < Generator
 		if !pg.is_a?(ProgramGenerator)
 			raise GeneratingLogicError, "a big bug, please report..."
 		end
-		pg.compile_code(@vs, DX::VertexShader)
-		pg.compile_code(@ps, DX::PixelShader)
-		pg.compile_code(@gs, DX::GeometryShader)
+		pg.compile_code(@vs, DX::VertexShader) if @vs != ""
+		pg.compile_code(@ps, DX::PixelShader) if @ps != ""
+		pg.compile_code(@gs, DX::GeometryShader) if @gs != ""
 		return {:vshader => @vs, :pshader => @ps, :gshader => @gs, :sets => @sets}
 	end
 end

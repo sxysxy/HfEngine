@@ -109,6 +109,13 @@ namespace Ext{
             GetNativeObject<Utility::Color>(self)->a = rb_float_value(r);
             return r;
         }
+        static VALUE CRGBA_row_data_ptr(VALUE self) {
+#ifdef _WIN64
+            return ULL2NUM((unsigned long long)GetNativeObject<Utility::Color>(self));
+#else
+            return INT2NUM((int)GetNativeObject<Utility::Color>(self));
+#endif
+        }
         static VALUE CRGBA_initialize(int argc, VALUE *argv, VALUE self) {
             if (argc == 1) {
                 if (!rb_obj_is_kind_of(argv[0], klass_HFColor))
@@ -157,6 +164,7 @@ namespace Ext{
             rb_define_method(klass_HFColor, "g=", (rubyfunc)CRBGA_sg, 1);
             rb_define_method(klass_HFColor, "b=", (rubyfunc)CRBGA_sb, 1);
             rb_define_method(klass_HFColor, "a=", (rubyfunc)CRBGA_sa, 1);
+            rb_define_method(klass_HFColor, "row_data_ptr", (rubyfunc)CRGBA_row_data_ptr, 0);
             rb_define_method(klass_HFColor, "initialize", (rubyfunc)CRGBA_initialize, -1);
             rb_define_module_function(rb_mKernel, "HFColorRGBA", (rubyfunc)CRGBA, -1);
         }
