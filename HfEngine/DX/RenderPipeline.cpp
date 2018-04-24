@@ -88,6 +88,7 @@ void RenderPipeline::SetViewport(const Utility::Rect &rect, float min_deep, floa
     native_context->RSSetViewports(1, &vp);
 }
 void RenderPipeline::SetRasterizer(Rasterizer *rs) {
+    rasterizer = rs;
     native_context->RSSetState(rs ? rs->native_rasterizer.Get() : nullptr);
 }
 void RenderPipeline::SetTarget(RTT *rtt) {
@@ -107,6 +108,7 @@ namespace Ext {
     namespace DX {
         namespace RenderPipeline {
             VALUE klass;
+            VALUE klass_remote_render_executive;
 
             static void delete_rp(::RenderPipeline *rp) {
                 rp->SubRefer();
@@ -380,6 +382,29 @@ namespace Ext {
                 return self;
             }
 
+            //------------------------
+            void DeleteRE(RemoteRenderExecutive *re) {
+                re->SubRefer();
+            }
+            static VALUE RE_initialize(VALUE self, VALUE device, VALUE swp, VALUE fps) {
+                auto re = GetNativeObject<RemoteRenderExecutive>(self);
+                re->Initialize(GetNativeObject<::D3DDevice>(device), 
+                        GetNativeObject<::SwapChain>(swp), FIX2INT(fps));
+                return self;
+            }
+            static VALUE RE_terminate(VALUE self) {
+                GetNativeObject<RemoteRenderExecutive>(self)->Terminate();
+                return self;
+            }
+            static VALUE RE_reset_fps(VALUE self, VALUE fps) {
+                GetNativeObject<RemoteRenderExecutive>(self)->ResetFPS(FIX2INT(fps));
+                return self;
+            }
+            static VALUE RE_push(VALUE self, VALUE rp) {
+                GetNativeObject<RemoteRenderExecutive>(self)->Push(GetNativeObject<::RenderPipeline>(rp));
+                return self;
+            }
+
             void Init() {
                 klass = rb_define_class_under(module, "RenderPipeline", rb_cObject);
 
@@ -453,6 +478,19 @@ namespace Ext {
                 rb_define_const(module, "TOPOLOGY_LINESTRIP_ADJ", INT2FIX(D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP_ADJ));
                 rb_define_const(module, "TOPOLOGY_POINTLIST", INT2FIX(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST));
                 rb_define_method(klass, "set_topology", (rubyfunc)set_topology, 1);
+
+
+                //RE
+                klass_remote_render_executive = rb_define_class_under(module, "RemoteRenderExecutive", rb_cObject);
+                rb_define_alloc_func(klass_remote_render_executive, [](VALUE k)->VALUE {
+                   auto re = new RemoteRenderExecutive;
+                   re->AddRefer();
+                   return Data_Wrap_Struct(k, nullptr, DeleteRE, re);
+                });
+                rb_define_method(klass_remote_render_executive, "initialize", (rubyfunc)RE_initialize, 3);
+                rb_define_method(klass_remote_render_executive, "reset_fps", (rubyfunc)RE_reset_fps, 1);
+                rb_define_method(klass_remote_render_executive, "push", (rubyfunc)RE_push, 1);
+                rb_define_method(klass_remote_render_executive, "terminate", (rubyfunc)RE_terminate, 0);
             }
         }
     }

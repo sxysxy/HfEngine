@@ -441,9 +441,37 @@ namespace Ext {
                 b->SubRefer();
             }
 
-            //
+            //RS
             static void DeleteRS(Rasterizer *r) {
                 r->SubRefer();
+            }
+            static VALUE set_fill_mode(VALUE self, VALUE m) {
+                GetNativeObject<Rasterizer>(self)->SetFillMode((D3D11_FILL_MODE)FIX2INT(m));
+                return self;
+            }
+            static VALUE set_cull_mode(VALUE self, VALUE m) {
+                GetNativeObject<Rasterizer>(self)->SetCullMode((D3D11_CULL_MODE)FIX2INT(m));
+                return self;
+            }
+            static VALUE set_depth_bias(VALUE self, VALUE bias, VALUE clamp, VALUE slope_scale) {
+                GetNativeObject<Rasterizer>(self)->SetDepthBias(FIX2INT(bias), (float)RFLOAT_VALUE(clamp), (float)RFLOAT_VALUE(slope_scale));
+                return self;
+            }
+            static VALUE set_front_counter(VALUE self, VALUE clockwise) {
+                GetNativeObject<Rasterizer>((self))->SetFrontCounter(clockwise == Qtrue);
+                return self;
+            }
+            static VALUE set_clip(VALUE self, VALUE depth_clip, VALUE scissor_clip) {
+                GetNativeObject<Rasterizer>(self)->SetClip(depth_clip == Qtrue, scissor_clip == Qtrue);
+                return self;
+            }
+            static VALUE set_multisample(VALUE self, VALUE msample_enable) {
+                GetNativeObject<Rasterizer>(self)->SetMultiSample(msample_enable == Qtrue);
+                return self;
+            }
+            static VALUE set_antialiased_line(VALUE self, VALUE enable) {
+                GetNativeObject<Rasterizer>(self)->SetAntialiasedLine(enable == Qtrue);
+                return self;
             }
 
             void Init() {
@@ -645,6 +673,19 @@ namespace Ext {
                     (rubyfunc)dump_description<Rasterizer, D3D11_RASTERIZER_DESC>, 0);
                 rb_define_method(klass_rasterizer, "load_description",
                     (rubyfunc)load_description<Rasterizer, D3D11_RASTERIZER_DESC>, 1);
+                rb_define_method(klass_rasterizer, "set_fill_mode", (rubyfunc)set_fill_mode, 1);
+                rb_define_method(klass_rasterizer, "set_cull_mode", (rubyfunc)set_cull_mode, 1);
+                rb_define_method(klass_rasterizer, "set_depth_bias", (rubyfunc)set_depth_bias, 3);
+                rb_define_method(klass_rasterizer, "set_front_counter", (rubyfunc)set_front_counter, 1);
+                rb_define_method(klass_rasterizer, "set_clip", (rubyfunc)set_clip, 2);
+                rb_define_method(klass_rasterizer, "set_multisample", (rubyfunc)set_multisample, 1);
+                rb_define_method(klass_rasterizer, "set_antialiased_line", (rubyfunc)set_antialiased_line, 1);
+
+                rb_define_const(module, "FILL_SOLID", INT2FIX(D3D11_FILL_SOLID));
+                rb_define_const(module, "FILL_WIREFRAME", INT2FIX(D3D11_FILL_WIREFRAME));
+                rb_define_const(module, "CULL_NONE", INT2FIX(D3D11_CULL_NONE));
+                rb_define_const(module, "CULL_FRONT", INT2FIX(D3D11_CULL_FRONT));
+                rb_define_const(module, "CULL_BACK", INT2FIX(D3D11_CULL_BACK));
             }
         }
     }

@@ -213,13 +213,37 @@ class Rasterizer : public Utility::ReferredObject, public WithDescriptionStruct<
 public:
     ComPtr<ID3D11RasterizerState> native_rasterizer;
 
-    void UseDefault() {
+    inline void UseDefault() {
         desc.AntialiasedLineEnable = desc.MultisampleEnable = desc.ScissorEnable = desc.FrontCounterClockwise = false;
         desc.DepthClipEnable = true;
         desc.SlopeScaledDepthBias = desc.DepthBiasClamp = 0.0;
         desc.DepthBias = 0;
         desc.FillMode = D3D11_FILL_SOLID;
         desc.CullMode = D3D11_CULL_BACK;
+    }
+    inline void SetFillMode(D3D11_FILL_MODE m) {
+        desc.FillMode = m;
+    }
+    inline void SetCullMode(D3D11_CULL_MODE m) {
+        desc.CullMode = m;
+    }
+    inline void SetDepthBias(int bias, float clamp, float slope_scale) {
+        desc.DepthBias = bias;
+        desc.DepthBiasClamp = clamp;
+        desc.SlopeScaledDepthBias = slope_scale;
+    }
+    inline void SetFrontCounter(bool clock_wise) {
+        desc.FrontCounterClockwise = clock_wise;
+    }
+    inline void SetClip(bool depth_clip, bool scissor_clip) {
+        desc.DepthClipEnable = depth_clip;
+        desc.ScissorEnable = scissor_clip;
+    }
+    inline void SetMultiSample(bool multisample_enable) {
+        desc.MultisampleEnable = multisample_enable;
+    }
+    inline void SetAntialiasedLine(bool enable) {
+        desc.AntialiasedLineEnable = enable;
     }
     void CreateState(D3DDevice *device) {
         device->native_device->CreateRasterizerState(&desc, &native_rasterizer);

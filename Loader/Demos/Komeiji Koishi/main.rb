@@ -27,7 +27,7 @@ HFWindow.new("恋恋 VS 紫妈", 300, 300) {
 	koishi = Texture2D.new(device, KOISHI_FILENAME)
 	yukari = Texture2D.new(device, YUKARI_FILENAME)					
     rp.set_ps_resource(0, koishi).set_ps_resource(1, yukari)
-	
+	re = RemoteRenderExecutive.new(device, swapchain, 60)
 	keyboard = Input::Keyboard.new(self)
 	timer = FPSTimer.new(60)
     messageloop {
@@ -47,8 +47,8 @@ HFWindow.new("恋恋 VS 紫妈", 300, 300) {
 		end
         rp.clear(HFColorRGBA(0.0, 0.0, 0.0, 0.0))
         rp.draw(0, 4)
-		rp.immdiate_render
-		swapchain.present
+		re.push(rp)
 		timer.await
     }
+	re.terminate
 }

@@ -20,6 +20,7 @@ HFWindow.new("Geometry Shader Simple Demo", 500, 500) {
 		rp.update_subresource vb, [center_pos[0].to_f, center_pos[1].to_f, 0.0].pack("f*")
 		rp.draw(0, 1)
 	}
+	re = RemoteRenderExecutive.new(device, swapchain, 60)
 	timer = FPSTimer.new(60)
 	messageloop {
 		rp.clear(HFColorRGBA(0.0, 0.0, 0.0, 0.0))
@@ -29,8 +30,8 @@ HFWindow.new("Geometry Shader Simple Demo", 500, 500) {
 		draw_triangle[0.5, [-0.4, -0.2], HFColorRGBA(0.0, 1.0, 1.0, 1.0)]
 		draw_triangle[0.33, [-0.2, 0.2], HFColorRGBA(1.0, 0.0, 0.0, 1.0)]
 		draw_triangle[0.7, [-0.6, -0.7], HFColorRGBA(1.0, 1.0, 1.0, 1.0)]
-		rp.immdiate_render
-		swapchain.present
+		re.push(rp)
 		timer.await
 	}
+	re.terminate
 }

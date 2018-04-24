@@ -5,6 +5,7 @@
 #include "D3DBuffer.h"
 #include "Shaders.h"
 #include "Texture2D.h"
+#include "SwapChain.h"
 
 class RenderPipeline : public Utility::ReferredObject {
 public:
@@ -15,10 +16,13 @@ public:
     ComPtr<ID3D11InputLayout> native_input_layout;
     Utility::ReferPtr<VertexBuffer> vbuffer;
 
-    //
+    //shaders
     Utility::ReferPtr<VertexShader> vshader;
     Utility::ReferPtr<PixelShader> pshader;
     Utility::ReferPtr<GeometryShader> gshader;
+
+    //RS
+    Utility::ReferPtr<Rasterizer> rasterizer;
 
     //OM data
     Utility::ReferPtr<Blender> blender;
@@ -95,6 +99,7 @@ public:
         vshader.Release();
         pshader.Release();
         gshader.Release();
+        rasterizer.Release();
         blender.Release();
         rtt_target.Release();
         vbuffer.Release();
@@ -102,14 +107,79 @@ public:
     virtual void Release() {
         UnInitialize();
     }
-    
+};
+
+class RemoteRenderExecutive : public Utility::ReferredObject {
+    std::thread render_thread;
+    std::mutex queue_lock;
+    std::queue<ID3D11CommandList *> list_queue;
+    Utility::SleepFPSTimer timer;
+    bool exit_flag;
+public:
+    Utility::ReferPtr<D3DDevice> device;
+    Utility::ReferPtr<SwapChain> swapchain;
+    int fps;
+    void Initialize(D3DDevice *device_, SwapChain *swp, int fps_) {
+        device = device_;
+        swapchain = swp;
+        fps = fps_;
+        exit_flag = false;
+        Run();
+    }
+    void Run() {
+        render_thread = std::thread([this]() {
+            ResetFPS(fps);
+            while (!exit_flag) {
+                if (!list_queue.empty()) {
+                    queue_lock.lock();
+                    while (!list_queue.empty()) {
+                        auto list = list_queue.front();
+                        if(list){
+                            device->native_immcontext->ExecuteCommandList(list, false);
+                            list->Release();
+                        }
+                        list_queue.pop();
+                    }
+                    queue_lock.unlock();
+                }
+                swapchain->Present();
+                timer.Await();
+            }
+        });
+    }
+    inline void Push(RenderPipeline *rp) {
+        ID3D11CommandList *list;
+        rp->native_context->FinishCommandList(true, &list);
+        queue_lock.lock();
+        list_queue.push(list);
+        queue_lock.unlock();
+    }
+    inline void Terminate() {
+        exit_flag = true;
+        if(render_thread.joinable())
+            render_thread.join(); 
+        UnInitialize();
+    }
+    inline void ResetFPS(int fps_) {
+        timer.Restart(fps = fps_);
+    }
+    void UnInitialize() {
+        if (render_thread.joinable()) {
+            Terminate();
+        }
+        device.Release();
+        swapchain.Release();
+    }
+    virtual void Release() {
+        UnInitialize();
+    }
 };
 
 namespace Ext {
     namespace DX {
         namespace RenderPipeline {
             extern VALUE klass;
-
+            extern VALUE klass_remote_render_executive;
             void Init();
         }
     }

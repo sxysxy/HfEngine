@@ -62,6 +62,10 @@ Program("emm") {
 		Blender("blender") {
 			set_mask COLOR_WRITE_ENABLE_ALL
 		}
+		Rasterizer("rasterizer") {
+			set_front_counter true
+			set_cull_mode CULL_NONE
+		}
 	}
 	Section("set") {
 		set_vshader("VS")
@@ -70,5 +74,6 @@ Program("emm") {
 		set_gs_cbuffer(0, "GSParam")
 		set_ps_cbuffer(1, "PSParam")
 		set_blender("blender")
+		set_rasterizer("rasterizer")
 	}
 }
