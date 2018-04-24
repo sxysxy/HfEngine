@@ -90,7 +90,6 @@ int __cdecl cmain(wchar_t *path) {
 
 }
 
-
 wchar_t path_buffer[MAX_PATH + 10];
 int HFEngineRubyEntry() {
     if (GetFileAttributes(TEXT("main.rb")) == INVALID_FILE_ATTRIBUTES) {
