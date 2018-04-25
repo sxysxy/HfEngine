@@ -407,6 +407,7 @@ namespace Ext {
 
             void Init() {
                 klass = rb_define_class_under(module, "RenderPipeline", rb_cObject);
+                rb_include_module(klass, module_release);
 
                 rb_define_alloc_func(klass, new_rp);
                 rb_define_method(klass, "initialize", (rubyfunc)initialize, 1);
@@ -482,6 +483,7 @@ namespace Ext {
 
                 //RE
                 klass_remote_render_executive = rb_define_class_under(module, "RemoteRenderExecutive", rb_cObject);
+                rb_include_module(klass_remote_render_executive, module_release);
                 rb_define_alloc_func(klass_remote_render_executive, [](VALUE k)->VALUE {
                    auto re = new RemoteRenderExecutive;
                    re->AddRefer();

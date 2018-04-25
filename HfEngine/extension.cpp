@@ -6,6 +6,7 @@
 
 namespace Ext {
     VALUE rb_mModule;
+    VALUE module_release;
 
     VALUE __msgbox__(VALUE self, VALUE msg) {
         msg = rb_funcall(msg, rb_intern("to_s"), 0);
@@ -131,9 +132,16 @@ namespace Ext {
         }
     }
 
+    static VALUE refobj_release(VALUE obj) {
+        GetNativeObject<Utility::ReferredObject>(obj)->Release();
+        return Qnil;
+    }
 
 	void ApplyExtensions() {
 		BasicExtensions();
+
+        module_release = rb_define_module("ReleaseObject");
+        rb_define_method(module_release, "release", (rubyfunc)refobj_release, 0);
 
 		Ext::HFWindow::Init();
         rb_define_module_function(rb_mKernel, "messageloop", (rubyfunc)messageloop, 0);

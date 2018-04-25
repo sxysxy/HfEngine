@@ -93,6 +93,7 @@ namespace Ext {
     namespace DX {
         namespace Input {
             VALUE module_Input;
+            VALUE klass_device;
             VALUE klass_Keyboard;
             VALUE klass_Mouse;
             VALUE InputInitialize(VALUE self) {
@@ -195,14 +196,16 @@ namespace Ext {
 
             void Init() {
                 module_Input = rb_define_module_under(module, "Input");
-                klass_Keyboard = rb_define_class_under(module_Input, "Keyboard", rb_cObject);
+                klass_device = rb_define_class_under(module_Input, "Device", rb_cObject);
+                rb_include_module(klass_device, module_release);
+                klass_Keyboard = rb_define_class_under(module_Input, "Keyboard", klass_device);
                 rb_define_alloc_func(klass_Keyboard, Keyboard_new);
                 rb_define_method(klass_Keyboard, "initialize", (rubyfunc)Keyboard_initialize, 1);
                 rb_define_method(klass_Keyboard, "is_pressed_now", (rubyfunc)Keyboard_is_pressed_now, 1);
                 rb_define_method(klass_Keyboard, "is_pressed_before", (rubyfunc)keyboard_is_pressed_before, 1);
                 rb_define_method(klass_Keyboard, "update", (rubyfunc)Device_update<::Input::Keyboard>, 0);
 
-                klass_Mouse = rb_define_class_under(module_Input, "Mouse", rb_cObject);
+                klass_Mouse = rb_define_class_under(module_Input, "Mouse", klass_device);
                 rb_define_alloc_func(klass_Mouse, [](VALUE k)->VALUE{
                     auto *m = new ::Input::Mouse;
                     m->AddRefer();

@@ -94,6 +94,7 @@ namespace Ext {
     namespace DX {
         namespace Input {
             extern VALUE module_Input;
+            extern VALUE klass_device;
             extern VALUE klass_Keyboard;
             extern VALUE klass_Mouse;
             void Init();

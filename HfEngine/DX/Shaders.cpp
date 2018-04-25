@@ -477,6 +477,7 @@ namespace Ext {
             void Init() {
                 klass_eShaderCompileError = rb_define_class_under(module, "ShaderCompileError", rb_eException);
                 klass = rb_define_class_under(module, "Shader", rb_cObject);
+                rb_include_module(klass, module_release);
                 //rb_define_method(klass, "initialize", (rubyfunc)shader_initialize, -1);
                 rb_define_method(klass, "initialize", (rubyfunc)initialize, 0);
                 rb_define_method(klass, "create_from_hlsl", (rubyfunc)create_from_hlsl, -1);
@@ -508,6 +509,7 @@ namespace Ext {
 
                 //sampler
                 klass_sampler = rb_define_class_under(module, "Sampler", rb_cObject);
+                rb_include_module(klass_sampler, module_release);
                 rb_define_alloc_func(klass_sampler, [](VALUE k)->VALUE {
                     auto sampler = new Sampler;
                     sampler->AddRefer();
@@ -574,6 +576,7 @@ namespace Ext {
 
                 //blender
                 klass_blender = rb_define_class_under(module, "Blender", rb_cObject);
+                rb_include_module(klass_blender, module_release);
                 rb_define_alloc_func(klass_blender, [](VALUE k) -> VALUE{
                     Blender *b = new Blender;
                     b->AddRefer();
@@ -661,6 +664,7 @@ namespace Ext {
                 rb_define_const(module, "COLOR_WRITE_ENABLE_ALL", INT2FIX(D3D11_COLOR_WRITE_ENABLE_ALL));
 
                 klass_rasterizer = rb_define_class_under(module, "Rasterizer", rb_cObject);
+                rb_include_module(klass_rasterizer, module_release);
                 rb_define_alloc_func(klass_rasterizer, [](VALUE k)->VALUE {
                     auto rs = new Rasterizer;
                     rs->AddRefer();

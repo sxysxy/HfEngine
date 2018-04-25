@@ -122,6 +122,7 @@ namespace Ext {
 
             void Init() {
                 klass = rb_define_class_under(module, "SwapChain", rb_cObject);
+                rb_include_module(klass, module_release);
                 rb_define_alloc_func(klass, New);
                 rb_define_method(klass, "initialize", (rubyfunc)initialize, -1);
                 rb_define_method(klass, "present", (rubyfunc)present, 0);

@@ -125,6 +125,7 @@ namespace Ext {
 
             void Init() {
                 klass = rb_define_class_under(module, "D3DDevice", rb_cObject);
+                rb_include_module(klass, module_release);
                 rb_define_alloc_func(klass, New);
                 rb_define_const(module, "HARDWARE_DEVICE", INT2FIX(D3D_DRIVER_TYPE_HARDWARE));
                 rb_define_const(module, "SIMULATED_DEVICE", INT2FIX(D3D_DRIVER_TYPE_WARP));

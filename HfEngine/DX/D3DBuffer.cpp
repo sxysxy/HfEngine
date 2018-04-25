@@ -152,17 +152,21 @@ namespace Ext {
 
             void Init() {
                 klass = rb_define_class_under(module, "D3DBuffer", rb_cObject);
+                rb_include_module(klass, module_release);
                 rb_define_method(klass, "initialize", (rubyfunc)initialize_d3dbuffer, -1);
 
                 klass_vbuffer = rb_define_class_under(module, "VertexBuffer", klass);
+                rb_include_module(klass_vbuffer, module_release);
                 rb_define_alloc_func(klass_vbuffer, New<::VertexBuffer>);
                 rb_define_method(klass_vbuffer, "initialize", (rubyfunc)vbuffer_initialize, -1);
 
                 klass_ibuffer = rb_define_class_under(module, "IndexBuffer", klass);
+                rb_include_module(klass_ibuffer, module_release);
                 rb_define_alloc_func(klass_ibuffer, New<::IndexBuffer>);
                 rb_define_method(klass_ibuffer, "initialize", (rubyfunc)ibuffer_initialize, -1);
 
                 klass_cbuffer = rb_define_class_under(module, "ConstantBuffer", klass);
+                rb_include_module(klass_cbuffer, module_release);
                 rb_define_alloc_func(klass_cbuffer, New<::ConstantBuffer>);
                 rb_define_method(klass_cbuffer, "initialize", (rubyfunc)cbuffer_initialize, -1);
             }

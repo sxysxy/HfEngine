@@ -6,7 +6,13 @@ require "./ConfigLoader.rb"
 require "./TextureCache.rb"
 require "./SceneManager.rb"
 require "./Controller.rb"
-require_relative "./STGScene/SceneTitle.rb"
+begin
+require_relative "./STGScene/SceneSHWTitle.rb"
+TITLE_CLASS = SceneSHWTitle
+rescue
+require_relative "./CommonScene/SceneTitle.rb"
+TITLE_CLASS = SceneTitle
+end
 
 $config = ConfigLoader.load("./config.rb")
 
@@ -19,4 +25,7 @@ $window.show
 $device = DX::D3DDevice.new(hardware)
 Controller.init
 Graphics.init
-SceneManager.run(SceneTitle)
+SceneManager.run(TITLE_CLASS)
+
+Graphics.shutdown
+$device.release

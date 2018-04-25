@@ -164,6 +164,7 @@ namespace Ext { namespace DX{
         }
         void Init() {
             klass_texture = rb_define_class_under(module, "Texture", rb_cObject);
+            rb_include_module(klass_texture, module_release);
             klass_texture2d = rb_define_class_under(module, "Texture2D", klass_texture);
 
             //Texture2D
@@ -178,6 +179,7 @@ namespace Ext { namespace DX{
 
             //RTT
             klass_rtt = rb_define_class_under(module, "RTT", rb_cObject);
+            rb_include_module(klass_rtt, module_release);
             rb_define_alloc_func(klass_rtt, [](VALUE k)->VALUE {
                 auto t = new ::RTT;
                 t->AddRefer();
