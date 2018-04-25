@@ -135,7 +135,8 @@ namespace Ext {
 
 		void RHFWindow::OnResized() {
 			HFWindow::OnResized();
-			rb_funcall(self, rb_intern("call_handler"), 1, ID2SYM(rb_intern("on_resized")));
+            int s = 0;
+            rb_protect([](VALUE obj) -> VALUE {return rb_funcall(obj, rb_intern("call_handler"), 1, ID2SYM(rb_intern("on_resized"))); }, self, &s);
 		}
 
 		void RHFWindow::OnClosed() {

@@ -30,7 +30,8 @@ class ConfigLoader
         if @config[name.to_sym] 
             return @config[name.to_sym]
         else
-            raise ArgumentError, "#{name} config section not found"
+            #raise ArgumentError, "#{name} config section not found"
+			nil
         end
     end
 

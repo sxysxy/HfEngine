@@ -63,12 +63,22 @@ namespace Ext {
         
     }
 
+    //return false(ruby Qfalse) means to quit.
+    //
+    VALUE process_message(VALUE self) {
+        static MSG msg;
+        if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE | PM_NOYIELD)) {
+            if (msg.message == WM_EXITLOOP)return Qfalse;
+            ::HFWindow::_WndProc(msg.hwnd, msg.message, msg.wParam, msg.lParam);
+        }
+        return Qtrue;
+    }
+
     VALUE messageloop(VALUE self) {
         MSG msg;
         while(true){
             if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE | PM_NOYIELD)) {
                 if(msg.message == WM_EXITLOOP)break;
-                //DispatchMessage(&msg);
                 ::HFWindow::_WndProc(msg.hwnd, msg.message, msg.wParam, msg.lParam);
             }
             if(rb_block_given_p())
@@ -127,6 +137,7 @@ namespace Ext {
 
 		Ext::HFWindow::Init();
         rb_define_module_function(rb_mKernel, "messageloop", (rubyfunc)messageloop, 0);
+        rb_define_module_function(rb_mKernel, "process_message", (rubyfunc)process_message, 0);
         rb_define_module_function(rb_mKernel, "exit_mainloop", (rubyfunc)exit_mainloop, 0);
 		Ext::DX::Init();
         Ext::FPSTimer::Init();
