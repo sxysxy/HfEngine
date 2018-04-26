@@ -5,7 +5,7 @@ Config("logic") {
 
 Config("graphics") {
     title "STG Test"
-    resolution 1024, 768
+    resolution 640, 480
     driver_type :HARDWARE
     fps 60
     fullscreen false

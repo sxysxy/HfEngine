@@ -13,6 +13,7 @@ rescue
 require_relative "./CommonScene/SceneTitle.rb"
 TITLE_CLASS = SceneTitle
 end
+require_relative "./HighLevelRenderer/Renderer2D.rb"
 
 $config = ConfigLoader.load("./config.rb")
 
@@ -27,5 +28,7 @@ Controller.init
 Graphics.init
 SceneManager.run(TITLE_CLASS)
 
+#do release
 Graphics.shutdown
+Renderer2D.release_basic_resource
 $device.release

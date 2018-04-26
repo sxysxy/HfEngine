@@ -381,11 +381,26 @@ class SFData
 end
 
 class SFProgram < SFData
-	attr_accessor :code
 	attr_accessor :shaders
 	attr_accessor :resource
 	attr_accessor :section
 	attr_accessor :input_layout
+	
+	#copy. It does nnt copy constant buffer's data.
+	def copy(device)
+		p = SFProgram.new
+		p.shaders = @shaders
+		p.section = @section
+		p.input_layout = @input_layout
+		#copy resource
+		p.resource = @resource.copy(device) if @resource
+		return p
+	end
+	
+	def release
+		@shaders.each{|name, shader| shader.release}
+		@resource.release
+	end
 end
 
 class SFResource < SFData
@@ -398,6 +413,41 @@ class SFResource < SFData
 		@sampler = {}
 		@cbuffer = {}
 		@rasterizer = {}
+	end
+	
+	#copy. It does nnt copy constant buffer's data.
+	def copy(device)
+		r = SFResource.new
+		@blender.each { |name, obj|
+			s = DX::Blender.new
+			s.load_description(obj.dump_description.pack("C*"))
+			s.set_blend_factor obj.blend_factor
+			s.create_state(device)
+			r.blender[name] = s
+		}
+		@sampler.each { |name, obj|
+			s = DX::Sampler.new
+			s.load_description(obj.dump_description.pack("C*"))
+			s.create_state(device)
+			r.sampler[name] = s
+		}
+		@cbuffer.each { |name, obj|
+			s = DX::ConstantBuffer.new(device, obj.size, 0)
+			r.cbuffer[name] = s
+		}
+		@rasterizer.each { |name, obj|
+			s = DX::Rasterizer.new
+			s.load_description(obj.dump_description.pack("C*"))
+			s.create_state(device)
+			r.rasterizer[name] = s
+		}
+		return r
+	end
+	
+	def release
+		[@blender, @sampler, @cbuffer, @rasterizer].each {|e|
+			e.each {|name, s| s.release}
+		}
 	end
 end
 
@@ -528,9 +578,6 @@ end
 
 def self.load_program(device, p)
 	program = SFProgram.new
-	
-	#hlsl
-	program.code = p[:code]
 	
 	#byte code
 	program.shaders = {}

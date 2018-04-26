@@ -24,4 +24,7 @@ module Graphics
 		@re.terminate
 		@swap_chain.release
 	end
+	def self.rtt
+		@swap_chain.rtt
+	end
 end
