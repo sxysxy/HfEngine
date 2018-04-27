@@ -7,7 +7,9 @@ module Graphics
 		
 		@re = DX::RemoteRenderExecutive.new($device, @swap_chain, @fps)
 	end
-	
+	def self.swap_chain
+		return @swap_chain
+	end
 	def self.re
 		return @re
 	end

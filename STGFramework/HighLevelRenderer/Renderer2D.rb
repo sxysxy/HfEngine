@@ -26,7 +26,7 @@ class Renderer2D < DX::RenderPipeline
 		set_target(Graphics.rtt)
 		set_viewport(HFRect(0, 0, $window.width, $window.height))
 		
-		@phase = PHASE_DRAW_SOLID #phase 
+		@phase = PHASE_DRAW_SOLID - 1 #phase 
 	end
 	
 	def pre_draw_solid
@@ -67,16 +67,12 @@ class Renderer2D < DX::RenderPipeline
     {{ x2, y2, _z_depth },{ 1.0, 0.0 }}
     };
 =end
-		midx = viewport.w / 2
-		midy = viewport.h / 2
-		x1 = 1.0 * (rect.x - midx) / midx
-		x2 = 1.0 * (rect.x + rect.w - midx) / midx;
-		y2 = -1.0 * (rect.y - midy) / midy
-		y1 = -1.0 * (rect.y + rect.h - midy) / midy
-		vecs = [[x1, y2, 0], [color.r, color.g, color.b, color.a],
-				[x1, y2, 0], [color.r, color.g, color.b, color.a],
-				[x1, y2, 0], [color.r, color.g, color.b, color.a],
-				[x1, y2, 0], [color.r, color.g, color.b, color.a]].flatten.pack("f*")
+		x1 = (rect.x * 2.0) / viewport.w - 1.0;
+		
+		vecs = [[-0.5, 0.5, 0], [color.r, color.g, color.b, color.a],
+				[0.5, 0.5, 0], [color.r, color.g, color.b, color.a],
+				[-0.5, -0.5, 0], [color.r, color.g, color.b, color.a],
+				[0.5, -0.5, 0], [color.r, color.g, color.b, color.a]].flatten.pack("f*")
 		vb = DX::VertexBuffer.new($device, 7*4, 4, vecs)
 		set_topology(DX::TOPOLOGY_TRIANGLESTRIP)
 		set_vbuffer(vb)

@@ -1,25 +1,37 @@
 Program("Renderer2D") {
 	Code(%{
-		struct VSIn{
+		struct VSTextureIn {
+			float4 position : POSITION;
+			float2 tex : TEXCOORD;
+		};
+		struct VSTextureOut {
+			float4 position : SV_POSITION;
+			float2 tex : TEXCOORD;
+		};
+		struct VSDrawIn {
 			float4 position : POSITION;
 			float4 color : COLOR;
-			float2 tex : TEXCOORD;
 		};
-		struct VSOut {
+		struct VSDrawOut {
 			float4 position : SV_POSITION;
 			float4 color : COLOR;
-			float2 tex : TEXCOORD;
 		};
-		VSOut VS(VSIn ipt) {
-			VSOut opt = (VSOut)ipt;
+		
+		VSTextureOut VSTexture(VSTextureIn ipt) {
+			VSTextureOut opt = (VSTextureOut)ipt;
 			return opt;
 		}
+		VSDrawOut VSDraw(VSDrawIn ipt) {
+			VSDrawOut opt = (VSDrawOut)ipt;
+			return opt;
+		}
+		
 		SamplerState color_sampler : register(s0);
 		Texture2D color_map : register(t0);
-		float4 PS_Texture(VSOut data) : SV_TARGET {
+		float4 PS_Texture(VSTextureOut data) : SV_TARGET {
 			return color_map.Sample(color_sampler, data.tex);
 		}
-		float4 PS_Color(VSOut data) : SV_TARGET {
+		float4 PS_Color(VSDrawOut data) : SV_TARGET {
 			return data.color;
 		}
 	})
@@ -50,25 +62,29 @@ Program("Renderer2D") {
 		}
 	}
 	Section("basic") {
-		set_vshader("VS")
+		set_vshader("VSDraw")
 		set_blender("blender")
 	}
 	Section("draw_solid") {
+		set_vshader("VSDraw")
 		set_pshader("PS_Color")
-		set_ps_sampler(0, nil)
+		#set_ps_sampler(0, nil)
 		set_rasterizer("RS_fill_solid")
 	}
 	Section("draw_wireframe") {
+		set_vshader("VSDraw")
 		set_pshader("PS_Color")
-		set_ps_sampler(0, nil)
+		#set_ps_sampler(0, nil)
 		set_rasterizer("RS_fill_wireframe")
 	}
 	Section("texturingHQ") {
+		set_vshader("VSTexture");
 		set_pshader("PS_Texture")
 		set_ps_sampler(0, "HQSampler")
 	}
 	Section("texturingLQ") {
 		set_pshader("PS_Texture")
+		set_vshader("VSTexture");
 		set_ps_sampler(0, "LQSampler")
 	}
 }

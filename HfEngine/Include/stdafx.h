@@ -18,7 +18,6 @@
 #include <thread>
 #include <sstream> 
 #include <mutex>
-#include "./Utility/NativeThread.h"  //Please use relative path in header files
 #include "./Utility/embeddedruby.h"
 #include <windows.h>
 #include <stdio.h>

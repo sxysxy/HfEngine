@@ -214,10 +214,11 @@ namespace Ext {
             //-----
             static VALUE set_vs_sampler(VALUE self, VALUE slot, VALUE s) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
-                if (!rb_obj_is_kind_of(s, Ext::DX::Shader::klass_sampler)) {
+                auto obj = GetNULLPTRableNativeObject<::Sampler>(s);
+                if (obj && !rb_obj_is_kind_of(s, Ext::DX::Shader::klass_sampler)) {
                     rb_raise(rb_eArgError, "set_sampler : the second param should be a Sampler");
                 }
-                rp->SetVSSampler(FIX2INT(slot), GetNULLPTRableNativeObject<::Sampler>(s));
+                rp->SetVSSampler(FIX2INT(slot), obj);
                 return self;
             }
             static VALUE set_vs_cbuffer(VALUE self, VALUE slot, VALUE cb) {
@@ -401,6 +402,8 @@ namespace Ext {
                 return self;
             }
             static VALUE RE_push(VALUE self, VALUE rp) {
+         //       if(!rb_obj_is_kind_of(rp, DX::RenderPipeline::klass))
+         //           rb_raise(rb_eArgError, "RemoteRenderExecutive#push : param should be a DX::RenderPipeline");
                 GetNativeObject<RemoteRenderExecutive>(self)->Push(GetNativeObject<::RenderPipeline>(rp));
                 return self;
             }

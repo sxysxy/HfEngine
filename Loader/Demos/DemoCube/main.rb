@@ -3,7 +3,7 @@ require 'libcore.rb'
 include DX
 CURRENT_PATH = File.dirname(__FILE__)
 SHADER_FILENAME = File.join(CURRENT_PATH, "shaders.rb")
-FPS = 144
+FPS = 2500
 HFWindow.new("Demo", 500, 500) { 
     show
 	set_handler(:on_closed) {exit_mainloop}

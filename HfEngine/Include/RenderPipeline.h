@@ -6,6 +6,7 @@
 #include "Shaders.h"
 #include "Texture2D.h"
 #include "SwapChain.h"
+//#include "Utility\concurrentqueue.h"
 
 class RenderPipeline : public Utility::ReferredObject {
 public:
@@ -112,6 +113,7 @@ public:
 class RemoteRenderExecutive : public Utility::ReferredObject {
     std::thread render_thread;
     std::mutex queue_lock;
+    //moodycamel::ConcurrentQueue<ID3D11CommandList *> list_queue;
     std::queue<ID3D11CommandList *> list_queue;
     Utility::SleepFPSTimer timer;
     bool exit_flag;
@@ -130,14 +132,13 @@ public:
         render_thread = std::thread([this]() {
             ResetFPS(fps);
             while (!exit_flag) {
-                if (!list_queue.empty()) {
+                ID3D11CommandList *clist = nullptr;
+                if(!list_queue.empty()){
                     queue_lock.lock();
-                    while (!list_queue.empty()) {
-                        auto list = list_queue.front();
-                        if(list){
-                            device->native_immcontext->ExecuteCommandList(list, false);
-                            list->Release();
-                        }
+                    while (!list_queue.empty()){
+                        clist = list_queue.front();
+                        device->native_immcontext->ExecuteCommandList(clist, false);
+                        clist->Release();
                         list_queue.pop();
                     }
                     queue_lock.unlock();
@@ -169,6 +170,7 @@ public:
         }
         device.Release();
         swapchain.Release();
+        //list_queue.~ConcurrentQueue();
     }
     virtual void Release() {
         UnInitialize();
