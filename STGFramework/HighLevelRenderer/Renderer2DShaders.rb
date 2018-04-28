@@ -1,5 +1,8 @@
 Program("Renderer2D") {
 	Code(%{
+		cbuffer viewport : register(b0) {
+			float vp_x, vp_y, vp_w, vp_h;
+		};
 		struct VSTextureIn {
 			float4 position : POSITION;
 			float2 tex : TEXCOORD;
@@ -22,7 +25,12 @@ Program("Renderer2D") {
 			return opt;
 		}
 		VSDrawOut VSDraw(VSDrawIn ipt) {
-			VSDrawOut opt = (VSDrawOut)ipt;
+			VSDrawOut opt;
+			opt.position.x = ipt.position.x * 2.0 / vp_w - 1.0f;
+			opt.position.y = -(ipt.position.y * 2.0 / vp_h) + 1.0f;
+			opt.position.z = ipt.position.z;
+			opt.position.w = 1.0f;
+			opt.color = ipt.color;
 			return opt;
 		}
 		
@@ -60,9 +68,13 @@ Program("Renderer2D") {
 			set_cull_mode DX::CULL_NONE
 			set_fill_mode DX::FILL_WIREFRAME
 		}
+		ConstantBuffer("viewport") {
+			set_size 16
+		}
 	}
 	Section("basic") {
 		set_vshader("VSDraw")
+		set_vs_cbuffer(0, "viewport")
 		set_blender("blender")
 	}
 	Section("draw_solid") {

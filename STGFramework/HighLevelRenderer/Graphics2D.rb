@@ -1,6 +1,12 @@
 module Graphics
 	def self.init
-		@fps = $config[:graphics].fps or 60
+		if $config[:graphics].fps_vsync
+			@fps = $device.query_monitor_info[:refresh_frequency]
+		elsif $config[:graphics].fps
+			@fps = Integer($config[:graphics].fps)
+		else
+			@fps = 60
+		end
 		
 		@swap_chain = DX::SwapChain.new($device, $window)
 		@swap_chain.set_fullscreen if $config[:graphics].fullscreen 

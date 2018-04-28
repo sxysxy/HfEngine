@@ -386,6 +386,7 @@ class SFProgram < SFData
 	attr_accessor :section
 	attr_accessor :input_layout
 	
+=begin
 	#copy. It does nnt copy constant buffer's data.
 	def copy(device)
 		p = SFProgram.new
@@ -396,7 +397,7 @@ class SFProgram < SFData
 		p.resource = @resource.copy(device) if @resource
 		return p
 	end
-	
+=end
 	def release
 		@shaders.each{|name, shader| shader.release}
 		@resource.release
@@ -414,7 +415,7 @@ class SFResource < SFData
 		@cbuffer = {}
 		@rasterizer = {}
 	end
-	
+=begin
 	#copy. It does nnt copy constant buffer's data.
 	def copy(device)
 		r = SFResource.new
@@ -443,6 +444,7 @@ class SFResource < SFData
 		}
 		return r
 	end
+=end
 	
 	def release
 		[@blender, @sampler, @cbuffer, @rasterizer].each {|e|

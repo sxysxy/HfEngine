@@ -30,5 +30,4 @@ SceneManager.run(TITLE_CLASS)
 
 #do release
 Graphics.shutdown
-Renderer2D.release_basic_resource
 $device.release

@@ -7,7 +7,8 @@ Config("graphics") {
     title "STG Test"
     resolution 640, 480
     driver_type :HARDWARE
-    fps 60
+	#fps 60
+    fps_vsync true
     fullscreen false
 }
 

@@ -33,6 +33,15 @@ void D3DDevice::QueryAdapterInfo(DXGI_ADAPTER_DESC *d) {
     native_dxgi_adapter->GetDesc(d);
 }
 
+void D3DDevice::QueryMonitorInfo(MonitorInfo *info) {
+    info->width = GetSystemMetrics(SM_CXSCREEN);
+    info->height = GetSystemMetrics(SM_CYSCREEN);
+    
+    DEVMODE dvm;
+    EnumDisplaySettings(nullptr, ENUM_CURRENT_SETTINGS, &dvm);
+    info->refresh_frequency = dvm.dmDisplayFrequency;
+}
+
 std::vector<std::wstring> D3DDevice::EnumAdapters() {
     UINT i = 0;
     IDXGIOutput *opt;
@@ -117,6 +126,17 @@ namespace Ext {
                 return arr;
             }
 
+            static VALUE query_monitor_info(VALUE self) {
+                auto d = GetNativeObject<::D3DDevice>(self);
+                MonitorInfo info;
+                d->QueryMonitorInfo(&info);
+                VALUE h = rb_hash_new();
+                rb_hash_aset(h, RB_ID2SYM(rb_intern("width")), INT2FIX(info.width));
+                rb_hash_aset(h, RB_ID2SYM(rb_intern("height")), INT2FIX(info.height));
+                rb_hash_aset(h, RB_ID2SYM(rb_intern("refresh_frequency")), INT2FIX(info.refresh_frequency));
+                return h;
+            }
+             
             static VALUE acquire_immcontext(VALUE self, VALUE occupy) {
                 auto d = GetNativeObject<::D3DDevice>(self);
                 d->AcquireImmdiateContext(occupy == Qtrue);
@@ -131,6 +151,7 @@ namespace Ext {
                 rb_define_const(module, "SIMULATED_DEVICE", INT2FIX(D3D_DRIVER_TYPE_WARP));
                 rb_define_method(klass, "initialize", (rubyfunc)initialize, -1);
                 rb_define_method(klass, "query_adapter_info", (rubyfunc)query_adapter_info, 0);
+                rb_define_method(klass, "query_monitor_info", (rubyfunc)query_monitor_info, 0);
                 rb_define_method(klass, "enum_adapters", (rubyfunc)enum_adapters, 0);
                 rb_define_method(klass, "acquire_immcontext", (rubyfunc)acquire_immcontext, 1);
             }

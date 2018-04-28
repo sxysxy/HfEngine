@@ -4,6 +4,11 @@
 
 class RenderPipeline;
 
+struct MonitorInfo {
+    int width, height;
+    int refresh_frequency;
+};
+
 class D3DDevice : public Utility::ReferredObject {
 public:
     ComPtr<ID3D11Device> native_device;
@@ -26,6 +31,7 @@ public:
     }
 
     void QueryAdapterInfo(DXGI_ADAPTER_DESC *desc);
+    void QueryMonitorInfo(MonitorInfo *info);
     std::vector<std::wstring> EnumAdapters();
 
     void AcquireImmdiateContext(bool occupy = true);

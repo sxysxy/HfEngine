@@ -17,9 +17,8 @@ class Renderer2D < DX::RenderPipeline
 	#quality = 0, low quality
 	def initialize(quality = 1)
 		super($device)
-		
-		@@__sf__ ||= HFSF.loadsf_file($device, SHADERS_FILE)[0]
-		@sf = @@__sf__.copy($device)
+	
+		@sf = HFSF.loadsf_file($device, SHADERS_FILE)[0]
 		@quality = quality
 		@sf.section[:basic].apply(self)
 		@sf.input_layout.apply(self)
@@ -44,35 +43,35 @@ class Renderer2D < DX::RenderPipeline
 		end
 	end
 	
+	def set_viewport(r)
+		super(r)
+		update_subresource @sf.resource.cbuffer[:viewport], [viewport.x, viewport.y, viewport.w, viewport.h].pack("f*")
+	end
+	
 	#draw rect
 	def draw_rect(rect, color)
 		pre_draw_solid
-=begin
-		    int midx = viewport.w / 2;
-    int midy = viewport.h / 2;
-#pragma warning(push)
-#pragma warning(disable:4244)
-    float x1 = 1.0 * (rect.x - midx) / midx;
-    float x2 = 1.0 * (rect.x + rect.w - midx) / midx;
-    float y2 = -1.0 * (rect.y - midy) / midy;
-    float y1 = -1.0 * (rect.y + rect.h - midy) / midy;
-#pragma warning(pop)
-    struct VertexXXX {
-        float pos[3];
-        float tex[2];
-    }vecs[] = {
-        {{ x1, y1, _z_depth },{ 0.0, 1.0 }},
-    {{ x1, y2, _z_depth },{ 0.0, 0.0 }},
-    {{ x2, y1, _z_depth },{ 1.0, 1.0 }},
-    {{ x2, y2, _z_depth },{ 1.0, 0.0 }}
-    };
-=end
-		x1 = (rect.x * 2.0) / viewport.w - 1.0;
+		#LT
+		#x1 = (rect.x * 2.0) / viewport.w
+		#y1 = (rect.y * 2.0) / viewport.h
+		#RT
+		#x2 = (rect.x + rect.w) * 2.0 / viewport.w
+		#y2 = rect.y * 2.0 / viewport.h
+		#LB
+		#x3 = (rect.x * 2.0) / viewport.w
+		#y3 = (rect.y + rect.h) * 2.0 / viewport.h
+		#RB
+		#x4 = (rect.x + rect.w) * 2.0 / viewport.w
+		#y4 = (rect.y + rect.h) * 2.0 / viewport.h
 		
-		vecs = [[-0.5, 0.5, 0], [color.r, color.g, color.b, color.a],
-				[0.5, 0.5, 0], [color.r, color.g, color.b, color.a],
-				[-0.5, -0.5, 0], [color.r, color.g, color.b, color.a],
-				[0.5, -0.5, 0], [color.r, color.g, color.b, color.a]].flatten.pack("f*")
+		#vecs = [[x1, y1, 0], [color.r, color.g, color.b, color.a],
+		#		[x2, y2, 0], [color.r, color.g, color.b, color.a],
+		#		[x3, y3, 0], [color.r, color.g, color.b, color.a],
+		#		[x4, y4, 0], [color.r, color.g, color.b, color.a]].flatten.pack("f*")
+		vecs = [[Float(rect.x), Float(rect.y), 0], [color.r, color.g, color.b, color.a],
+				[Float(rect.x+rect.w), Float(rect.y), 0], [color.r, color.g, color.b, color.a],
+				[Float(rect.x), Float(rect.y+rect.h), 0], [color.r, color.g, color.b, color.a],
+				[Float(rect.x+rect.w), Float(rect.y+rect.h), 0], [color.r, color.g, color.b, color.a]].flatten.pack("f*")
 		vb = DX::VertexBuffer.new($device, 7*4, 4, vecs)
 		set_topology(DX::TOPOLOGY_TRIANGLESTRIP)
 		set_vbuffer(vb)
@@ -84,7 +83,9 @@ class Renderer2D < DX::RenderPipeline
 		Graphics.re.push(self)
 	end
 	
-	def self.release_basic_resource
-		@@__sf__.release if @@__sf__
+	
+	def release
+		super
+		@sf.release
 	end
 end
