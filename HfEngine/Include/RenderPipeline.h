@@ -8,13 +8,34 @@
 #include "SwapChain.h"
 //#include "Utility\concurrentqueue.h"
 
+class InputLayout : public Utility::ReferredObject {
+public:
+    ComPtr<ID3D11InputLayout> native_input_layout;
+
+    void Initialize(D3DDevice *device, const std::string *idents,
+        const DXGI_FORMAT *formats, int count, VertexShader *vs);
+    void Initialize(D3DDevice *device, const std::initializer_list<std::string> &idents,
+        const std::initializer_list<DXGI_FORMAT> &formats, VertexShader *vs) {
+        int len1 = (int)(idents.end() - idents.begin());
+        int len2 = (int)(formats.end() - formats.begin());
+        if (len1 != len2)
+            throw std::runtime_error("InputLayout: idents and formats should be in the same length");
+        Initialize(device, idents.begin(), formats.begin(), len1, vs);
+    }
+    void UnInitialize() {
+        native_input_layout.ReleaseAndGetAddressOf();
+    }
+    virtual void Release() {
+        UnInitialize();
+    }
+};
+
 class RenderPipeline : public Utility::ReferredObject {
 public:
     Utility::ReferPtr<D3DDevice> device;
     ComPtr<ID3D11DeviceContext> native_context;
 
     //drawing renderer pipeline
-    ComPtr<ID3D11InputLayout> native_input_layout;
     Utility::ReferPtr<VertexBuffer> vbuffer;
 
     //shaders
@@ -41,6 +62,12 @@ public:
         if(len1 != len2)
             throw std::runtime_error("RenderPipeline::SetInputLayout: idents and formats should be in the same length");
         SetInputLayout(device, idents.begin(), formats.begin(), len1);
+    }
+    void SetInputLayout(InputLayout *ly) {
+#ifdef _DEBUG
+        if(!ly)throw std::invalid_argument("RenderPipeline::SetInputLayout: param can't be nullptr");
+#endif
+        native_context->IASetInputLayout(ly->native_input_layout.Get());
     }
     void SetVertexBuffer(VertexBuffer *vb);
     void SetIndexBuffer(IndexBuffer *ib);
@@ -95,7 +122,6 @@ public:
 
     void UnInitialize() {
         native_context.ReleaseAndGetAddressOf();
-        native_input_layout.ReleaseAndGetAddressOf();
         device.Release();
         vshader.Release();
         pshader.Release();
@@ -182,6 +208,7 @@ namespace Ext {
         namespace RenderPipeline {
             extern VALUE klass;
             extern VALUE klass_remote_render_executive;
+            extern VALUE klass_input_layout;
             void Init();
         }
     }

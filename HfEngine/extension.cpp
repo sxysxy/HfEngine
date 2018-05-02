@@ -5,6 +5,37 @@
 #include "Include\MathTool.h"
 
 namespace Ext {
+
+#ifdef _DEBUG
+    void CheckArgs(int argc, const VALUE *argv, const std::initializer_list<ArgType> &klasses) {
+        const int xlen = argc;
+        const VALUE *pobjs = argv;
+        const ArgType *t = klasses.begin();
+        for (int i = 0; i < xlen; i++) {
+            if (t[i].nilok && NIL_P(pobjs[i]))continue;
+
+            if (!NIL_P(pobjs[i]) && !rb_obj_is_kind_of(pobjs[i], t[i].klass)) {
+                static char buf[100];
+#ifdef _WIN64
+                sprintf_s(buf, "ObjectSpace._id2ref(%ull).to_s", t[i].klass / 2);
+#else _WIN32
+                sprintf_s(buf, "ObjectSpace._id2ref(%u).to_s", t[i].klass / 2);
+#endif
+                int p = 0;
+                VALUE klass_name = rb_eval_string_protect(buf, &p);
+#ifdef _WIN64
+                sprintf_s(buf, "ObjectSpace._id2ref(%ull).to_s", rb_obj_class(pobjs[i]) / 2);
+#else _WIN32
+                sprintf_s(buf, "ObjectSpace._id2ref(%u).to_s", rb_obj_class(pobjs[i]) / 2);
+#endif
+                VALUE arg_type_name = rb_eval_string_protect(buf, &p);
+                rb_raise(rb_eArgError, "Param No.%d should be a %s but got a %s", i + 1, 
+                    rb_string_value_cstr(&klass_name), rb_string_value_cstr(&arg_type_name));
+            }
+        }
+    }
+#endif
+
     VALUE rb_mModule;
     VALUE module_release;
 

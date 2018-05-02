@@ -88,11 +88,7 @@ namespace Ext {
                     rb_raise(rb_eArgError, "SwapChain::initialize:Wrong number of Arguments, expecting (2..3) \
                      (device, window, [fullscreen]), but given %d", argc);
                 }
-
-                if (!(rb_obj_is_kind_of(argv[0], Ext::DX::D3DDevice::klass)) ||
-                    !(rb_obj_is_kind_of(argv[1], Ext::HFWindow::klass))) {
-                    rb_raise(rb_eArgError, "SwapChain::initialize: Invalid Argument type");
-                }
+                CheckArgs(2, argv, {DX::D3DDevice::klass, HFWindow::klass});
 
                 auto sc = GetNativeObject<::SwapChain>(self);
                 try {

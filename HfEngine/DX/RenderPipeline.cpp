@@ -2,14 +2,17 @@
 
 void RenderPipeline::SetInputLayout(D3DDevice *device, const std::string *idents, 
                                            const DXGI_FORMAT *formats, int count) {
+#ifdef _DEBUG
     if (!vshader) {
         throw std::runtime_error("No vertex shader provided, you can not set input layout now");
     }
+#endif
     std::vector<D3D11_INPUT_ELEMENT_DESC> ied;
     for (int i = 0; i < count; i++) {
         ied.push_back(D3D11_INPUT_ELEMENT_DESC{ idents[i].c_str(), 0, formats[i], 0,
             D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 });
     }
+    ComPtr<ID3D11InputLayout> native_input_layout;
     HRESULT hr = S_FALSE;
     if (FAILED(hr = device->native_device->CreateInputLayout(ied.data(), count, vshader->byte_code->GetBufferPointer(),
         vshader->byte_code->GetBufferSize(), &native_input_layout))) {
@@ -18,6 +21,21 @@ void RenderPipeline::SetInputLayout(D3DDevice *device, const std::string *idents
     
     native_context->IASetInputLayout(native_input_layout.Get());
 }
+
+void InputLayout::Initialize(D3DDevice *device, const std::string *idents,
+    const DXGI_FORMAT *formats, int count, VertexShader *vs) {
+    std::vector<D3D11_INPUT_ELEMENT_DESC> ied;
+    for (int i = 0; i < count; i++) {
+        ied.push_back(D3D11_INPUT_ELEMENT_DESC{ idents[i].c_str(), 0, formats[i], 0,
+            D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 });
+    }
+    HRESULT hr = S_FALSE;
+    if (FAILED(hr = device->native_device->CreateInputLayout(ied.data(), count, vs->byte_code->GetBufferPointer(),
+        vs->byte_code->GetBufferSize(), &native_input_layout))) {
+        MAKE_ERRMSG<std::runtime_error>("Fail to Create InputLayout, Error code:", hr);
+    }
+}
+
 void RenderPipeline::SetVertexBuffer(VertexBuffer *vb) {
     vbuffer = vb;
     UINT stride = vb->size_per_vertex;
@@ -109,6 +127,7 @@ namespace Ext {
         namespace RenderPipeline {
             VALUE klass;
             VALUE klass_remote_render_executive;
+            VALUE klass_input_layout;
 
             static void delete_rp(::RenderPipeline *rp) {
                 rp->SubRefer();
@@ -137,9 +156,8 @@ namespace Ext {
             }
 
             static VALUE set_input_layout(VALUE self, VALUE names, VALUE fmts) {
+                CheckArgs({ names, fmts }, {rb_cArray, rb_cArray});
                 VALUE _device = rb_iv_get(self, "@device");
-                if (!rb_obj_is_kind_of(names, rb_cArray) || !rb_obj_is_kind_of(fmts, rb_cArray))
-                    rb_raise(rb_eArgError, "RenderPipeline::set_input_layout: 2nd and 3rd params should be Array");
                 VALUE *pnames = (VALUE *)RARRAY_PTR(names);
                 VALUE *pfmts = (VALUE *)RARRAY_PTR(fmts);
                 int len1 = RARRAY_LEN(names);
@@ -164,6 +182,7 @@ namespace Ext {
             }
             
             static VALUE set_vshader(VALUE self, VALUE s) {
+                CheckArgs({ s }, {Shader::klass_vshader});
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 auto sd = GetNULLPTRableNativeObject<::VertexShader>(s);
                 rp->SetVertexShader(sd);
@@ -171,6 +190,7 @@ namespace Ext {
                 return self;
             }
             static VALUE set_pshader(VALUE self, VALUE s) {
+                CheckArgs({ s }, { Shader::klass_pshader });
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 auto sd = GetNULLPTRableNativeObject<::PixelShader>(s);
                 rp->SetPixelShader(sd);
@@ -178,6 +198,7 @@ namespace Ext {
                 return self;
             }
             static VALUE set_gshader(VALUE self, VALUE s) {
+                CheckArgs({ s }, { Shader::klass_gshader });
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 auto sd = GetNULLPTRableNativeObject<::GeometryShader>(s);
                 rp->SetGeometryShader(sd);
@@ -200,11 +221,13 @@ namespace Ext {
                 return self;
             }
             static VALUE set_vbuffer(VALUE self, VALUE vb) {
+                CheckArgs({ vb }, { D3DBuffer::klass_vbuffer });
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 rp->SetVertexBuffer(GetNativeObject<VertexBuffer>(vb));
                 return self;
             }
             static VALUE set_ibuffer(VALUE self, VALUE ib) {
+                CheckArgs({ ib }, { D3DBuffer::klass_ibuffer });
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 rp->SetIndexBuffer(GetNativeObject<IndexBuffer>(ib));
                 return self;
@@ -213,28 +236,21 @@ namespace Ext {
 
             //-----
             static VALUE set_vs_sampler(VALUE self, VALUE slot, VALUE s) {
+                CheckArgs({ slot, s }, { rb_cInteger, ArgType(Shader::klass_sampler, true) });
                 auto rp = GetNativeObject<::RenderPipeline>(self);
-                auto obj = GetNULLPTRableNativeObject<::Sampler>(s);
-                if (obj && !rb_obj_is_kind_of(s, Ext::DX::Shader::klass_sampler)) {
-                    rb_raise(rb_eArgError, "set_sampler : the second param should be a Sampler");
-                }
-                rp->SetVSSampler(FIX2INT(slot), obj);
+                rp->SetVSSampler(FIX2INT(slot), GetNULLPTRableNativeObject<::Sampler>(s));
                 return self;
             }
             static VALUE set_vs_cbuffer(VALUE self, VALUE slot, VALUE cb) {
+                CheckArgs({ slot, cb }, {rb_cInteger, ArgType(D3DBuffer::klass_cbuffer, true)});
                 auto rp = GetNativeObject<::RenderPipeline>(self);
-                if (!rb_obj_is_kind_of(cb, Ext::DX::D3DBuffer::klass_cbuffer)) {
-                    rb_raise(rb_eArgError, "set_cbuffer : the second param should be a ConstantBuffer");
-                }
                 rp->SetVSCBuffer(FIX2INT(slot), GetNULLPTRableNativeObject<::ConstantBuffer>(cb));
                 return self;
             }
             
             static VALUE set_vs_resource(VALUE self, VALUE slot, VALUE res) {
+                CheckArgs({ slot, res }, {rb_cInteger, ArgType(Texture::klass_texture2d, true)});
                 auto rp = GetNativeObject<::RenderPipeline>(self);
-                if (!rb_obj_is_kind_of(res, Ext::DX::Texture::klass_texture2d)) {
-                    rb_raise(rb_eArgError, "set_resource : the second param should be a Texture2D");
-                }
                 rp->SetVSResource(FIX2INT(slot), GetNULLPTRableNativeObject<::Texture2D>(res));
                 return self;
             }
@@ -242,52 +258,42 @@ namespace Ext {
             
             //-----
             static VALUE set_ps_sampler(VALUE self, VALUE slot, VALUE s) {
+                CheckArgs({ slot, s }, { rb_cInteger, ArgType(Shader::klass_sampler, true) });
                 auto rp = GetNativeObject<::RenderPipeline>(self);
-                if (!rb_obj_is_kind_of(s, Ext::DX::Shader::klass_sampler)) {
-                    rb_raise(rb_eArgError, "set_sampler : the second param should be a Sampler");
-                }
                 rp->SetPSSampler(FIX2INT(slot), GetNULLPTRableNativeObject<::Sampler>(s));
                 return self;
             }
             static VALUE set_ps_cbuffer(VALUE self, VALUE slot, VALUE cb) {
+                CheckArgs({ slot, cb }, { rb_cInteger, ArgType(D3DBuffer::klass_cbuffer, true) });
                 auto rp = GetNativeObject<::RenderPipeline>(self);
-                if (!rb_obj_is_kind_of(cb, Ext::DX::D3DBuffer::klass_cbuffer)) {
-                    rb_raise(rb_eArgError, "set_cbuffer : the second param should be a ConstantBuffer");
-                }
                 rp->SetPSCBuffer(FIX2INT(slot), GetNULLPTRableNativeObject<::ConstantBuffer>(cb));
                 return self;
             }
+
             static VALUE set_ps_resource(VALUE self, VALUE slot, VALUE res) {
+                CheckArgs({ slot, res }, { rb_cInteger, ArgType(Texture::klass_texture2d, true) });
                 auto rp = GetNativeObject<::RenderPipeline>(self);
-                if (!rb_obj_is_kind_of(res, Ext::DX::Texture::klass_texture2d)) {
-                    rb_raise(rb_eArgError, "set_resource : the second param should be a Texture2D");
-                }
                 rp->SetPSResource(FIX2INT(slot), GetNULLPTRableNativeObject<::Texture2D>(res));
                 return self;
             }
             
             // --------
             static VALUE set_gs_sampler(VALUE self, VALUE slot, VALUE s) {
+                CheckArgs({ slot, s }, { rb_cInteger, ArgType(Shader::klass_sampler, true) });
                 auto rp = GetNativeObject<::RenderPipeline>(self);
-                if (!rb_obj_is_kind_of(s, Ext::DX::Shader::klass_sampler)) {
-                    rb_raise(rb_eArgError, "set_sampler : the second param should be a Sampler");
-                }
                 rp->SetGSSampler(FIX2INT(slot), GetNULLPTRableNativeObject<::Sampler>(s));
                 return self;
             }
             static VALUE set_gs_cbuffer(VALUE self, VALUE slot, VALUE cb) {
+                CheckArgs({ slot, cb }, { rb_cInteger, ArgType(D3DBuffer::klass_cbuffer, true) });
                 auto rp = GetNativeObject<::RenderPipeline>(self);
-                if (!rb_obj_is_kind_of(cb, Ext::DX::D3DBuffer::klass_cbuffer)) {
-                    rb_raise(rb_eArgError, "set_cbuffer : the second param should be a ConstantBuffer");
-                }
                 rp->SetGSCBuffer(FIX2INT(slot), GetNULLPTRableNativeObject<::ConstantBuffer>(cb));
                 return self;
             }
+
             static VALUE set_gs_resource(VALUE self, VALUE slot, VALUE res) {
+                CheckArgs({ slot, res }, { rb_cInteger, ArgType(Texture::klass_texture2d, true) });
                 auto rp = GetNativeObject<::RenderPipeline>(self);
-                if (!rb_obj_is_kind_of(res, Ext::DX::Texture::klass_texture2d)) {
-                    rb_raise(rb_eArgError, "set_resource : the second param should be a Texture2D");
-                }
                 rp->SetGSResource(FIX2INT(slot), GetNULLPTRableNativeObject<::Texture2D>(res));
                 return self;
             }
@@ -296,10 +302,12 @@ namespace Ext {
             static VALUE set_viewport(int argc, VALUE *argv, VALUE self) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 if (argc == 1) {
+                    CheckArgs({argv[0]}, {DX::klass_HFRect});
                     auto rect = GetNativeObject<::Utility::Rect>(argv[0]);
                     rp->SetViewport(*rect);
                 }
                 else if (argc == 3) {
+                    CheckArgs(3, argv, {DX::klass_HFRect, rb_cFloat, rb_cFloat});
                     auto rect = GetNativeObject<::Utility::Rect>(argv[0]);
                     rp->SetViewport(*rect, (float)rb_float_value(argv[1]), (float)rb_float_value(argv[2]));
                 }
@@ -331,6 +339,7 @@ namespace Ext {
                 return rb_iv_get(self, "@blender");
             }
             static VALUE set_rasterizer(VALUE self, VALUE r) {
+                CheckArgs({ r }, { ArgType{Shader::klass_rasterizer, true} });
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 rp->SetRasterizer(GetNULLPTRableNativeObject<Rasterizer>(r));
                 rb_iv_set(self, "@rasterizer", r);
@@ -343,6 +352,10 @@ namespace Ext {
             static VALUE clear_target(int argc, VALUE *argv, VALUE self) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 if(argc < 1 || argc > 2)rb_raise(rb_eArgError, "RenderPipeline::clear_target(color, [depth]): expecting(1..2) args but got %d", argc);
+#ifdef _DEBUG
+               if (!rb_obj_is_kind_of(argv[0], DX::klass_HFColor))
+                   rb_raise(rb_eArgError, "RenderPipeline::clear_target(color, [depth]), First param should be a HFColorRGBA");
+#endif
                 auto color = GetNativeObject<Utility::Color>(argv[0]);
                 if(argc == 2)
                     rp->Clear(*color, (float)rb_float_value(argv[1]));
@@ -384,9 +397,6 @@ namespace Ext {
             }
 
             //------------------------
-            void DeleteRE(RemoteRenderExecutive *re) {
-                re->SubRefer();
-            }
             static VALUE RE_initialize(VALUE self, VALUE device, VALUE swp, VALUE fps) {
                 auto re = GetNativeObject<RemoteRenderExecutive>(self);
                 re->Initialize(GetNativeObject<::D3DDevice>(device), 
@@ -405,6 +415,11 @@ namespace Ext {
          //       if(!rb_obj_is_kind_of(rp, DX::RenderPipeline::klass))
          //           rb_raise(rb_eArgError, "RemoteRenderExecutive#push : param should be a DX::RenderPipeline");
                 GetNativeObject<RemoteRenderExecutive>(self)->Push(GetNativeObject<::RenderPipeline>(rp));
+                return self;
+            }
+
+            //-------
+            static VALUE LY_initialize(VALUE self, VALUE names, VALUE fmts, VALUE vs) {
                 return self;
             }
 
@@ -487,15 +502,17 @@ namespace Ext {
                 //RE
                 klass_remote_render_executive = rb_define_class_under(module, "RemoteRenderExecutive", rb_cObject);
                 rb_include_module(klass_remote_render_executive, module_release);
-                rb_define_alloc_func(klass_remote_render_executive, [](VALUE k)->VALUE {
-                   auto re = new RemoteRenderExecutive;
-                   re->AddRefer();
-                   return Data_Wrap_Struct(k, nullptr, DeleteRE, re);
-                });
+                rb_define_alloc_func(klass_remote_render_executive, RefObjNew<::RemoteRenderExecutive>);
                 rb_define_method(klass_remote_render_executive, "initialize", (rubyfunc)RE_initialize, 3);
                 rb_define_method(klass_remote_render_executive, "reset_fps", (rubyfunc)RE_reset_fps, 1);
                 rb_define_method(klass_remote_render_executive, "push", (rubyfunc)RE_push, 1);
                 rb_define_method(klass_remote_render_executive, "terminate", (rubyfunc)RE_terminate, 0);
+
+
+                klass_input_layout = rb_define_class_under(module, "InputLayout", rb_cObject);
+                rb_include_module(klass_input_layout, module_release);
+                rb_define_alloc_func(klass_input_layout, RefObjNew<::InputLayout>);
+                rb_define_method(klass_input_layout, "initialize", (rubyfunc)LY_initialize, 3);
             }
         }
     }

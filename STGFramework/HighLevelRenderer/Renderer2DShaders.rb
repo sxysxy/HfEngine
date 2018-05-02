@@ -93,7 +93,7 @@ Program("Texture2D") {
 		}
 		SamplerState color_sampler : register(s0);
 		Texture2D color_map : register(t0);
-		float4 PS_Texture(VSTextureOut data) : SV_TARGET {
+		float4 PSTexture(VSTextureOut data) : SV_TARGET {
 			return color_map.Sample(color_sampler, data.tex);
 		}
 	})
@@ -128,11 +128,11 @@ Program("Texture2D") {
 		set_blender("blender")
 	}
 	Section("texturingHQ") {
-		set_pshader("PS_Texture")
+		set_pshader("PSTexture")
 		set_ps_sampler(0, "HQSampler")
 	}
 	Section("texturingLQ") {
-		set_pshader("PS_Texture")
+		set_pshader("PSTexture")
 		set_ps_sampler(0, "LQSampler")
 	}
 	

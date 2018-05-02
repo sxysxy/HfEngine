@@ -587,6 +587,9 @@ def self.load_program(device, p)
 		#program.byte_code[info[0].to_sym] = p[:compiled][info[0].to_sym].pack("C*") 
 				#info[0] is shader entry's name, info[1] is the class(such as VertexShader)
 		a = p[:compiled][info[0].to_sym]
+		if !a
+			raise GeneratingLogicError, "Can not find shader : #{info[0].to_s}"
+		end
 		byte_code = a.pack("C*") 
 		program.shaders[info[0].to_sym] = info[1].load_binary(device, byte_code, a.size)
 	}
