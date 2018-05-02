@@ -46,19 +46,23 @@ void RenderPipeline::SetIndexBuffer(IndexBuffer *ib) {
     native_context->IASetIndexBuffer(ib->native_buffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 }
 
+static ID3D11SamplerState * empty_sampler[1] = { nullptr };
+static ID3D11Buffer * const empty_buffer[1] = { nullptr };
+static ID3D11ShaderResourceView * const empty_shader_resource[1] = { nullptr };
+
 //VS
 void RenderPipeline::SetVertexShader(VertexShader *vs) {
     vshader = vs;
     native_context->VSSetShader(vs ? vs->native_vshader.Get() : nullptr, 0, 0);
 }
 void RenderPipeline::SetVSSampler(int slot, Sampler * sampler) {
-    native_context->VSSetSamplers(slot, 1, sampler ? sampler->native_sampler.GetAddressOf() : nullptr);
+    native_context->VSSetSamplers(slot, 1, sampler ? sampler->native_sampler.GetAddressOf() : empty_sampler);
 }
 void RenderPipeline::SetVSCBuffer(int slot, ConstantBuffer * cbuffer) {
-    native_context->VSSetConstantBuffers(slot, 1, cbuffer ? cbuffer->native_buffer.GetAddressOf() : nullptr);
+    native_context->VSSetConstantBuffers(slot, 1, cbuffer ? cbuffer->native_buffer.GetAddressOf() : empty_buffer);
 }
 void RenderPipeline::SetVSResource(int slot, Texture2D *tex) {
-    native_context->VSSetShaderResources(slot, 1, tex ? tex->native_shader_resource_view.GetAddressOf() : nullptr);
+    native_context->VSSetShaderResources(slot, 1, tex ? tex->native_shader_resource_view.GetAddressOf() : empty_shader_resource);
 }
 
 //PS
@@ -67,13 +71,13 @@ void RenderPipeline::SetPixelShader(PixelShader *ps) {
     native_context->PSSetShader(ps ? ps->native_pshader.Get() : nullptr, 0, 0);
 }
 void RenderPipeline::SetPSSampler(int slot, Sampler * sampler) {
-    native_context->PSSetSamplers(slot, 1, sampler ? sampler->native_sampler.GetAddressOf() : nullptr);
+    native_context->PSSetSamplers(slot, 1, sampler ? sampler->native_sampler.GetAddressOf() : empty_sampler);
 }
 void RenderPipeline::SetPSCBuffer(int slot, ConstantBuffer * cbuffer) {
-    native_context->PSSetConstantBuffers(slot, 1, cbuffer ? cbuffer->native_buffer.GetAddressOf() : nullptr);
+    native_context->PSSetConstantBuffers(slot, 1, cbuffer ? cbuffer->native_buffer.GetAddressOf() : empty_buffer);
 }
 void RenderPipeline::SetPSResource(int slot, Texture2D *tex) {
-    native_context->PSSetShaderResources(slot, 1, tex ? tex->native_shader_resource_view.GetAddressOf() : nullptr);
+    native_context->PSSetShaderResources(slot, 1, tex ? tex->native_shader_resource_view.GetAddressOf() : empty_shader_resource);
 }
 
 //GS
@@ -82,13 +86,13 @@ void RenderPipeline::SetGeometryShader(GeometryShader *gs) {
     native_context->GSSetShader(gs ? gs->native_gshader.Get() : nullptr, 0, 0);
 }
 void RenderPipeline::SetGSCBuffer(int slot, ConstantBuffer *cb) {
-    native_context->GSSetConstantBuffers(slot, 1, cb ? cb->native_buffer.GetAddressOf() : nullptr);
+    native_context->GSSetConstantBuffers(slot, 1, cb ? cb->native_buffer.GetAddressOf() : empty_buffer);
 }
 void RenderPipeline::SetGSResource(int slot, Texture2D * tex) {
-    native_context->GSSetShaderResources(slot, 1, tex ? tex->native_shader_resource_view.GetAddressOf() : nullptr);
+    native_context->GSSetShaderResources(slot, 1, tex ? tex->native_shader_resource_view.GetAddressOf() : empty_shader_resource);
 }
 void RenderPipeline::SetGSSampler(int slot, Sampler * sampler) {
-    native_context->GSSetSamplers(slot, 1, sampler ? sampler->native_sampler.GetAddressOf() : nullptr);
+    native_context->GSSetSamplers(slot, 1, sampler ? sampler->native_sampler.GetAddressOf() : empty_sampler);
 }
 
 //OM

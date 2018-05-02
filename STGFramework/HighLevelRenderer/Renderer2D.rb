@@ -13,6 +13,8 @@ class Renderer2D < DX::RenderPipeline
 	PHASE_DRAW_WIREFRAME = 1
 	PHASE_DRAW_TEXTURE = 2
 	
+	attr_accessor :z_depth #z depth
+	
 	#quality = 1, high quality
 	#quality = 0, low quality
 	def initialize(quality = 1)
@@ -26,7 +28,11 @@ class Renderer2D < DX::RenderPipeline
 		set_target(Graphics.rtt)
 		set_viewport(HFRect(0, 0, $window.width, $window.height))
 		
+		@z_depth = 0.0;
 		@phase = PHASE_DRAW_SOLID - 1 #phase 
+		
+		#common vertex buffer for drawing rect or texturing
+		@common_vbuffer = DX::VertexBuffer.new($device, 9*4, 4)
 	end
 	
 	def pre_draw_solid
@@ -72,15 +78,14 @@ class Renderer2D < DX::RenderPipeline
 		#		[x2, y2, 0], [color.r, color.g, color.b, color.a],
 		#		[x3, y3, 0], [color.r, color.g, color.b, color.a],
 		#		[x4, y4, 0], [color.r, color.g, color.b, color.a]].flatten.pack("f*")
-		vecs = [[Float(rect.x), Float(rect.y), 0], [color.r, color.g, color.b, color.a],
-				[Float(rect.x+rect.w), Float(rect.y), 0], [color.r, color.g, color.b, color.a],
-				[Float(rect.x), Float(rect.y+rect.h), 0], [color.r, color.g, color.b, color.a],
-				[Float(rect.x+rect.w), Float(rect.y+rect.h), 0], [color.r, color.g, color.b, color.a]].flatten.pack("f*")
-		vb = DX::VertexBuffer.new($device, 7*4, 4, vecs)
+		vecs = [Float(rect.x), Float(rect.y), @z_depth, color.r, color.g, color.b, color.a, 0.0, 0.0,
+				Float(rect.x+rect.w), Float(rect.y), @z_depth, color.r, color.g, color.b, color.a, 0.0, 0.0,
+				Float(rect.x), Float(rect.y+rect.h), @z_depth, color.r, color.g, color.b, color.a, 0.0, 0.0,
+				Float(rect.x+rect.w), Float(rect.y+rect.h), @z_depth, color.r, color.g, color.b, color.a, 0.0, 0.0].pack("f*")
+		update_subresource @common_vbuffer, vecs
 		set_topology(DX::TOPOLOGY_TRIANGLESTRIP)
-		set_vbuffer(vb)
+		set_vbuffer(@common_vbuffer)
 		draw(0, 4)
-		vb.release
 	end
 	
 	def draw_texture(texture, dest_rect, src_rect = nil)
@@ -102,24 +107,25 @@ class Renderer2D < DX::RenderPipeline
 		x4 = x2
 		y4 = y3
 		
-		vecs = [[Float(dest_rect.x), Float(dest_rect.y),             0], [x1, y1],
-				[Float(dest_rect.x+dest_rect.w), Float(dest_rect.y), 0], [x2, y2],
-				[Float(dest_rect.x), Float(dest_rect.x+dest_rect.h), 0], [x3, y3],
-				[Float(dest_rect.x+dest_rect.w), Float(dest_rect.y+dest_rect.h), 0],[x4, y4]].flatten.pack("f*")
-		vb = DX::VertexBuffer.new($device, 5*4, 4, vecs)
+		vecs = [Float(dest_rect.x), Float(dest_rect.y),             @z_depth, 0.0, 0.0, 0.0, 0.0, x1, y1, 
+				Float(dest_rect.x+dest_rect.w), Float(dest_rect.y), @z_depth, 0.0, 0.0, 0.0, 0.0, x2, y2,
+				Float(dest_rect.x), Float(dest_rect.y+dest_rect.h), @z_depth, 0.0, 0.0, 0.0, 0.0, x3, y3,
+				Float(dest_rect.x+dest_rect.w), Float(dest_rect.y+dest_rect.h), @z_depth, 0.0, 0.0, 0.0, 0.0, x4, y4].pack("f*")
+		update_subresource @common_vbuffer, vecs
 		set_topology(DX::TOPOLOGY_TRIANGLESTRIP)
-		set_vbuffer(vb)
+		set_vbuffer(@common_vbuffer)
+		set_ps_resource(0, texture)
 		draw(0, 4)
-		vb.release
+		set_ps_resource(0, nil)
 	end
 	
 	def render
 		Graphics.re.push(self)
 	end
 	
-	
 	def release
 		super
 		@sf.release
+		@common_vbuffer.release
 	end
 end

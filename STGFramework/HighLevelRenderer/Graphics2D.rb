@@ -35,4 +35,11 @@ module Graphics
 	def self.rtt
 		@swap_chain.rtt
 	end
+	
+	def self.width
+		$window.width
+	end
+	def self.height
+		$window.height
+	end
 end
