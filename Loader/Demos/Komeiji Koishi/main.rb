@@ -9,7 +9,7 @@ YUKARI_FILENAME = File.join(CURRENT_PATH, "250px-Yukari.jpg")
 HFWindow.new("恋恋 VS 紫妈", 300, 300) {   
     show
     set_handler(:on_closed) {exit_mainloop}
-    device = D3DDevice.new(HARDWARE_DEVICE);
+    device = D3DDevice.new
     swapchain = SwapChain.new(device, self)
 	vecs = [[-1.0, -1.0], [0.0, 1.0],
             [-1.0, 1.0],  [0.0, 0.0],
@@ -51,4 +51,5 @@ HFWindow.new("恋恋 VS 紫妈", 300, 300) {
 		timer.await
     }
 	re.terminate
+	[swapchain, vb, sf, keyboard, koishi, yukari, re].each &:release
 }

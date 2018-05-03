@@ -347,29 +347,31 @@ class Compiler < Generator
 	end
 	
 	attr_accessor :device
-	def self.parse_code(*arg)
-		if(arg.size < 1 || arg.size > 2)
-			raise ArgumentError, "Compiler.parse_code(code) or Compiler.parse_code(device, code), expecting 2 args but got #{arg.size}"
-		end
+	def self.parse_code(code, device = nil)
 		x = self.new 
-		x.device = arg.size == 2 ? arg[1] : DX::D3DDevice.new(DX::HARDWARE_DEVICE)
-		code = arg[0]
+		x.device = device ? device : DX::D3DDevice.new
 		
 		if code.is_a?(String)
 			x.instance_eval(code)
 		elsif code.is_a?(Proc)
 			x.instance_exec &code
 		end
+		x.device.release if !device
 		return x
 	end
 	
 	def self.compile_code(code = nil, &block)
-		data = parse_code(code || block)	
+		d = DX::D3DDevice.new
+		data = parse_code(code || block, d)	
+		r = nil
 		begin
-			return Compiled.new(data.compile([]), "#{VERSION} #{Time.now}")
+			r = Compiled.new(data.compile([]), "#{VERSION} #{Time.now}")
 		rescue Exception => e
 			raise Exception, e.message
+		ensure
+			d.release
 		end
+		return r
 	end
 	def self.compile_file(filename)
 		compile_code(File.read(filename))

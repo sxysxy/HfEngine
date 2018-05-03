@@ -4,7 +4,7 @@ SHADERS_FILENAME = File.join(File.dirname(__FILE__), "shaders.rb")
 HFWindow.new("Geometry Shader Simple Demo", 500, 500) {
 	show
 	set_handler(:on_closed) {exit_mainloop}
-	device = D3DDevice.new(HARDWARE_DEVICE)
+	device = D3DDevice.new
 	swapchain = SwapChain.new(device, self)
 	rp = RenderPipeline.new(device)
 	sf = HFSF::loadsf_file(device, SHADERS_FILENAME)[0]

@@ -3,11 +3,11 @@ require 'libcore.rb'
 include DX
 CURRENT_PATH = File.dirname(__FILE__)
 SHADER_FILENAME = File.join(CURRENT_PATH, "shaders.rb")
-FPS = 2500
+FPS = 144
 HFWindow.new("Demo", 500, 500) { 
     show
 	set_handler(:on_closed) {exit_mainloop}
-    device = D3DDevice.new(HARDWARE_DEVICE)
+    device = D3DDevice.new
 	swapchain = SwapChain.new(device, self)
     vecs = [[-1.0, -1.0, -1.0], [1.0, 1.0, 1.0, 1.0],
 			[-1.0, +1.0, -1.0], [0.0, 0.0, 0.0, 1.0],
@@ -49,4 +49,5 @@ HFWindow.new("Demo", 500, 500) {
 		timer.await
 	}
 	re.terminate
+	[swapchain, vb, ib, rp, sf, re, device].each &:release
 }

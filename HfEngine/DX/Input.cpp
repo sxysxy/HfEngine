@@ -118,8 +118,10 @@ namespace Ext {
             }
 
             VALUE Keyboard_initialize(VALUE self, VALUE wnd) {
+#ifdef _DEBUG
                 if(!rb_obj_is_kind_of(wnd, Ext::HFWindow::klass))rb_raise(rb_eArgError, 
                     "Input::Keyboard::initialize: The only param should be a HFWindow");
+#endif
                 auto keyboard = GetNativeObject<::Input::Keyboard>(self);
                 auto window = GetNativeObject<Ext::HFWindow::RHFWindow>(wnd);
                 try{
@@ -139,14 +141,18 @@ namespace Ext {
             VALUE Keyboard_is_pressed_now(VALUE self, VALUE key) {
                 auto keyboard = GetNativeObject<::Input::Keyboard>(self);
                 int code = FIX2INT(key);
+#ifdef _DEBUG
                 if(code > 255)rb_raise(rb_eArgError, "Invalid key code value");
+#endif
                 return keyboard->IsKeyPressedNow(code) ? Qtrue : Qfalse;
             }
 
             VALUE keyboard_is_pressed_before(VALUE self, VALUE key) {
                 auto keyboard = GetNativeObject<::Input::Keyboard>(self);
                 int code = FIX2INT(key);
+#ifdef _DEBUG
                 if (code > 255)rb_raise(rb_eArgError, "Invalid key code value");
+#endif
                 return keyboard->IsKeyPressedBefore(code)? Qtrue : Qfalse;
             }
 
@@ -155,8 +161,10 @@ namespace Ext {
             }
 
             VALUE Mouse_initialize(VALUE self, VALUE wnd) {
+#ifdef _DEBUG
                 if (!rb_obj_is_kind_of(wnd, Ext::HFWindow::klass))rb_raise(rb_eArgError,
                     "Input::Mouse::initialize: The only param should be a HFWindow");
+#endif
                 auto mouse = GetNativeObject<::Input::Mouse>(self);
                 auto window = GetNativeObject<Ext::HFWindow::RHFWindow>(wnd);
                 try {

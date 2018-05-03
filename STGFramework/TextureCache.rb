@@ -9,4 +9,10 @@ module TextureCache
 		@textures[fn] or DX::Texture2D.new($device, fn)
 	end
 	
+	def self.clear
+		@textures.each {|f, t|
+			t.release
+		}
+		@textures = {}
+	end
 end

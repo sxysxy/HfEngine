@@ -46,9 +46,7 @@ namespace Ext {
             VALUE vbuffer_initialize(int argc, VALUE *argv, VALUE self) {
                 if (argc < 3 || argc > 4)rb_raise(rb_eArgError,
                     "VertexBuffer::initialize:Wrong number of arguments. expecting (3..4) but got %d", argc);
-                if (!rb_obj_is_kind_of(argv[0], Ext::DX::D3DDevice::klass)) {
-                    rb_raise(rb_eArgError, "VertexBuffer::initialize:The first param 'device' should be a DX::D3DDevice");
-                }
+                CheckArgs(3, argv, {D3DDevice::klass, rb_cInteger, rb_cInteger});
                 void *init_data = nullptr;
                 if (argc == 4) {
                     if (rb_obj_is_kind_of(argv[3], rb_cInteger)) {
@@ -79,9 +77,7 @@ namespace Ext {
             VALUE ibuffer_initialize(int argc, VALUE *argv, VALUE self) {
                 if(argc < 2 || argc > 3)rb_raise(rb_eArgError,
                     "IndexBuffer::initialize:Wrong number of arguments. expecting (2..3) but got %d", argc);
-                if (!rb_obj_is_kind_of(argv[0], Ext::DX::D3DDevice::klass)) {
-                    rb_raise(rb_eArgError, "IndexBuffer::initialize:The first param 'device' should be a DX::D3DDevice");
-                }
+                CheckArgs(2, argv, { D3DDevice::klass, rb_cInteger });
                 int32_t *init_data = nullptr;
                 std::unique_ptr<int[]> p; //RAII is good
                 if (argc == 3) {
@@ -121,9 +117,7 @@ namespace Ext {
             VALUE cbuffer_initialize(int argc, VALUE *argv, VALUE self) {
                 if (argc < 2 || argc > 3)rb_raise(rb_eArgError,
                     "ConstantBuffer::initialize:Wrong number of arguments. expecting (2..3) but got %d", argc);
-                if (!rb_obj_is_kind_of(argv[0], Ext::DX::D3DDevice::klass)) {
-                    rb_raise(rb_eArgError, "ConstantBuffer::initialize:The first param 'device' should be a DX::D3DDevice");
-                }
+                CheckArgs(2, argv, { D3DDevice::klass, rb_cInteger });
                 void *init_data = nullptr;
                 if (argc == 3) {
                     if (rb_obj_is_kind_of(argv[2], rb_cInteger)) {

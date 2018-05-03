@@ -39,7 +39,7 @@ namespace Tests {
     }
 
     void TestShaderBasic() {
-        auto device = ReferPtr<D3DDevice>::New(D3D_DRIVER_TYPE_HARDWARE);
+        auto device = ReferPtr<D3DDevice>::New();
         auto vshader = Shader::LoadCodeString<VertexShader>(device.Get(),"\
          float4 main(float4 pos : POSITION) : SV_POSITION {      \n\
             return pos;                                          \n\
@@ -100,7 +100,7 @@ namespace Tests {
     void TestSimpleRender() {
         auto window = Utility::ReferPtr<HFWindow>::New(L"Simple", 500, 500);
         window->Show();
-        auto device = Utility::ReferPtr<D3DDevice>::New(D3D_DRIVER_TYPE_HARDWARE);
+        auto device = Utility::ReferPtr<D3DDevice>::New();
         auto ps = Shader::LoadCodeString<PixelShader>(device.Get(), draw_rect_ps);
         auto vs = Shader::LoadCodeString<VertexShader>(device.Get(), draw_rect_vs);
         auto rp = Utility::ReferPtr<RenderPipeline>::New(device.Get());
@@ -168,7 +168,7 @@ namespace Tests {
         rp->SetViewport({0, 0, window->width, window->height});
 
         int t = 0;
-        MessageLoop(30, [&](){
+        MessageLoop(144, [&](){
             rp->Clear({0.0f, 0.0f, 0.0f, 0.0f});
             update(t++);
             rp->DrawIndex(0, sizeof(indexs) / sizeof(int));

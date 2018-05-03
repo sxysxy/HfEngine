@@ -6,6 +6,6 @@ float4 main(float4 pos : POSITION) : SV_POSITION {
 }
 VS
 
-device = DX::D3DDevice.new(DX::HARDWARE_DEVICE)
+device = DX::D3DDevice.new
 vs = DX::VertexShader::load_string device, vscode
 msgbox vs

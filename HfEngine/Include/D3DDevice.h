@@ -18,12 +18,7 @@ public:
     ComPtr<ID3D11DeviceContext> native_immcontext;
     std::mutex immcontext_lock;
 
-    D3DDevice(){}
-    D3DDevice(D3D_DRIVER_TYPE t) {
-        Initialize(t);
-    }
-
-    void Initialize(D3D_DRIVER_TYPE t);
+    void Initialize();
     void UnInitialize();
 
     virtual void Release() {

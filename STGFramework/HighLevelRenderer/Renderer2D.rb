@@ -88,7 +88,7 @@ class Renderer2D < DX::RenderPipeline
 		draw(0, 4)
 	end
 	
-	def draw_texture(texture, dest_rect, src_rect = nil)
+	def draw_texture(texture, dest_rect, src_rect = nil, opacity = 1.0, color_mod = HFColorRGBA(1.0, 1.0, 1.0, 1.0))
 		pre_draw_texture
 		
 		rect = src_rect ? src_rect : HFRect(0, 0, texture.width, texture.height)
@@ -112,6 +112,7 @@ class Renderer2D < DX::RenderPipeline
 				Float(dest_rect.x), Float(dest_rect.y+dest_rect.h), @z_depth, 0.0, 0.0, 0.0, 0.0, x3, y3,
 				Float(dest_rect.x+dest_rect.w), Float(dest_rect.y+dest_rect.h), @z_depth, 0.0, 0.0, 0.0, 0.0, x4, y4].pack("f*")
 		update_subresource @common_vbuffer, vecs
+		update_subresource @sf.resource.cbuffer[:PSTextureParam], [color_mod.r, color_mod.g, color_mod.b, color_mod.a, opacity, 0.0, 0.0, 0.0].pack("f*")
 		set_topology(DX::TOPOLOGY_TRIANGLESTRIP)
 		set_vbuffer(@common_vbuffer)
 		set_ps_resource(0, texture)

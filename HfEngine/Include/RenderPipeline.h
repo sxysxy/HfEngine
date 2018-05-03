@@ -163,9 +163,9 @@ public:
                     queue_lock.lock();
                     while (!list_queue.empty()){
                         clist = list_queue.front();
+                        list_queue.pop();
                         device->native_immcontext->ExecuteCommandList(clist, false);
                         clist->Release();
-                        list_queue.pop();
                     }
                     queue_lock.unlock();
                 }
@@ -177,14 +177,21 @@ public:
     inline void Push(RenderPipeline *rp) {
         ID3D11CommandList *list;
         rp->native_context->FinishCommandList(true, &list);
-        queue_lock.lock();
-        list_queue.push(list);
-        queue_lock.unlock();
+        if(!exit_flag){
+            queue_lock.lock();
+            list_queue.push(list);
+            queue_lock.unlock();
+        }
     }
     inline void Terminate() {
         exit_flag = true;
         if(render_thread.joinable())
             render_thread.join(); 
+        auto x = list_queue._Get_container();
+        for (auto &l : x) {
+            l->Release();
+        }
+        x.clear();
         UnInitialize();
     }
     inline void ResetFPS(int fps_) {

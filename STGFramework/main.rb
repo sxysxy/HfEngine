@@ -19,15 +19,15 @@ $config = ConfigLoader.load("./config.rb")
 
 title = $config[:graphics].title or "A STG Game"
 width, height = $config[:graphics].resolution ? $config[:graphics].resolution : [640, 480]
-hardware = $config[:graphics].driver_type == :HARDWARE ? DX::HARDWARE_DEVICE : DX::SIMULATED_DEVICE
 
 $window = HFWindow.new(title, width, height)
 $window.show
-$device = DX::D3DDevice.new(hardware)
+$device = DX::D3DDevice.new
 Controller.init
 Graphics.init
 SceneManager.run(TITLE_CLASS)
 
 #do release
 Graphics.shutdown
+TextureCache.clear
 $device.release

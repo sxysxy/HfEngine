@@ -6,7 +6,7 @@ SHADER_FILENAME = File.join(CURRENT_PATH, "shaders.shader")
 HFWindow.new("Demo", 500, 500) { 
     show
 	set_handler(:on_closed) {exit_mainloop}
-    device = D3DDevice.new(HARDWARE_DEVICE)
+    device = D3DDevice.new
 	swapchain = SwapChain.new(device, self)
 	vs = VertexShader.load_hlsl(device, SHADER_FILENAME, "VS")
 	ps = PixelShader.load_hlsl(device, SHADER_FILENAME, "PS")
@@ -28,5 +28,6 @@ HFWindow.new("Demo", 500, 500) {
 		swapchain.present
 		timer.await
 	}
+	[swapchain, vs, ps, vb, rp, device].each &:release
 }
 

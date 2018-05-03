@@ -7,13 +7,22 @@
 #endif
 #pragma comment(lib, "d3d11.lib")
 
-void D3DDevice::Initialize(D3D_DRIVER_TYPE t) {
-    if(t > 5)
-        throw std::invalid_argument("Invalid D3DDevice Type");
+//Initialize a D3D11Device and its ImmdiateContext
+void D3DDevice::Initialize() {
     HRESULT hr;
-    if (FAILED(hr = D3D11CreateDevice(0, t, 0, D3D_DEVICE_CREATE_FLAG,
-        0, 0, D3D11_SDK_VERSION, &native_device, 0, &native_immcontext))) {
-        MAKE_ERRMSG<std::runtime_error>("Fail to create D3D11 Device, Error code:", hr);
+    D3D_FEATURE_LEVEL flevels[] = {
+        D3D_FEATURE_LEVEL_11_0, 
+        D3D_FEATURE_LEVEL_10_1,
+        D3D_FEATURE_LEVEL_10_0,
+        D3D_FEATURE_LEVEL_9_3
+    };
+    if (FAILED(hr = D3D11CreateDevice(0, D3D_DRIVER_TYPE_HARDWARE, 0, D3D_DEVICE_CREATE_FLAG,
+        flevels, ARRAYSIZE(flevels), D3D11_SDK_VERSION, &native_device, 0, &native_immcontext))) {
+        if(FAILED(hr = D3D11CreateDevice(0, D3D_DRIVER_TYPE_WARP, 0, D3D_DEVICE_CREATE_FLAG,
+            flevels, ARRAYSIZE(flevels), D3D11_SDK_VERSION, &native_device, 0, &native_immcontext))){
+                //if all fail    
+            MAKE_ERRMSG<std::runtime_error>("Fail to create D3D11 Device, Error code:", hr);
+        }
     }
     ID3D11Device *d = native_device.Get();
     d->QueryInterface(__uuidof(IDXGIDevice), &native_dxgi_device);
@@ -29,6 +38,7 @@ void D3DDevice::UnInitialize() {
     native_immcontext.ReleaseAndGetAddressOf();
 }
 
+//Get Adapter info
 void D3DDevice::QueryAdapterInfo(DXGI_ADAPTER_DESC *d) {
     native_dxgi_adapter->GetDesc(d);
 }
@@ -78,23 +88,16 @@ namespace Ext {
                 return Data_Wrap_Struct(klass, nullptr, Delete, d);
             }
 
-            static VALUE initialize(int argc, VALUE *argv, VALUE self) {
-                if (argc > 1) {
-                    rb_raise(rb_eArgError, "D3DDevice#intialize:Wrong number of arguments, expecting (0..1), but given %d", argc);
-                }
-
-                D3D_DRIVER_TYPE t;
-                if (argc == 0)t = D3D_DRIVER_TYPE_HARDWARE;
-                if (argc == 1)t = (D3D_DRIVER_TYPE)FIX2INT(argv[0]);
+            static VALUE initialize(VALUE self) {
                 auto d = GetNativeObject<::D3DDevice>(self);
                 try {
-                    d->Initialize(t);
+                    d->Initialize();
                 }
                 catch (std::runtime_error err) {
                     rb_raise(rb_eRuntimeError, err.what());
                 }
-                catch (std::invalid_argument err) {
-                    rb_raise(rb_eArgError, err.what());
+                if (!d->native_device) {
+                    rb_raise(rb_eArgError, "Fail to create D3DDevice");
                 }
                 return self;
             }
@@ -147,9 +150,7 @@ namespace Ext {
                 klass = rb_define_class_under(module, "D3DDevice", rb_cObject);
                 rb_include_module(klass, module_release);
                 rb_define_alloc_func(klass, New);
-                rb_define_const(module, "HARDWARE_DEVICE", INT2FIX(D3D_DRIVER_TYPE_HARDWARE));
-                rb_define_const(module, "SIMULATED_DEVICE", INT2FIX(D3D_DRIVER_TYPE_WARP));
-                rb_define_method(klass, "initialize", (rubyfunc)initialize, -1);
+                rb_define_method(klass, "initialize", (rubyfunc)initialize, 0);
                 rb_define_method(klass, "query_adapter_info", (rubyfunc)query_adapter_info, 0);
                 rb_define_method(klass, "query_monitor_info", (rubyfunc)query_monitor_info, 0);
                 rb_define_method(klass, "enum_adapters", (rubyfunc)enum_adapters, 0);
