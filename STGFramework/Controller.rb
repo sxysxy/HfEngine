@@ -9,9 +9,13 @@ module Controller
 		return @fps
 	end
 	def self.fps=(f)
-		return @re.reset_fps(@fps = f)
+		@fps = f
+		restart
 	end
 	def self.wait_next_frame
 		@timer.await
+	end
+	def self.restart
+		@timer.restart(@fps)
 	end
 end
