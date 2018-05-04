@@ -10,6 +10,7 @@ module TextureCache
 	end
 	
 	def self.clear
+		return if !@textures 
 		@textures.each {|f, t|
 			t.release
 		}

@@ -6,12 +6,13 @@ require "./ConfigLoader.rb"
 require "./TextureCache.rb"
 require "./SceneManager.rb"
 require "./Controller.rb"
-begin
-require_relative "./STGScene/SceneSHWTitle.rb"
-TITLE_CLASS = SceneSHWTitle
-rescue
-require_relative "./CommonScene/SceneTitle.rb"
-TITLE_CLASS = SceneTitle
+
+if File.exist?("./STGScene/SceneSHWTitle.rb")
+	require_relative "./STGScene/SceneSHWTitle.rb"
+	TITLE_CLASS = SceneSHWTitle
+else
+	require_relative "./CommonScene/SceneTitle.rb"
+	TITLE_CLASS = SceneTitle
 end
 require_relative "./HighLevelRenderer/Renderer2D.rb"
 

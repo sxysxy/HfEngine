@@ -40,7 +40,7 @@ class SceneSTG < Scene
 	
 	
 	def update_keypress
-		call_handler(:cancel) if @keyboard.is_triggled(DX::DIK_X)
-		call_handler(:confirm) if @keyboard.is_triggled(DX::DIK_Z)
+		call_handler(:cancel) if @keyboard.is_triggled(DX::DIK_X) 
+		call_handler(:confirm) if @keyboard.is_triggled(DX::DIK_Z) || @keyboard.is_triggled(DX::DIK_RETURN)
 	end
 end

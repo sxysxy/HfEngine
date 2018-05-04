@@ -28,15 +28,27 @@ Program("Draw") {
 			return data.color;
 		}
 		
-		cbuffer VSTextureParam : register(b1) {
+		VSOut VSTexture(Input ipt) {
+			VSOut opt;
+			opt.position.x = ipt.position.x * 2.0 / vp_w - 1.0f;
+			opt.position.y = -(ipt.position.y * 2.0 / vp_h) + 1.0f;
+			opt.position.z = ipt.position.z;
+			opt.position.w = 1.0f;
+			opt.tex = ipt.tex;
+			opt.color = float4(0.0, 0.0, 0.0, 0.0);
+			return opt;
+		}
+		
+		cbuffer VSTextureExParam : register(b1) {
+			float svp_x, svp_y, svp_w, svp_h;
 			float angle;
 			int vmirror, hmirror;			//Vertical Mirror & Horizon Mirror
 			int emm; //unused 
-		};
-		VSOut VSTexture(Input ipt) {
+		}
+		VSOut VSTextureEx(Input ipt) {
 			VSOut opt;
-			float x1 = ipt.position.x * 2.0 / vp_w - 1.0f;
-			float y1 = -(ipt.position.y * 2.0 / vp_h) + 1.0f;
+			float x1 = (ipt.position.x + svp_x) * 2.0 / svp_w - 1.0f;
+			float y1 = -((ipt.position.y + svp_y) * 2.0 / svp_h) + 1.0f;
 			opt.position.x = x1 * cos(angle) - y1 * sin(angle);
 			opt.position.y = x1 * sin(angle) + y1 * cos(angle);
 			opt.position.z = ipt.position.z;
@@ -50,6 +62,7 @@ Program("Draw") {
 			float opacity;
 			float psp_em, psp_emm, psp_emmm;
 		}
+		
 		SamplerState color_sampler : register(s0);
 		Texture2D color_map : register(t0);
 		float4 PSTexture(VSOut data) : SV_TARGET {
@@ -92,7 +105,13 @@ Program("Draw") {
 			set_size 32
 			set_init_data [1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0].pack("f*")
 		}
-		
+		ConstantBuffer("PSTextureParamSprite") {
+			set_size 32
+			set_init_data [1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0].pack("f*")
+		}
+		ConstantBuffer("VSTextureEXParam") {
+			set_size 32
+		}
 		#destRGBA = srcRGBA
 		#(dest is the color in the renderring-target texture)
 		#(src is the color in resoruce)
@@ -106,14 +125,17 @@ Program("Draw") {
 		Blender("alpha_blend") {
 			use_default
 			enable true
-			set_color_blend DX::BLEND_ONE, DX::BLEND_FACTOR, DX::BLEND_OP_ADD 
-			set_alpha_blend DX::BLEND_ONE, DX::BLEND_ONE, DX::BLEND_OP_ADD
+			set_color_blend DX::BLEND_SRC_ALPHA, DX::BLEND_INV_SRC_ALPHA, DX::BLEND_OP_ADD 
+			set_alpha_blend DX::BLEND_SRC_ALPHA, DX::BLEND_INV_SRC_ALPHA, DX::BLEND_OP_ADD
 		}
 		
 		#destRGB = (srcRGB * srcA) + destRGB
 		#destA = destA
 		Blender("add_blend") {
-		
+			use_default
+			enable true
+			set_color_blend DX::BLEND_SRC_ALPHA, DX::BLEND_DEST_COLOR, DX::BLEND_OP_ADD
+			set_alpha_blend DX::BLEND_SRC_ALPHA, DX::BLEND_DEST_ALPHA, DX::BLEND_OP_ADD
 		}
 		
 		#add -> sub
@@ -124,15 +146,15 @@ Program("Draw") {
 		#destRGB = srcRGB * destRGB
 		#destA = destA
 		Blender("color_mod_blender") {
-			
+			use_default
+			enable true
 		}
 	}
 	
 	Section("basic") {
 		set_vshader("VSDraw")
 		set_vs_cbuffer(0, "viewport")
-		set_vs_cbuffer(1, "VSTextureParam")
-		set_ps_cbuffer(2, "PSTextureParam")
+		set_vs_cbuffer(1, "VSTextureEXParam")
 		set_blender("alpha_blend")
 	}
 	Section("draw_solid") {
@@ -148,16 +170,31 @@ Program("Draw") {
 	Section("texturingHQ") {
 		set_vshader("VSTexture")
 		set_pshader("PSTexture")
+		set_ps_cbuffer(2, "PSTextureParam")
 		set_ps_sampler(0, "HQSampler")
 		set_rasterizer("RS_fill_solid")
 	}
 	Section("texturingLQ") {
 		set_vshader("VSTexture")
 		set_pshader("PSTexture")
+		set_ps_cbuffer(2, "PSTextureParam")
 		set_ps_sampler(0, "LQSampler")
 		set_rasterizer("RS_fill_solid")
 	}
-	
+	Section("SpriteHQ") {
+		set_vshader("VSTextureEx")
+		set_pshader("PSTexture")
+		set_ps_sampler(0, "HQSampler")
+		set_ps_cbuffer(2, "PSTextureParamSprite")
+		set_rasterizer("RS_fill_solid")
+	}
+	Section("SpriteLQ") {
+		set_vshader("VSTextureEx")
+		set_pshader("PSTexture")
+		set_ps_sampler(0, "LQSampler")
+		set_ps_cbuffer(2, "PSTextureParamSprite")
+		set_rasterizer("RS_fill_solid")
+	}
 }
 
 

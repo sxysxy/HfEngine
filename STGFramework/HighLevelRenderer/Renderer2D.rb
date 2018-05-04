@@ -12,6 +12,7 @@ class Renderer2D < DX::RenderPipeline
 	PHASE_DRAW_SOLID = 0
 	PHASE_DRAW_WIREFRAME = 1
 	PHASE_DRAW_TEXTURE = 2
+	PHASE_DRAW_SPRITE = 3
 	
 	attr_accessor :z_depth #z depth
 	
@@ -52,6 +53,15 @@ class Renderer2D < DX::RenderPipeline
 		end
 		@phase = PHASE_DRAW_TEXTURE
 	end
+	def pre_draw_sprite
+		return if @phase == PHASE_DRAW_SPRITE
+		if @quality == 1
+			@sf.section[:SpriteHQ].apply(self)
+		else 
+			@sf.section[:SpriteLQ].apply(self)
+		end
+		@phase = PHASE_DRAW_SPRITE
+	end
 	
 	def set_viewport(r)
 		super(r)
@@ -88,7 +98,7 @@ class Renderer2D < DX::RenderPipeline
 		draw(0, 4)
 	end
 	
-	def draw_texture(texture, dest_rect, src_rect = nil, opacity = 1.0, color_mod = HFColorRGBA(1.0, 1.0, 1.0, 1.0))
+	def draw_texture(texture, dest_rect, src_rect = nil, opacity = 1.0)
 		pre_draw_texture
 		
 		rect = src_rect ? src_rect : HFRect(0, 0, texture.width, texture.height)
@@ -112,10 +122,47 @@ class Renderer2D < DX::RenderPipeline
 				Float(dest_rect.x), Float(dest_rect.y+dest_rect.h), @z_depth, 0.0, 0.0, 0.0, 0.0, x3, y3,
 				Float(dest_rect.x+dest_rect.w), Float(dest_rect.y+dest_rect.h), @z_depth, 0.0, 0.0, 0.0, 0.0, x4, y4].pack("f*")
 		update_subresource @common_vbuffer, vecs
-		update_subresource @sf.resource.cbuffer[:PSTextureParam], [color_mod.r, color_mod.g, color_mod.b, color_mod.a, opacity, 0.0, 0.0, 0.0].pack("f*")
+		update_subresource @sf.resource.cbuffer[:PSTextureParam], [1.0, 1.0, 1.0, 1.0, opacity, 0.0, 0.0, 0.0].pack("f*")
 		set_topology(DX::TOPOLOGY_TRIANGLESTRIP)
 		set_vbuffer(@common_vbuffer)
 		set_ps_resource(0, texture)
+		draw(0, 4)
+		set_ps_resource(0, nil)
+	end
+	
+	def draw_sprite(s)
+		pre_draw_sprite
+		
+		rect = s.src_rect
+		w = rect.w
+		h = rect.h
+		#LT
+		x1 = Float(rect.x) / w  
+		y1 = Float(rect.y) / h 
+		#RT
+		x2 = Float(rect.x + rect.w) / w
+		y2 = y1
+		#LB
+		x3 = x1
+		y3 = Float(rect.y + rect.h) / h
+		#RB
+		x4 = x2
+		y4 = y3
+		
+		dest_rect = HFRect.new(s.x, s.y, Integer(s.texture.width * s.zoom_x), Integer(s.texture.height * s.zoom_y))
+		
+		vecs = [Float(dest_rect.x), Float(dest_rect.y),             s.z, 0.0, 0.0, 0.0, 0.0, x1, y1, 
+				Float(dest_rect.x+dest_rect.w), Float(dest_rect.y), s.z, 0.0, 0.0, 0.0, 0.0, x2, y2,
+				Float(dest_rect.x), Float(dest_rect.y+dest_rect.h), s.z, 0.0, 0.0, 0.0, 0.0, x3, y3,
+				Float(dest_rect.x+dest_rect.w), Float(dest_rect.y+dest_rect.h), s.z, 0.0, 0.0, 0.0, 0.0, x4, y4].pack("f*")
+		update_subresource @common_vbuffer, vecs
+		update_subresource @sf.resource.cbuffer[:PSTextureParamSprite], 
+				[s.color_mod.r, s.color_mod.g, s.color_mod.b, s.color_mod.a, s.opacity, 0.0, 0.0, 0.0].pack("f*")
+		update_subresource @sf.resource.cbuffer[:VSTextureEXParam], 
+			[s.viewport.x, s.viewport.y, s.viewport.w, s.viewport.h, s.angle, s.vmirror ? 1 : 0, s.hmirror ? 1 : 0, 0].pack("fffffiii")			
+		set_topology(DX::TOPOLOGY_TRIANGLESTRIP)
+		set_vbuffer(@common_vbuffer)
+		set_ps_resource(0, s.texture)
 		draw(0, 4)
 		set_ps_resource(0, nil)
 	end
