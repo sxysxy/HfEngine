@@ -162,6 +162,14 @@ namespace Ext { namespace DX{
         static VALUE T2D_height(VALUE self) {
             return INT2FIX(GetNativeObject<::Texture2D>(self)->height);
         }
+
+        static VALUE rtt_initialize(VALUE self, VALUE tex) {
+            CheckArgs({ tex }, {klass_texture2d});
+            auto rtt = GetNativeObject<::RTT>(self);
+            auto t = GetNativeObject<::Texture2D>(tex);
+            rtt->Initialize(t);
+            return self;
+        }
         void Init() {
             klass_texture = rb_define_class_under(module, "Texture", rb_cObject);
             rb_include_module(klass_texture, module_release);
@@ -185,7 +193,7 @@ namespace Ext { namespace DX{
                 t->AddRefer();
                 return Data_Wrap_Struct(k, nullptr, Delete<::RTT>, t);
             });
-            
+            rb_define_method(klass_rtt, "initialize", (rubyfunc)rtt_initialize, 1);
         }
     }
 }}

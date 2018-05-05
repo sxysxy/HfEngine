@@ -325,6 +325,7 @@ namespace Ext {
                 return rb_iv_get(self, "@viewport");
             }
             static VALUE set_target(VALUE self, VALUE tar) {
+                CheckArgs({ tar }, {DX::Texture::klass_rtt});
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 rp->SetTarget(GetNativeObject<RTT>(tar));
                 rb_iv_set(self, "@target", tar);
@@ -334,6 +335,7 @@ namespace Ext {
                 return rb_iv_get(self, "@target");
             }
             static VALUE set_blender(VALUE self, VALUE b) {
+                CheckArgs({ b }, {ArgType(DX::Shader::klass_blender, true)});
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 rp->SetBlender(GetNULLPTRableNativeObject<Blender>(b));
                 rb_iv_set(self, "@blender", b);

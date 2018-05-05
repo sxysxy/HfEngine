@@ -1,6 +1,12 @@
 #encoding :utf-8
 Dir.chdir File.dirname(__FILE__)
 
+class Class
+	def derive(m)
+		self.superclass.instance_method(m)
+	end
+end
+
 require 'libcore'
 require "./ConfigLoader.rb"
 require "./TextureCache.rb"

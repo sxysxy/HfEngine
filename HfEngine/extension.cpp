@@ -17,14 +17,14 @@ namespace Ext {
             if (!NIL_P(pobjs[i]) && !rb_obj_is_kind_of(pobjs[i], t[i].klass)) {
                 static char buf[100];
 #ifdef _WIN64
-                sprintf_s(buf, "ObjectSpace._id2ref(%ull).to_s", t[i].klass / 2);
+                sprintf_s(buf, "ObjectSpace._id2ref(%llu).to_s", t[i].klass / 2);
 #else _WIN32
                 sprintf_s(buf, "ObjectSpace._id2ref(%u).to_s", t[i].klass / 2);
 #endif
                 int p = 0;
                 VALUE klass_name = rb_eval_string_protect(buf, &p);
 #ifdef _WIN64
-                sprintf_s(buf, "ObjectSpace._id2ref(%ull).to_s", rb_obj_class(pobjs[i]) / 2);
+                sprintf_s(buf, "ObjectSpace._id2ref(%llu).to_s", rb_obj_class(pobjs[i]) / 2);
 #else _WIN32
                 sprintf_s(buf, "ObjectSpace._id2ref(%u).to_s", rb_obj_class(pobjs[i]) / 2);
 #endif

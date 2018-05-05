@@ -171,6 +171,10 @@ class Renderer2D < DX::RenderPipeline
 		Graphics.re.push(self)
 	end
 	
+	def use_default_target
+		set_target Graphics.rtt
+	end
+	
 	def release
 		super
 		@sf.release

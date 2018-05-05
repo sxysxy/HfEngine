@@ -3,6 +3,8 @@ require_relative "./HighLevelRenderer/Graphics2D.rb"
 require "./Controller.rb"
 
 class Scene
+	attr_reader :keyboard
+	
 	def initialize
 		@keyboard = DX::Input::Keyboard.new($window)
 	end
@@ -35,6 +37,7 @@ module SceneManager
 	
 	def self.run(scene_klass)
 		$window.set_handler(:on_closed) {self.exit}
+		@stack = []
 		@scene = scene_klass.new
 		@scene.main while @scene
 		self.clear
@@ -46,6 +49,14 @@ module SceneManager
 	
 	def self.exit
 		@scene = nil
+	end
+	
+	def self.call(scene_klass)
+		@stack.push @scene
+		@scene = scene_klass.new
+	end
+	def self.return 
+		@scene = @stack.pop
 	end
 	
 	def self.clear
