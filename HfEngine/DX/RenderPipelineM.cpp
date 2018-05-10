@@ -1,6 +1,6 @@
 #include "../Include/RenderPipelineM.h"
 
-int GetRank(RPMNode *x, RPMNode *q) {
+int RPMTreap::GetRank(RPMNode *x, RPMNode *q) {
     if(!x)return 0;
     if(q->operator<(x))return GetRank(x->left, q);
     else return GetRank(x->right, q) + 1 + x->lsize();
@@ -74,7 +74,7 @@ namespace Ext {
                 //       if(!rb_obj_is_kind_of(rp, DX::RenderPipeline::klass))
                 //           rb_raise(rb_eArgError, "RemoteRenderExecutive#push : param should be a DX::RenderPipeline");
                 CheckArgs({rpm, priority}, {klass_rpm, rb_cInteger});
-                GetNativeObject<RemoteRenderExecutive>(self)->Push(GetNativeObject<::RenderPipeline>(rp));
+                GetNativeObject<RemoteRenderExecutive>(self)->Insert(GetNativeObject<::RenderPipelineM>(rpm), FIX2INT(priority));
                 return self;
             }
 
@@ -87,7 +87,7 @@ namespace Ext {
                 rb_define_alloc_func(klass_remote_render_executive, RefObjNew<::RemoteRenderExecutive>);
                 rb_define_method(klass_remote_render_executive, "initialize", (rubyfunc)RE_initialize, 3);
                 rb_define_method(klass_remote_render_executive, "reset_fps", (rubyfunc)RE_reset_fps, 1);
-                rb_define_method(klass_remote_render_executive, "push", (rubyfunc)RE_push, 1);
+                rb_define_method(klass_remote_render_executive, "insert", (rubyfunc)RE_insert, 2);
                 rb_define_method(klass_remote_render_executive, "terminate", (rubyfunc)RE_terminate, 0);
             }
         }

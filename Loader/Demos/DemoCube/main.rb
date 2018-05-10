@@ -25,7 +25,7 @@ HFWindow.new("Demo", 500, 500) {
 			  1,5,6,1,6,2,
 			  4,0,3,4,3,7].pack("i*")
 	ib = IndexBuffer.new(device, 36, indexs)
-	rp = RenderPipeline.new(device).set_topology(TOPOLOGY_TRIANGLELIST)\
+	rp = RenderPipelineM.new(device).set_topology(TOPOLOGY_TRIANGLELIST)\
 	 .set_target(swapchain.rtt).set_viewport(HFRect(0, 0, width, height))\
 						.set_vbuffer(vb).set_ibuffer(ib)
 	sf = HFSF::loadsf_file(device, SHADER_FILENAME)[0]
@@ -33,6 +33,7 @@ HFWindow.new("Demo", 500, 500) {
 	sf.input_layout.apply(rp)  #设置input_layout
 	cb = sf.resource.cbuffer[:wvpmatrix]  #得到资源段内名为 wvpmatrix 的constant buffer, 因为需要更新
 	re = RemoteRenderExecutive.new(device, swapchain, FPS)
+	re.insert(rp, 100)
 	timer = FPSTimer.new(FPS)
 	t = 0
 	w, v, p, wvp = Array.new(4) {MathTool::Matrix4x4.new}
@@ -45,7 +46,7 @@ HFWindow.new("Demo", 500, 500) {
 		wvp = w*v*p #also, you can use MathTool.rotate_round... but it will generate a new object
 		rp.update_subresource(cb, wvp.tranpose!.row_data_ptr);
 		rp.draw_index(0, 36)
-		re.push(rp)
+		
 		timer.await
 	}
 	re.terminate

@@ -42,7 +42,7 @@ struct RPMNode {
     }
 };
 
-class RPMTreap : Utility::ReferredObject {
+class RPMTreap : public Utility::ReferredObject {
     unsigned GenerateUid() {
         static std::default_random_engine engine;
         static std::uniform_int_distribution<unsigned> distribution(0, 65535);
@@ -96,8 +96,8 @@ public:
 
 class RemoteRenderExecutive : public Utility::ReferredObject {
     std::thread render_thread;
-    
     Utility::SleepFPSTimer timer;
+    Utility::ReferPtr<RPMTreap> tree;
     bool exit_flag;
 public:
     Utility::ReferPtr<D3DDevice> device;
@@ -108,46 +108,28 @@ public:
         swapchain = swp;
         fps = fps_;
         exit_flag = false;
+        tree = Utility::ReferPtr<RPMTreap>::New(device_);
         Run();
     }
     void Run() {
         render_thread = std::thread([this]() {
             ResetFPS(fps);
-            while (!exit_flag) {
-                ID3D11CommandList *clist = nullptr;
-                if (!list_queue.empty()) {
-                    queue_lock.lock();
-                    while (!list_queue.empty()) {
-                        clist = list_queue.front();
-                        list_queue.pop();
-                        device->native_immcontext->ExecuteCommandList(clist, false);
-                        clist->Release();
-                    }
-                    queue_lock.unlock();
-                }
-                swapchain->Present();
-                timer.Await();
-            }
+            tree->Render();
+            swapchain->Present();
+            timer.Await();
+            
         });
     }
-    inline void Push(RenderPipeline *rp) {
-        ID3D11CommandList *list;
-        rp->native_context->FinishCommandList(true, &list);
+    inline void Insert(RenderPipelineM *rp, int priority) {
         if (!exit_flag) {
-            queue_lock.lock();
-            list_queue.push(list);
-            queue_lock.unlock();
+            tree->Insert(rp, priority);
         }
     }
     inline void Terminate() {
         exit_flag = true;
         if (render_thread.joinable())
             render_thread.join();
-        auto x = list_queue._Get_container();
-        for (auto &l : x) {
-            l->Release();
-        }
-        x.clear();
+        
         UnInitialize();
     }
     inline void ResetFPS(int fps_) {
@@ -159,7 +141,6 @@ public:
         }
         device.Release();
         swapchain.Release();
-        //list_queue.~ConcurrentQueue();
     }
     virtual void Release() {
         UnInitialize();
