@@ -96,9 +96,7 @@ public:
 
 class RemoteRenderExecutive : public Utility::ReferredObject {
     std::thread render_thread;
-    std::mutex queue_lock;
-    //moodycamel::ConcurrentQueue<ID3D11CommandList *> list_queue;
-    std::queue<ID3D11CommandList *> list_queue;
+    
     Utility::SleepFPSTimer timer;
     bool exit_flag;
 public:

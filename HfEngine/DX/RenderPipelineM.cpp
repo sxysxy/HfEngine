@@ -70,9 +70,10 @@ namespace Ext {
                 GetNativeObject<RemoteRenderExecutive>(self)->ResetFPS(FIX2INT(fps));
                 return self;
             }
-            static VALUE RE_push(VALUE self, VALUE rp) {
+            static VALUE RE_insert(VALUE self, VALUE rpm, VALUE priority) {
                 //       if(!rb_obj_is_kind_of(rp, DX::RenderPipeline::klass))
                 //           rb_raise(rb_eArgError, "RemoteRenderExecutive#push : param should be a DX::RenderPipeline");
+                CheckArgs({rpm, priority}, {klass_rpm, rb_cInteger});
                 GetNativeObject<RemoteRenderExecutive>(self)->Push(GetNativeObject<::RenderPipeline>(rp));
                 return self;
             }
