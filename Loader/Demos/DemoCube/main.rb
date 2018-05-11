@@ -3,7 +3,7 @@ require 'libcore.rb'
 include DX
 CURRENT_PATH = File.dirname(__FILE__)
 SHADER_FILENAME = File.join(CURRENT_PATH, "shaders.rb")
-FPS = 144
+FPS = 233
 HFWindow.new("Demo", 500, 500) { 
     show
 	set_handler(:on_closed) {exit_mainloop}
@@ -33,7 +33,7 @@ HFWindow.new("Demo", 500, 500) {
 	sf.input_layout.apply(rp)  #设置input_layout
 	cb = sf.resource.cbuffer[:wvpmatrix]  #得到资源段内名为 wvpmatrix 的constant buffer, 因为需要更新
 	re = RemoteRenderExecutive.new(device, swapchain, FPS)
-	re.insert(rp, 100)
+	re.insert(rp, 100) #rp 是一个 RenderPipelineM(专为多线程渲染的RenderPipiline)，设置优先级为100. (O(logn))
 	timer = FPSTimer.new(FPS)
 	t = 0
 	w, v, p, wvp = Array.new(4) {MathTool::Matrix4x4.new}
@@ -46,7 +46,7 @@ HFWindow.new("Demo", 500, 500) {
 		wvp = w*v*p #also, you can use MathTool.rotate_round... but it will generate a new object
 		rp.update_subresource(cb, wvp.tranpose!.row_data_ptr);
 		rp.draw_index(0, 36)
-		
+		rp.swap_commands #交换指令列表缓冲( O(1) )
 		timer.await
 	}
 	re.terminate

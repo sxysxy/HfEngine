@@ -6,7 +6,7 @@ HFWindow.new("Geometry Shader Simple Demo", 500, 500) {
 	set_handler(:on_closed) {exit_mainloop}
 	device = D3DDevice.new
 	swapchain = SwapChain.new(device, self)
-	rp = RenderPipeline.new(device)
+	rp = RenderPipelineM.new(device)
 	sf = HFSF::loadsf_file(device, SHADERS_FILENAME)[0]
 	sf.section[:set].apply(rp)
 	sf.input_layout.apply(rp)
@@ -21,6 +21,7 @@ HFWindow.new("Geometry Shader Simple Demo", 500, 500) {
 		rp.draw(0, 1)
 	}
 	re = RemoteRenderExecutive.new(device, swapchain, 60)
+	re.insert(rp, 10)
 	timer = FPSTimer.new(60)
 	messageloop {
 		rp.clear(HFColorRGBA(0.0, 0.0, 0.0, 0.0))
@@ -30,7 +31,7 @@ HFWindow.new("Geometry Shader Simple Demo", 500, 500) {
 		draw_triangle[0.5, [-0.4, -0.2], HFColorRGBA(0.0, 1.0, 1.0, 1.0)]
 		draw_triangle[0.33, [-0.2, 0.2], HFColorRGBA(1.0, 0.0, 0.0, 1.0)]
 		draw_triangle[0.7, [-0.6, -0.7], HFColorRGBA(1.0, 1.0, 1.0, 1.0)]
-		re.push(rp)
+		rp.swap_commands
 		timer.await
 	}
 	re.terminate
