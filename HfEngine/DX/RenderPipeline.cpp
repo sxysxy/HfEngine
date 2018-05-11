@@ -1,4 +1,5 @@
 #include "RenderPipeline.h"
+#include "RenderPipelineM.h"
 
 void RenderPipeline::SetInputLayout(D3DDevice *device, const std::string *idents, 
                                            const DXGI_FORMAT *formats, int count) {
@@ -130,7 +131,6 @@ namespace Ext {
     namespace DX {
         namespace RenderPipeline {
             VALUE klass;
-            VALUE klass_remote_render_executive;
             VALUE klass_input_layout;
 
             static void delete_rp(::RenderPipeline *rp) {
@@ -402,28 +402,6 @@ namespace Ext {
                 return self;
             }
 
-            //------------------------
-            static VALUE RE_initialize(VALUE self, VALUE device, VALUE swp, VALUE fps) {
-                auto re = GetNativeObject<RemoteRenderExecutive>(self);
-                re->Initialize(GetNativeObject<::D3DDevice>(device), 
-                        GetNativeObject<::SwapChain>(swp), FIX2INT(fps));
-                return self;
-            }
-            static VALUE RE_terminate(VALUE self) {
-                GetNativeObject<RemoteRenderExecutive>(self)->Terminate();
-                return self;
-            }
-            static VALUE RE_reset_fps(VALUE self, VALUE fps) {
-                GetNativeObject<RemoteRenderExecutive>(self)->ResetFPS(FIX2INT(fps));
-                return self;
-            }
-            static VALUE RE_push(VALUE self, VALUE rp) {
-         //       if(!rb_obj_is_kind_of(rp, DX::RenderPipeline::klass))
-         //           rb_raise(rb_eArgError, "RemoteRenderExecutive#push : param should be a DX::RenderPipeline");
-                GetNativeObject<RemoteRenderExecutive>(self)->Push(GetNativeObject<::RenderPipeline>(rp));
-                return self;
-            }
-
             //-------
             static VALUE LY_initialize(VALUE self, VALUE names, VALUE fmts, VALUE vs) {
                 return self;
@@ -505,20 +483,12 @@ namespace Ext {
                 rb_define_method(klass, "set_topology", (rubyfunc)set_topology, 1);
 
 
-                //RE
-                klass_remote_render_executive = rb_define_class_under(module, "RemoteRenderExecutive", rb_cObject);
-                rb_include_module(klass_remote_render_executive, module_release);
-                rb_define_alloc_func(klass_remote_render_executive, RefObjNew<::RemoteRenderExecutive>);
-                rb_define_method(klass_remote_render_executive, "initialize", (rubyfunc)RE_initialize, 3);
-                rb_define_method(klass_remote_render_executive, "reset_fps", (rubyfunc)RE_reset_fps, 1);
-                rb_define_method(klass_remote_render_executive, "push", (rubyfunc)RE_push, 1);
-                rb_define_method(klass_remote_render_executive, "terminate", (rubyfunc)RE_terminate, 0);
-
-
                 klass_input_layout = rb_define_class_under(module, "InputLayout", rb_cObject);
                 rb_include_module(klass_input_layout, module_release);
                 rb_define_alloc_func(klass_input_layout, RefObjNew<::InputLayout>);
                 rb_define_method(klass_input_layout, "initialize", (rubyfunc)LY_initialize, 3);
+
+                InitRPM();
             }
         }
     }

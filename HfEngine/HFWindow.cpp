@@ -113,7 +113,7 @@ void HFWindow::Create(const cstring &_title, int w, int h) {
 		wc.hInstance = instance;
 		wc.lpfnWndProc = _WndProc;
 		wc.lpszClassName = TEXT("23333");
-		wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+		wc.style = CS_OWNDC;
 		RegisterClass(&wc);
 		_native_inited = true;
 	}

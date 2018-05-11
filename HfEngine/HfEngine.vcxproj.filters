@@ -60,6 +60,9 @@
     <ClCompile Include="DX\MathTool.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="DX\RenderPipelineM.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\DX.h">
@@ -105,6 +108,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Include\MathTool.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\RenderPipelineM.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

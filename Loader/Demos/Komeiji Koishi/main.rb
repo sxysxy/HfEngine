@@ -16,7 +16,7 @@ HFWindow.new("恋恋 VS 紫妈", 300, 300) {
             [1.0, -1.0],  [1.0, 1.0],
             [1.0, 1.0],   [1.0, 0.0]].flatten.pack("f*")
 	vb = VertexBuffer.new(device, 4*4, 4, vecs)
-	rp = RenderPipeline.new(device).set_topology(TOPOLOGY_TRIANGLESTRIP)\
+	rp = RenderPipelineM.new(device).set_topology(TOPOLOGY_TRIANGLESTRIP)\
 	 .set_target(swapchain.rtt).set_viewport(HFRect(0, 0, width, height))\
 						.set_vbuffer(vb)
 	sf = HFSF::loadsf_file(device, SHADER_FILENAME)[0]
@@ -28,6 +28,7 @@ HFWindow.new("恋恋 VS 紫妈", 300, 300) {
 	yukari = Texture2D.new(device, YUKARI_FILENAME)					
     rp.set_ps_resource(0, koishi).set_ps_resource(1, yukari)
 	re = RemoteRenderExecutive.new(device, swapchain, 60)
+	re.insert(rp, 100)
 	keyboard = Input::Keyboard.new(self)
 	timer = FPSTimer.new(60)
     messageloop {
@@ -47,7 +48,7 @@ HFWindow.new("恋恋 VS 紫妈", 300, 300) {
 		end
         rp.clear(HFColorRGBA(0.0, 0.0, 0.0, 0.0))
         rp.draw(0, 4)
-		re.push(rp)
+		rp.swap_commands
 		timer.await
     }
 	re.terminate

@@ -25,7 +25,10 @@ struct FPSTimer {
 			long long nowt;
 			QueryPerformanceCounter((PLARGE_INTEGER)&nowt);
 			long long d = nowt - startt;
-			if (d >= ticktime)break;
+            if (d >= ticktime) {
+                if(d - ticktime >= 100000 * tick )Restart(rate);
+                break;
+            }
 			if (d >= 20000)cls::Wait(1);
 			else 
 				cls::Wait(0);
