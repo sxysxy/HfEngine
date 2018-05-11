@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include "D3DDevice.h"
 
-class RenderPipelineM : public RenderPipeline, public SwapData<ComPtr<ID3D11CommandList>> {
+class RenderPipelineM : public RenderPipeline, protected SwapData<ComPtr<ID3D11CommandList>> {
     friend struct RPMNode;
     friend class RPMTreap;
     std::pair<int , unsigned> access; //pair<priority, uid>
@@ -17,14 +17,15 @@ public:
         ID3D11CommandList *list;
         native_context->FinishCommandList(true, &list);
         WriteRef() = list;
+        list->Release();
         Swap();
     }
 };
 
 struct RPMNode {
     RenderPipelineM *rpm;
-    int size = 1;
-    RPMNode *left = nullptr, *right = nullptr;
+    int size;
+    RPMNode *left, *right;
     inline int lsize() {
         return left ? left->size : 0;
     }
@@ -39,6 +40,11 @@ struct RPMNode {
     }
     inline unsigned weight() {
         return rpm->access.second;
+    }
+    RPMNode() {
+        size = 1;
+        left = right = nullptr;
+        rpm = nullptr;
     }
 };
 
@@ -55,11 +61,13 @@ class RPMTreap : public Utility::ReferredObject {
     RPMNode *DoInsert(RPMNode *x, RPMNode *y);
     droot DoSplit(RPMNode *x, int k);
     void DoRender(RPMNode *u);
+    void DoClear(RPMNode *u);
+    void DoErase(RenderPipelineM *rpm);
 
     std::unordered_map<unsigned, RPMNode *> uid2node;
     Utility::ReferPtr<D3DDevice> device;
     std::mutex tree_lock;
-    RPMNode *root = nullptr;
+    RPMNode *root;
 public:
     inline void Insert(RenderPipelineM *rp, int priority) {
         rp->access.first = priority;
@@ -73,23 +81,42 @@ public:
         auto p = DoSplit(root, k);
         root = DoInsert(DoInsert(p.first, node), p.second);
     }
-
-    void Initialize(D3DDevice *d) {
-        device = d;
+    inline void Clear() {
+        std::lock_guard<std::mutex> g(tree_lock);
+        uid2node.clear();
+        DoClear(root);
+        root = nullptr;
     }
 
-    void UnInitialize() {
+    inline void Initialize(D3DDevice *d) {
+        device = d;
+        root = nullptr;
+    }
+
+    inline void UnInitialize() {
         device.Release();
-        uid2node.clear();
+        Clear();
     }
 
     virtual void Release() {
         UnInitialize();
     }
 
-    void Render() {
+    inline void Render() {
         std::lock_guard<std::mutex> g(tree_lock);
         DoRender(root);
+    }
+
+    inline void Lock() {
+        tree_lock.lock();
+    }
+    inline void UnLock() {
+        tree_lock.unlock();
+    }
+
+    inline void Erase(RenderPipelineM *rpm) {
+        std::lock_guard<std::mutex> g(tree_lock);
+        DoErase(rpm);
     }
 };
 
@@ -114,10 +141,11 @@ public:
     void Run() {
         render_thread = std::thread([this]() {
             ResetFPS(fps);
-            tree->Render();
-            swapchain->Present();
-            timer.Await();
-            
+            while(!exit_flag) {
+                tree->Render();
+                swapchain->Present();
+                timer.Await();
+            }
         });
     }
     inline void Insert(RenderPipelineM *rp, int priority) {
@@ -135,10 +163,23 @@ public:
     inline void ResetFPS(int fps_) {
         timer.Restart(fps = fps_);
     }
+    inline void Clear() {
+        tree->Clear();
+    }
+    inline void Lock() {
+        tree->Lock();
+    }
+    inline void UnLock() {
+        tree->UnLock();
+    }
+    inline void Erase(RenderPipelineM *rpm) {
+        tree->Erase(rpm);
+    }
     void UnInitialize() {
         if (render_thread.joinable()) {
             Terminate();
         }
+        Clear();
         device.Release();
         swapchain.Release();
     }

@@ -42,11 +42,29 @@ RPMTreap::droot RPMTreap::DoSplit(RPMNode *x, int k) {
 void RPMTreap::DoRender(RPMNode *u) {
     if(!u)return;
     if(u->right)DoRender(u->right);
-    auto &l = u->rpm->ReadRef();
-    device->native_immcontext->ExecuteCommandList(l.Get(), false);
+    ComPtr<ID3D11CommandList> l = *u->rpm->ReadPtr();
+    if(l)device->native_immcontext->ExecuteCommandList(l.Get(), false);
     if(u->left)DoRender(u->left);
 }
 
+void RPMTreap::DoClear(RPMNode *u) {
+    if(!u)return;
+    DoClear(u->left);
+    DoClear(u->right);
+    delete u;
+}
+
+void RPMTreap::DoErase(RenderPipelineM *rpm) {
+    RPMNode *d = uid2node[rpm->access.second];
+    if(!d)return;
+    uid2node.erase(rpm->access.second);
+    rpm->access = {0, 0};
+    int k = GetRank(root, d);
+    auto p = DoSplit(root, k);
+    auto p2 = DoSplit(p.first, k-1);
+    if(p2.second)delete p2.second;
+    root = DoInsert(p2.first, p.second);
+}
 
 namespace Ext {
     namespace DX {
@@ -54,6 +72,10 @@ namespace Ext {
             VALUE klass_rpm;
             VALUE klass_remote_render_executive;
 
+            static VALUE rpm_swap_commands(VALUE self) {
+                GetNativeObject<::RenderPipelineM>(self)->SwapCommands();
+                return self;
+            }
 
             //------------------------
             static VALUE RE_initialize(VALUE self, VALUE device, VALUE swp, VALUE fps) {
@@ -77,9 +99,28 @@ namespace Ext {
                 GetNativeObject<RemoteRenderExecutive>(self)->Insert(GetNativeObject<::RenderPipelineM>(rpm), FIX2INT(priority));
                 return self;
             }
+            static VALUE RE_clear(VALUE self) {
+                GetNativeObject<RemoteRenderExecutive>(self)->Clear();
+                return self;
+            }
+            static VALUE RE_lock(VALUE self) {
+                GetNativeObject<RemoteRenderExecutive>(self)->Lock();
+                return self;
+            }
+            static VALUE RE_unlock(VALUE self) {
+                GetNativeObject<RemoteRenderExecutive>(self)->UnLock();
+                return self;
+            }
+            static VALUE RE_erase(VALUE self, VALUE rpm) {
+                CheckArgs({ rpm }, {klass_rpm});
+                GetNativeObject<RemoteRenderExecutive>(self)->Erase(GetNativeObject<RenderPipelineM>(rpm));
+                return self;
+            }
 
             void InitRPM() {
                 klass_rpm = rb_define_class_under(module, "RenderPipelineM", RenderPipeline::klass);
+                rb_define_alloc_func(klass_rpm, RefObjNew<::RenderPipelineM>);
+                rb_define_method(klass_rpm, "swap_commands", (rubyfunc)rpm_swap_commands, 0);
 
                 //RE
                 klass_remote_render_executive = rb_define_class_under(module, "RemoteRenderExecutive", rb_cObject);
@@ -88,7 +129,11 @@ namespace Ext {
                 rb_define_method(klass_remote_render_executive, "initialize", (rubyfunc)RE_initialize, 3);
                 rb_define_method(klass_remote_render_executive, "reset_fps", (rubyfunc)RE_reset_fps, 1);
                 rb_define_method(klass_remote_render_executive, "insert", (rubyfunc)RE_insert, 2);
+                rb_define_method(klass_remote_render_executive, "clear", (rubyfunc)RE_clear, 0);
                 rb_define_method(klass_remote_render_executive, "terminate", (rubyfunc)RE_terminate, 0);
+                rb_define_method(klass_remote_render_executive,"lock", (rubyfunc)RE_lock, 0);
+                rb_define_method(klass_remote_render_executive, "unlock", (rubyfunc)RE_unlock, 0);
+                rb_define_method(klass_remote_render_executive, "erase", (rubyfunc)RE_erase, 1);
             }
         }
     }
