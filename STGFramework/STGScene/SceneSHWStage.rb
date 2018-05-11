@@ -9,6 +9,7 @@ class SceneSHWStage < SceneStage
 	
 	def init_back
 		@sp_panel = TextureCache.load("./stage/back.png")
+		Graphics.re.insert(@rd_back, 200)
 	end
 	def init_content
 		@reimus = TextureCache.load("/th14/player/pl00/pl00.png")
@@ -16,11 +17,15 @@ class SceneSHWStage < SceneStage
 		@reimu_forward, @reimu_left, @reimu_right, @reimu_back = Array.new(4) {DX::Texture2D.new($device, 32, 48)}
 		@rd_content.set_target(DX::RTT.new(@reimu_forward))
 		@rd_content.draw_texture(@reimus, HFRect(0, 0, 32, 48), HFRect(32, 0, 32, 48))
-		@rd_content.use_default_target
+		Graphics.re.lock
+		@rd_content.immdiate_render
+		Graphics.re.unlock
+		Graphics.re.insert(@rd_content, 100)
 	end
 	
 	def terminate
 		super
+		Graphics.re.clear
 		[@reimu_forward, @reimu_back, @reimu_left, @reimu_right].each &:release
 	end
 	

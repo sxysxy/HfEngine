@@ -6,7 +6,7 @@
 
 require_relative "./Graphics2D.rb"
 
-class Renderer2D < DX::RenderPipeline
+class Renderer2D < DX::RenderPipelineM
 	SHADERS_FILE = "./HighLevelRenderer/Renderer2DShaders.rb"
 
 	PHASE_DRAW_SOLID = 0
@@ -28,6 +28,9 @@ class Renderer2D < DX::RenderPipeline
 		@sf.input_layout.apply(self)
 		set_target(Graphics.rtt)
 		set_viewport(HFRect(0, 0, $window.width, $window.height))
+		Graphics.re.lock
+		immdiate_render
+		Graphics.re.unlock
 		
 		@z_depth = 0.0;
 		@phase = PHASE_DRAW_SOLID - 1 #phase 
@@ -168,7 +171,7 @@ class Renderer2D < DX::RenderPipeline
 	end
 	
 	def render
-		Graphics.re.push(self)
+		swap_commands
 	end
 	
 	def use_default_target

@@ -7,6 +7,7 @@ class SceneSHWTitle < SceneTitle
 	
 	def start
 		@renderer = Renderer2D.new
+		Graphics.re.insert(@renderer, 100)
 		
 		#handlers
 		set_handler(:cancel, ->{SceneManager.exit})
@@ -22,6 +23,7 @@ class SceneSHWTitle < SceneTitle
 	end
 	
 	def terminate
+		Graphics.re.clear
 		@renderer.release
 	end
 	
@@ -53,7 +55,6 @@ class SceneSHWTitle < SceneTitle
 			SceneManager.exit
 		elsif @option_index == 0
 			SceneManager.call(SceneSHWStage)
-			Controller.restart
 		end
 	end
 	
