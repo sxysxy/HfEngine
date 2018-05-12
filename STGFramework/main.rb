@@ -1,6 +1,6 @@
 #encoding :utf-8
 Dir.chdir File.dirname(__FILE__)
-
+show_console
 class Class
 	def derive(m)
 		self.superclass.instance_method(m)

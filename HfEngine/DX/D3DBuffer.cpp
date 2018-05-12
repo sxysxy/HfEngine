@@ -5,7 +5,7 @@ void D3DBuffer::Initialize(D3DDevice *device, UINT usage, UINT flag, size_t size
     RtlZeroMemory(&bd, sizeof bd);
     bd.BindFlags = flag;
     bd.Usage = (D3D11_USAGE)usage;
-    bd.ByteWidth = size;
+    bd.ByteWidth = (UINT)size;
     D3D11_SUBRESOURCE_DATA data;
     if (init_data) {
         RtlZeroMemory(&data, sizeof data);

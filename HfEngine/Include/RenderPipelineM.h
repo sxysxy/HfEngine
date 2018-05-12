@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include "D3DDevice.h"
 
-class RenderPipelineM : public RenderPipeline, protected SwapData<ComPtr<ID3D11CommandList>> {
+class RenderPipelineM : public RenderPipeline, protected SwapData<std::atomic<ID3D11CommandList *>> {
     friend struct RPMNode;
     friend class RPMTreap;
     std::pair<int , unsigned> access; //pair<priority, uid>
@@ -16,9 +16,19 @@ public:
     void SwapCommands() {
         ID3D11CommandList *list;
         native_context->FinishCommandList(true, &list);
-        WriteRef() = list;
-        list->Release();
+        auto &x = WriteRef();
+        auto ol = x.load();
+        if(ol)ol->Release();
+        x.store(list);
         Swap();
+    }
+    virtual void Release() {
+        RenderPipeline::Release();
+        auto x = WriteRef().load();
+        if(x)x->Release();
+        x = ReadRef().load();
+        x->Release();
+        a = b = nullptr;
     }
 };
 

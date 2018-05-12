@@ -105,8 +105,8 @@ class Renderer2D < DX::RenderPipelineM
 		pre_draw_texture
 		
 		rect = src_rect ? src_rect : HFRect(0, 0, texture.width, texture.height)
-		w = rect.w
-		h = rect.h
+		w = texture.width
+		h = texture.height
 		#LT
 		x1 = Float(rect.x) / w  
 		y1 = Float(rect.y) / h 

@@ -128,8 +128,15 @@ namespace Ext {
         struct RubySleep {
             static void Wait(int ms) {
                 //Sleep(ms);
-                rb_funcall(rb_mKernel, rb_intern("sleep"), 1, DBL2NUM(ms / 1000.0));  //It also works
-                
+                //rb_funcall(rb_mKernel, rb_intern("sleep"), 1, DBL2NUM(ms / 1000.0));  //It also works
+                static struct timeval {
+                    long sec;
+                    long microsec;
+                }t{0, 1000};  
+                typedef VALUE (*rb_thread_wait_for_t)(struct timeval); 
+                static rb_thread_wait_for_t rth_wait_for = (rb_thread_wait_for_t)(rb_thread_wait_for);
+                    //直接用ruby.h里的rb_thread_wait_for会因为这里定义的struct timeval与ruby.h里声明的strcut timeval不是同一个东西而过不了编译...
+                rth_wait_for(t);
                 //if(ms)
                 //    rb_thread_sleep(ms); //It preforms bad.
             }

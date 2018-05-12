@@ -52,5 +52,5 @@ HFWindow.new("恋恋 VS 紫妈", 300, 300) {
 		timer.await
     }
 	re.terminate
-	[swapchain, vb, sf, keyboard, koishi, yukari, re].each &:release
+	[swapchain, vb, sf, keyboard, koishi, yukari, re, rp, device].each &:release
 }

@@ -40,10 +40,14 @@ RPMTreap::droot RPMTreap::DoSplit(RPMNode *x, int k) {
 }
 
 void RPMTreap::DoRender(RPMNode *u) {
-    if(!u)return;
-    if(u->right)DoRender(u->right);
-    ComPtr<ID3D11CommandList> l = *u->rpm->ReadPtr();
-    if(l)device->native_immcontext->ExecuteCommandList(l.Get(), false);
+    if (!u)return;
+    if (u->right)DoRender(u->right);
+    ID3D11CommandList *l = u->rpm->ReadRef().load();
+    if (l) {
+        l->AddRef();
+        device->native_immcontext->ExecuteCommandList(l, false);
+        l->Release();
+    }
     if(u->left)DoRender(u->left);
 }
 
