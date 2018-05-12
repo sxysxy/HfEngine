@@ -27,7 +27,7 @@ public:
         auto x = WriteRef().load();
         if(x)x->Release();
         x = ReadRef().load();
-        x->Release();
+        if(x)x->Release();
         a = b = nullptr;
     }
 };
