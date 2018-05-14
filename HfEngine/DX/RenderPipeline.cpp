@@ -114,6 +114,13 @@ void RenderPipeline::SetRasterizer(Rasterizer *rs) {
     rasterizer = rs;
     native_context->RSSetState(rs ? rs->native_rasterizer.Get() : nullptr);
 }
+void RenderPipeline::SetScissorRect(const Utility::Rect &rect) {
+    D3D11_RECT r{rect.x, rect.y, rect.x+rect.w, rect.y+rect.h};
+    native_context->RSSetScissorRects(1, &r);
+}
+
+
+//OM
 void RenderPipeline::SetTarget(RTT *rtt) {
     rtt_target = rtt;
     native_context->OMSetRenderTargets(1, rtt->native_rtt_view.GetAddressOf(),
@@ -126,6 +133,19 @@ void RenderPipeline::ImmdiateRender() {
     device->native_immcontext->ExecuteCommandList(list, false);
     list->Release();
 }
+
+void RenderPipeline::ImmdiateCopy2D(Texture2D *dest, Texture2D *src, 
+    const Utility::Rect &dest_rect, const Utility::Rect &src_rect) {
+    D3D11_BOX box;
+    box.back = box.back = 0.0;
+    box.top = src_rect.y;
+    box.left = src_rect.x;
+    box.right = box.left + src_rect.width;
+    box.bottom = box.top + src_rect.height;
+    device->native_immcontext->CopySubresourceRegion(dest->native_texture2d.Get(), 0, dest_rect.x, dest_rect.y, 0.0, 
+            src->native_texture2d.Get(), 0, &box);
+}
+
 
 namespace Ext {
     namespace DX {
@@ -331,6 +351,11 @@ namespace Ext {
                 rb_iv_set(self, "@target", tar);
                 return self;
             }
+            static VALUE set_scissor_rect(VALUE self, VALUE r) {
+                CheckArgs({ r }, {DX::klass_HFRect});
+                GetNativeObject<::RenderPipeline>(self)->SetScissorRect(*GetNativeObject<Utility::Rect>(r));
+                return self;
+            }
             static VALUE get_target(VALUE self) {
                 return rb_iv_get(self, "@target");
             }
@@ -383,6 +408,14 @@ namespace Ext {
             static VALUE immdiate_render(VALUE self) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
                 rp->ImmdiateRender();
+                return self;
+            }
+            static VALUE immdiate_copy2d(VALUE self, VALUE dest, VALUE src, VALUE dest_rect, VALUE src_rect) {
+                CheckArgs({ dest, src, dest_rect, src_rect }, 
+                    {DX::Texture::klass_texture2d, DX::Texture::klass_texture2d , DX::klass_HFRect, DX::klass_HFRect});
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                rp->ImmdiateCopy2D(GetNativeObject<::Texture2D>(dest), GetNativeObject<::Texture2D>(dest),
+                    *GetNativeObject<Utility::Rect>(dest_rect), *GetNativeObject<Utility::Rect>(src_rect));
                 return self;
             }
 
@@ -444,6 +477,7 @@ namespace Ext {
                 rb_define_method(klass, "viewport", (rubyfunc)get_viewport, 0);
                 rb_define_method(klass, "set_rasterizer", (rubyfunc)set_rasterizer, 1);
                 rb_define_method(klass, "rasterizer", (rubyfunc)get_rasterizer, 0);
+                rb_define_method(klass, "set_scissor_rect", (rubyfunc)set_scissor_rect, 1);
 
                 //om
                 rb_define_method(klass, "set_target", (rubyfunc)set_target, 1);
@@ -458,6 +492,7 @@ namespace Ext {
 
                 //
                 rb_define_method(klass, "immdiate_render", (rubyfunc)immdiate_render, 0);
+                rb_define_method(klass, "immdiate_copy2d", (rubyfunc)immdiate_copy2d, 4);
                 
                 //
                 rb_define_method(klass, "update_subresource", (rubyfunc)update_subresource, 2);
@@ -469,6 +504,9 @@ namespace Ext {
                 rb_define_const(module, "R32_FLOAT", INT2FIX(DXGI_FORMAT_R32_FLOAT));
                 rb_define_const(module, "D32_FLOAT", INT2FIX(DXGI_FORMAT_D32_FLOAT));
                 rb_define_const(module, "R8G8B8A8_UINT", INT2FIX(DXGI_FORMAT_R8G8B8A8_UINT));
+                rb_define_const(module, "R8G8_UINT", INT2FIX(DXGI_FORMAT_R8G8_UINT));
+                rb_define_const(module ,"R16G16_UINT", INT2FIX(DXGI_FORMAT_R16G16_UINT));
+                rb_define_const(module, "R16G16B16A16_UINT", INT2FIX(DXGI_FORMAT_R16G16B16A16_UINT));
 
                 //primitive topology
                 rb_define_const(module, "TOPOLOGY_TRIANGLELIST", INT2FIX(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST));

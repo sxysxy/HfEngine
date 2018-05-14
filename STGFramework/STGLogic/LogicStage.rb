@@ -9,8 +9,8 @@ class LogicStage
 	def initialize(s)
 		@scene = s
 		
-		@player_x = 200 - PLAYER_H/2
-		@player_y = 212 - PLAYER_W/2
+		@player_x = 200 - PLAYER_W/2
+		@player_y = 420 - PLAYER_H
 		@player_dir = 8 #as numpad 8↑ 2↓ 4←，etc
 	end
 

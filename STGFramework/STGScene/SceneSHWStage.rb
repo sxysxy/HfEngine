@@ -17,8 +17,10 @@ class SceneSHWStage < SceneStage
 	end
 	def init_content
 		@reimus = TextureCache.load("/th14/player/pl00/pl00.png")
-		@rd_content.set_viewport(HFRect(25, 25, 400, 425))
 		Graphics.re.insert(@rd_content, 100)
+		
+		@sp_player = Sprite.new(@reimus)
+		@sp_player.viewport = HFRect(25, 25, 400, 420)
 	end
 	
 	def update
@@ -28,7 +30,7 @@ class SceneSHWStage < SceneStage
 	
 	def terminate
 		super
-		Graphics.re.clear
+		Graphics.re.clear 
 	end
 	
 	derive(:draw_background) 
@@ -39,6 +41,16 @@ class SceneSHWStage < SceneStage
 	
 	derive(:draw_content)
 	def draw_content
-		@rd_content.draw_texture(@reimus, HFRect(100, 100, 32, 48), HFRect(0, 0, 32, 48))
+		draw_player
+		
+	end
+	
+	def draw_player
+		@sp_player.src_rect = HFRect(32, 0, 32, 48)
+		@sp_player.x = @logic.player_x - 16
+		@sp_player.y = @logic.player_y - 24
+		@sp_player.zoom_x = 32.0 / @reimus.width
+		@sp_player.zoom_y = 48.0 / @reimus.height
+		@rd_content.draw_sprite(@sp_player)
 	end
 end

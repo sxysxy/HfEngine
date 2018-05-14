@@ -90,6 +90,7 @@ public:
 
     //RS 
     void SetViewport(const Utility::Rect &rect, float min_deep = 0.0f, float max_deep = 1.0f);
+    void SetScissorRect(const Utility::Rect &rect);
     void SetRasterizer(Rasterizer *rs);
 
     //OM 
@@ -107,6 +108,8 @@ public:
         native_context->DrawIndexed(count, start_pos, 0);
     }
     void ImmdiateRender();
+    void ImmdiateCopy2D(Texture2D *dest, Texture2D *src,
+        const Utility::Rect &dest_rect, const Utility::Rect &src_rect);
 
     template<class T>
     void UpdateSubResource(D3DBuffer *bf, const T *data) {

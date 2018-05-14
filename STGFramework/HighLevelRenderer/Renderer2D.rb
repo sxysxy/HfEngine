@@ -28,6 +28,7 @@ class Renderer2D < DX::RenderPipelineM
 		@sf.input_layout.apply(self)
 		set_target(Graphics.rtt)
 		set_viewport(HFRect(0, 0, $window.width, $window.height))
+		update_subresource @sf.resource.cbuffer[:viewport], [viewport.x, viewport.y, viewport.w, viewport.h].pack("f*")
 		Graphics.re.lock
 		immdiate_render
 		Graphics.re.unlock
@@ -64,11 +65,6 @@ class Renderer2D < DX::RenderPipelineM
 			@sf.section[:SpriteLQ].apply(self)
 		end
 		@phase = PHASE_DRAW_SPRITE
-	end
-	
-	def set_viewport(r)
-		super(r)
-		update_subresource @sf.resource.cbuffer[:viewport], [viewport.x, viewport.y, viewport.w, viewport.h].pack("f*")
 	end
 	
 	#draw rect
@@ -137,8 +133,8 @@ class Renderer2D < DX::RenderPipelineM
 		pre_draw_sprite
 		
 		rect = s.src_rect
-		w = rect.w
-		h = rect.h
+		w = s.texture.width
+		h = s.texture.height
 		#LT
 		x1 = Float(rect.x) / w  
 		y1 = Float(rect.y) / h 
@@ -163,6 +159,7 @@ class Renderer2D < DX::RenderPipelineM
 				[s.color_mod.r, s.color_mod.g, s.color_mod.b, s.color_mod.a, s.opacity, 0.0, 0.0, 0.0].pack("f*")
 		update_subresource @sf.resource.cbuffer[:VSTextureEXParam], 
 			[s.viewport.x, s.viewport.y, s.viewport.w, s.viewport.h, s.angle, s.vmirror ? 1 : 0, s.hmirror ? 1 : 0, 0].pack("fffffiii")			
+		set_viewport(s.viewport)
 		set_topology(DX::TOPOLOGY_TRIANGLESTRIP)
 		set_vbuffer(@common_vbuffer)
 		set_ps_resource(0, s.texture)
