@@ -35,6 +35,7 @@ Graphics.init
 SceneManager.run(TITLE_CLASS)
 
 #do release
+Controller.shutdown
 Graphics.shutdown
 TextureCache.clear
 $device.release

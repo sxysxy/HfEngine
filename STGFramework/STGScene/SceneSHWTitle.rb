@@ -43,9 +43,9 @@ class SceneSHWTitle < SceneTitle
 	
 	def update_keypress
 		super
-		if @keyboard.is_triggled(DX::DIK_UP)
+		if Controller.keyboard.is_triggled(DX::DIK_UP)
 			@option_index = (@option_index+1)%2
-		elsif @keyboard.is_triggled(DX::DIK_DOWN)
+		elsif Controller.keyboard.is_triggled(DX::DIK_DOWN)
 			@option_index = (@option_index+1)%2
 		end
 	end

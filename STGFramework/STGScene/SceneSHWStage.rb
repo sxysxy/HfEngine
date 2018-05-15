@@ -7,7 +7,7 @@ class SceneSHWStage < SceneStage
 		init_back
 		init_content
 		
-		@logic = LogicStage.new(self)
+		@logic = LogicStage.new
 	end
 	
 	def init_back
@@ -17,10 +17,27 @@ class SceneSHWStage < SceneStage
 	end
 	def init_content
 		@reimus = TextureCache.load("/th14/player/pl00/pl00.png")
-		Graphics.re.insert(@rd_content, 100)
 		
-		@sp_player = Sprite.new(@reimus)
-		@sp_player.viewport = HFRect(25, 25, 400, 420)
+		@sp_reimu_forward = Sprite.new(DX::Texture2D.new($device, 32, 48))
+		@sp_reimu_left = Sprite.new(DX::Texture2D.new($device, 32, 48))
+		@sp_reimu_right = Sprite.new(DX::Texture2D.new($device, 32, 48))
+		@sp_reimu_back = Sprite.new(DX::Texture2D.new($device, 32, 49))
+		Graphics.re.lock
+		@rd_content.immdiate_copy2d(@sp_reimu_forward.texture, @reimus, HFRect(0, 0, 32, 48), 
+																		HFRect(32, 0, 32, 48))
+		@rd_content.immdiate_copy2d(@sp_reimu_left.texture, @reimus, HFRect(0, 0, 32, 48), 
+																		HFRect(96, 48, 32, 48))
+		@rd_content.immdiate_copy2d(@sp_reimu_right.texture, @reimus, HFRect(0, 0, 32, 48), 
+																		HFRect(96, 96, 32, 48))
+		@rd_content.immdiate_copy2d(@sp_reimu_back.texture, @reimus, HFRect(0, 0, 32, 48), 
+																		HFRect(32, 48, 32, 48))
+		Graphics.re.unlock
+		Graphics.re.insert(@rd_content, 100)
+		[@sp_reimu_forward, @sp_reimu_back, @sp_reimu_left, @sp_reimu_right].each {|s|
+			s.viewport = HFRect(25, 25, 400, 420)
+			s.origin_center
+		}
+		@dir2sp = {:up => @sp_reimu_forward, :down => @sp_reimu_back, :left => @sp_reimu_left, :right => @sp_reimu_right}
 	end
 	
 	def update
@@ -31,6 +48,7 @@ class SceneSHWStage < SceneStage
 	def terminate
 		super
 		Graphics.re.clear 
+		[@sp_reimu_forward, @sp_reimu_back, @sp_reimu_left, @sp_reimu_right].each &:release_texture
 	end
 	
 	derive(:draw_background) 
@@ -42,15 +60,12 @@ class SceneSHWStage < SceneStage
 	derive(:draw_content)
 	def draw_content
 		draw_player
-		
 	end
 	
 	def draw_player
-		@sp_player.src_rect = HFRect(32, 0, 32, 48)
-		@sp_player.x = @logic.player_x - 16
-		@sp_player.y = @logic.player_y - 24
-		@sp_player.zoom_x = 32.0 / @reimus.width
-		@sp_player.zoom_y = 48.0 / @reimus.height
-		@rd_content.draw_sprite(@sp_player)
+		sp = @dir2sp[@logic.player_dir]
+		sp.x = @logic.player_x
+		sp.y = @logic.player_y
+		@rd_content.draw_sprite(sp)
 	end
 end

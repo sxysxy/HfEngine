@@ -7,7 +7,7 @@ using namespace Utility;
 
 void HFEngineInitialize() {
     MSVCRT::GetFunctions();
-    CoInitialize(nullptr);
+    CoInitializeEx(nullptr, COINIT_MULTITHREADED); //多线程模式
     Input::Initialize();
 }
 

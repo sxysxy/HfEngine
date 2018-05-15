@@ -14,8 +14,10 @@ public:
     ComPtr<ID3D11ShaderResourceView> native_shader_resource_view;
 
     const int& width = _width, &height = _height;
+    void Initialize() {};
     void Initialize(D3DDevice *device, const std::wstring &filename); 
     void Initialize(D3DDevice *deivce, int w, int h);
+    void CreateFromNativeTexture2D(ID3D11Texture2D *tex);
 
     void UnInitialize() {
         native_texture2d.ReleaseAndGetAddressOf(); //ComPtr & operator will call release...

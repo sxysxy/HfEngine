@@ -43,6 +43,7 @@ namespace Ext {
             return obj;
         }
         static VALUE M_matrix_mul_to(VALUE self, VALUE _om) {
+            CheckArgs({ _om }, { klass_matrix4x4 });
             auto m = GetNativeObject<XMFLOAT4X4>(self);
             XMMATRIX xm = XMLoadFloat4x4(m);
             auto om = GetNativeObject<XMFLOAT4X4>(_om);
@@ -54,6 +55,7 @@ namespace Ext {
 
         //returns a new object
         static VALUE M_matrix_mul(VALUE self, VALUE _om) {
+            CheckArgs({ _om }, {klass_matrix4x4});
             auto m = GetNativeObject<XMFLOAT4X4>(self);
             XMMATRIX xm = XMLoadFloat4x4(m);
             auto om = GetNativeObject<XMFLOAT4X4>(_om);
@@ -66,6 +68,10 @@ namespace Ext {
         }
 
         static VALUE M_set(VALUE self, VALUE m, VALUE n, VALUE v) {
+#ifdef _DEBUG
+            if(!RB_FIXNUM_P(m) || !RB_FIXNUM_P(n) || !RB_FLOAT_TYPE_P(v))
+                rb_raise(rb_eArgError, "Matrix4x4#set(m : Fixnum, n : Fixnum, v : Float)");
+#endif
             auto mt = GetNativeObject<XMFLOAT4X4>(self);
             mt->m[FIX2INT(m)][FIX2INT(n)] = (float)rb_float_value(v);
             return v;
@@ -128,6 +134,7 @@ namespace Ext {
         static VALUE perspective(VALUE self, VALUE fovangleY, VALUE aspect, VALUE znear, VALUE zfar) {
             // if you called MathTool.perspective, it returns a new matrix4x4
             // if you called Matrix4x4#perspective!, it change the object it self
+            CheckAllFloat({fovangleY, aspect, znear, zfar});
             auto obj = self == module ? New<XMFLOAT4X4>(klass_matrix4x4) : self;
             auto nobj = GetNativeObject<XMFLOAT4X4>(obj);
             auto m = XMMatrixPerspectiveFovLH(RFLOAT_VALUE(fovangleY), RFLOAT_VALUE(aspect), 
@@ -149,6 +156,7 @@ namespace Ext {
             if(argc < 2 || argc > 3)
                 rb_raise(rb_eArgError,
                 "Mathtool::lookat(eyepos, target, [up = [0.0, 1.0, 0.0, 0.0]] expecting (2..3) args but got %d", argc);
+            CheckAllFloat({argv[0], argv[1]});
             VALUE eyepos = argv[0];
             VALUE target = argv[1];
             VALUE up = argc == 3? argv[2] : 0;
@@ -170,6 +178,7 @@ namespace Ext {
             return obj;
         }
         static VALUE rotateX(VALUE self, VALUE angle) {
+            CheckAllFloat({angle});
             auto obj = self == module ? New<XMFLOAT4X4>(klass_matrix4x4) : self;
             auto nobj = GetNativeObject<XMFLOAT4X4>(obj);
             auto m = XMMatrixRotationX(RFLOAT_VALUE(angle));
@@ -177,6 +186,7 @@ namespace Ext {
             return obj;
         }
         static VALUE rotateY(VALUE self, VALUE angle) {
+            CheckAllFloat({ angle });
             auto obj = self == module ? New<XMFLOAT4X4>(klass_matrix4x4) : self;
             auto nobj = GetNativeObject<XMFLOAT4X4>(obj);
             auto m = XMMatrixRotationY(RFLOAT_VALUE(angle));
@@ -184,6 +194,7 @@ namespace Ext {
             return obj;
         }
         static VALUE rotateZ(VALUE self, VALUE angle) {
+            CheckAllFloat({ angle });
             auto obj = self == module ? New<XMFLOAT4X4>(klass_matrix4x4) : self;
             auto nobj = GetNativeObject<XMFLOAT4X4>(obj);
             auto m = XMMatrixRotationZ(RFLOAT_VALUE(angle));
@@ -191,6 +202,7 @@ namespace Ext {
             return obj;
         }
         static VALUE move(VALUE self, VALUE mx, VALUE my, VALUE mz) {
+            CheckAllFloat({ mx, my, mz });
             auto obj = self == module ? New<XMFLOAT4X4>(klass_matrix4x4) : self;
             identity(obj);
             auto nobj = GetNativeObject<XMFLOAT4X4>(obj);
@@ -200,6 +212,7 @@ namespace Ext {
             return obj;
         }
         static VALUE zoom(VALUE self, VALUE zoomx, VALUE zoomy, VALUE zoomz) {
+            CheckAllFloat({zoomx, zoomy, zoomz});
             auto obj = self == module ? New<XMFLOAT4X4>(klass_matrix4x4) : self;
             identity(obj);
             auto nobj = GetNativeObject<XMFLOAT4X4>(obj);

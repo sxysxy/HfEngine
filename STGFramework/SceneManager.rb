@@ -6,14 +6,14 @@ class Scene
 	attr_reader :keyboard
 	
 	def initialize
-		@keyboard = DX::Input::Keyboard.new($window)
+
 	end
 	
 	def main
 		start
 		while self == SceneManager.scene
 			process_message
-			@keyboard.update
+			Controller.keyboard.update
 			update
 			Controller.wait_next_frame
 		end

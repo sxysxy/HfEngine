@@ -148,12 +148,14 @@ class Renderer2D < DX::RenderPipelineM
 		x4 = x2
 		y4 = y3
 		
-		dest_rect = HFRect.new(s.x, s.y, Integer(s.texture.width * s.zoom_x), Integer(s.texture.height * s.zoom_y))
+		dest_rect = s.dest_rect
+		dx = dest_rect.x - s.ox
+		dy = dest_rect.y - s.oy
 		
-		vecs = [Float(dest_rect.x), Float(dest_rect.y),             s.z, 0.0, 0.0, 0.0, 0.0, x1, y1, 
-				Float(dest_rect.x+dest_rect.w), Float(dest_rect.y), s.z, 0.0, 0.0, 0.0, 0.0, x2, y2,
-				Float(dest_rect.x), Float(dest_rect.y+dest_rect.h), s.z, 0.0, 0.0, 0.0, 0.0, x3, y3,
-				Float(dest_rect.x+dest_rect.w), Float(dest_rect.y+dest_rect.h), s.z, 0.0, 0.0, 0.0, 0.0, x4, y4].pack("f*")
+		vecs = [Float(dx), Float(dy),             s.z, 0.0, 0.0, 0.0, 0.0, x1, y1, 
+				Float(dx+dest_rect.w), Float(dy), s.z, 0.0, 0.0, 0.0, 0.0, x2, y2,
+				Float(dx), Float(dy+dest_rect.h), s.z, 0.0, 0.0, 0.0, 0.0, x3, y3,
+				Float(dx+dest_rect.w), Float(dy+dest_rect.h), s.z, 0.0, 0.0, 0.0, 0.0, x4, y4].pack("f*")
 		update_subresource @common_vbuffer, vecs
 		update_subresource @sf.resource.cbuffer[:PSTextureParamSprite], 
 				[s.color_mod.r, s.color_mod.g, s.color_mod.b, s.color_mod.a, s.opacity, 0.0, 0.0, 0.0].pack("f*")

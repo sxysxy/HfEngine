@@ -36,7 +36,8 @@ void SwapChain::Initialize(D3DDevice * device, HFWindow * wnd, bool fullscreen) 
 
 void SwapChain::Resize(int w, int h) {
     backrtt.Release(); //Must be placed before ResizeBuffers, otherwise ResizeBuffers will fail.
-    backrtt = Utility::ReferPtr<RTT>::New();
+    backbuffer.Release();
+    backbuffer = Utility::ReferPtr<Texture2D>::New();
 
     HRESULT hr = native_swap_chain->ResizeBuffers(1, w, h,
         DXGI_FORMAT_R8G8B8A8_UNORM, 0);
@@ -50,8 +51,8 @@ void SwapChain::Resize(int w, int h) {
     if (!native_backbuffer) {
         MAKE_ERRMSG<std::runtime_error>("Fail to get swapchain buffers, Error code:", hr);
     }
-    
-    backrtt->CreateFromNativeTexture2D(native_backbuffer.Get());
+    backbuffer->CreateFromNativeTexture2D(native_backbuffer.Get());
+    backrtt = Utility::ReferPtr<RTT>::New(backbuffer.Get());
 }
 
 namespace Ext {
@@ -103,16 +104,23 @@ namespace Ext {
                 }
                 //rb_iv_set(self, "@back_buffer", Data_Wrap_Struct(Ext::DX::D3DTexture2D::klass, nullptr, nullptr, &sc->backbuffer));
                 rb_iv_set(self, "@rtt", Data_Wrap_Struct(Ext::DX::Texture::klass_rtt, nullptr, nullptr, sc->GetRTT()));
+                rb_iv_set(self, "@backbuffer", Data_Wrap_Struct(Ext::DX::Texture::klass_texture2d, nullptr,
+                                    nullptr, sc->GetBackBuffer()));
                 return self;
             }
             static VALUE get_rtt(VALUE self) {
                 return rb_iv_get(self, "@rtt");
+            }
+            static VALUE get_backbuffer(VALUE self) {
+                return rb_iv_get(self, "@backbuffer");
             }
 
             static VALUE resize(VALUE self, VALUE w, VALUE h) {  ///why doesn't work...
                 auto sc = GetNativeObject<::SwapChain>(self);
                 sc->Resize(FIX2INT(w), FIX2INT(h));
                 rb_iv_set(self, "@rtt", Data_Wrap_Struct(Ext::DX::Texture::klass_rtt, nullptr, nullptr, sc->GetRTT()));
+                rb_iv_set(self, "@backbuffer", Data_Wrap_Struct(Ext::DX::Texture::klass_texture2d, nullptr,
+                    nullptr, sc->GetBackBuffer()));
                 return self;
             }
 
@@ -123,6 +131,7 @@ namespace Ext {
                 rb_define_method(klass, "initialize", (rubyfunc)initialize, -1);
                 rb_define_method(klass, "present", (rubyfunc)present, 0);
                 rb_define_method(klass, "rtt", (rubyfunc)get_rtt, 0);
+                rb_define_method(klass, "backbuffer", (rubyfunc)get_backbuffer, 0);
                 rb_define_method(klass, "set_fullscreen", (rubyfunc)set_fullscreen, -1);
                 rb_define_method(klass, "resize", (rubyfunc)resize, 2);
             

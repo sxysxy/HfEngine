@@ -33,19 +33,19 @@ namespace Ext{
             return INT2FIX(GetNativeObject<Utility::Rect>(self)->h);
         }
         static VALUE HRF_setx(VALUE self, VALUE sx) {
-            GetNativeObject<Utility::Rect>(self)->x = FIX2INT(sx);
+            GetNativeObject<Utility::Rect>(self)->x = FIX2INT(rb_to_int(sx));
             return sx;
         }
         static VALUE HRF_sety(VALUE self, VALUE sx) {
-            GetNativeObject<Utility::Rect>(self)->y = FIX2INT(sx);
+            GetNativeObject<Utility::Rect>(self)->y = FIX2INT(rb_to_int(sx));
             return sx;
         }
         static VALUE HRF_setw(VALUE self, VALUE sx) {
-            GetNativeObject<Utility::Rect>(self)->w = FIX2INT(sx);
+            GetNativeObject<Utility::Rect>(self)->w = FIX2INT(rb_to_int(sx));
             return sx;
         }
         static VALUE HRF_seth(VALUE self, VALUE sx) {
-            GetNativeObject<Utility::Rect>(self)->h = FIX2INT(sx);
+            GetNativeObject<Utility::Rect>(self)->h = FIX2INT(rb_to_int(sx));
             return sx;
         }
         static VALUE HFR_initialize(int argc, VALUE *argv, VALUE self) {
@@ -56,6 +56,7 @@ namespace Ext{
             }
             else if (argc == 4) {
                 auto rect = GetNativeObject<Utility::Rect>(self);
+                CheckAllFixnum({argv[0], argv[1], argv[2], argv[3]});
                 rect->x = FIX2INT(argv[0]);
                 rect->y = FIX2INT(argv[1]);
                 rect->w = FIX2INT(argv[2]);
@@ -124,6 +125,7 @@ namespace Ext{
             }
             else if (argc == 4) {
                 auto color = GetNativeObject<Utility::Color>(self);
+                CheckAllFloat({argv[0], argv[1], argv[2], argv[3]});
                 color->r = rb_float_value(argv[0]);
                 color->g = rb_float_value(argv[1]);
                 color->b = rb_float_value(argv[2]);
@@ -150,7 +152,9 @@ namespace Ext{
             rb_define_method(klass_HFRect, "x=", (rubyfunc)HRF_setx, 1);
             rb_define_method(klass_HFRect, "y=", (rubyfunc)HRF_sety, 1);
             rb_define_method(klass_HFRect, "w=", (rubyfunc)HRF_setw, 1);
+            rb_alias(klass_HFRect, rb_intern("width="), rb_intern("w="));
             rb_define_method(klass_HFRect, "h=", (rubyfunc)HRF_seth, 1);
+            rb_alias(klass_HFRect, rb_intern("height="), rb_intern("h="));
             rb_define_method(klass_HFRect, "initialize", (rubyfunc)HFR_initialize, -1);
             rb_define_module_function(rb_mKernel, "HFRect", (rubyfunc)HFR, -1);
 

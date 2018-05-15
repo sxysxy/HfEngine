@@ -39,7 +39,7 @@ void InputLayout::Initialize(D3DDevice *device, const std::string *idents,
 
 void RenderPipeline::SetVertexBuffer(VertexBuffer *vb) {
     vbuffer = vb;
-    UINT stride = vb->size_per_vertex;
+    UINT stride = (UINT)vb->size_per_vertex;
     UINT offset = 0;
     native_context->IASetVertexBuffers(0, 1, vbuffer->native_buffer.GetAddressOf(), &stride, &offset);
 }
@@ -137,12 +137,13 @@ void RenderPipeline::ImmdiateRender() {
 void RenderPipeline::ImmdiateCopy2D(Texture2D *dest, Texture2D *src, 
     const Utility::Rect &dest_rect, const Utility::Rect &src_rect) {
     D3D11_BOX box;
-    box.back = box.back = 0.0;
+    box.front = 0;
+    box.back = 1;
     box.top = src_rect.y;
     box.left = src_rect.x;
     box.right = box.left + src_rect.width;
     box.bottom = box.top + src_rect.height;
-    device->native_immcontext->CopySubresourceRegion(dest->native_texture2d.Get(), 0, dest_rect.x, dest_rect.y, 0.0, 
+    device->native_immcontext->CopySubresourceRegion(dest->native_texture2d.Get(), 0, dest_rect.x, dest_rect.y, 0, 
             src->native_texture2d.Get(), 0, &box);
 }
 
@@ -414,7 +415,7 @@ namespace Ext {
                 CheckArgs({ dest, src, dest_rect, src_rect }, 
                     {DX::Texture::klass_texture2d, DX::Texture::klass_texture2d , DX::klass_HFRect, DX::klass_HFRect});
                 auto rp = GetNativeObject<::RenderPipeline>(self);
-                rp->ImmdiateCopy2D(GetNativeObject<::Texture2D>(dest), GetNativeObject<::Texture2D>(dest),
+                rp->ImmdiateCopy2D(GetNativeObject<::Texture2D>(dest), GetNativeObject<::Texture2D>(src),
                     *GetNativeObject<Utility::Rect>(dest_rect), *GetNativeObject<Utility::Rect>(src_rect));
                 return self;
             }

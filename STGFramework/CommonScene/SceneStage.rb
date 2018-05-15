@@ -10,11 +10,9 @@ class SceneStage < Scene
 		@rd_content.z_depth = 0.5
 		@rd_weather.z_depth = 0.1
 		@renderers = [@rd_back, @rd_content, @rd_weather]
-		@logic = LogicStage.new(self)
 	end
 	
 	def update
-		@logic.update
 		draw_background
 		draw_content
 		draw_weather

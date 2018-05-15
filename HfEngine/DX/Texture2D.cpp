@@ -53,6 +53,11 @@ void Texture2D::Initialize(D3DDevice * device, int w, int h) {
     CreateViews(device);
 }
 
+void Texture2D::CreateFromNativeTexture2D(ID3D11Texture2D * tex) {
+    native_texture2d = tex;
+    native_shader_resource_view = nullptr;
+}
+
 void RTT::Initialize(Texture2D *tex) {
     texture = tex;
     D3D11_TEXTURE2D_DESC desc;

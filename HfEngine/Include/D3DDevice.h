@@ -30,6 +30,8 @@ public:
     std::vector<std::wstring> EnumAdapters();
 
     void AcquireImmdiateContext(bool occupy = true);
+
+    
 };
 
 namespace Ext {

@@ -8,6 +8,7 @@
 
 class SwapChain : public Utility::ReferredObject {
     Utility::ReferPtr<RTT> backrtt;
+    Utility::ReferPtr<Texture2D> backbuffer;
 public:
     ComPtr<IDXGISwapChain> native_swap_chain;
 
@@ -23,6 +24,7 @@ public:
         //do not need to release native_device. delete operation will do it automacailly.
         //UnIntialize dose not entirely equal to Destructor. eg. You can Uninitalize an object and then call Initialize.
         backrtt.Release();
+        backbuffer.Release();
     }
     ~SwapChain() {
         UnInitialize();
@@ -41,6 +43,9 @@ public:
     }
     inline RTT *GetRTT() {
         return backrtt.Get();
+    }
+    inline Texture2D *GetBackBuffer() {
+        return backbuffer.Get();
     }
 
     void Resize(int w, int h);

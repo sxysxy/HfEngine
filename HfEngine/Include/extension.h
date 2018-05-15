@@ -67,12 +67,32 @@ namespace Ext {
 
 #ifdef _DEBUG
     void CheckArgs(int argc, const VALUE *argv, const std::initializer_list<ArgType> &klasses);
+    inline void CheckAllFloat(const std::initializer_list<VALUE> &args) {
+        const VALUE *x = args.begin();
+        while (x != args.end()) {
+            if (!RB_FLOAT_TYPE_P(*x)) {
+                rb_raise(rb_eArgError, "Param No.%d should be a Float", x - args.begin() + 1);
+            }
+            x++;
+        }
+    }
+
+    inline void CheckAllFixnum(const std::initializer_list<VALUE> &args) {
+        const VALUE *x = args.begin();
+        while (x != args.end()) {
+            if (!RB_FIXNUM_P(*x))
+                rb_raise(rb_eArgError, "Param No.%d should be a Fixnum", x - args.begin() + 1);
+            x++;
+        }
+    }
 
     inline void CheckArgs(const std::initializer_list<VALUE> &objs, const std::initializer_list<ArgType> &klasses) {
         CheckArgs((int)(objs.end() - objs.begin()), objs.begin(), klasses);
     }
 #else
 #define CheckArgs(...) void(0);
+#define CheckAllFloat(...) void(0);
+#define CheckAllFixnum(...) void(0);
 #endif
     
 

@@ -298,7 +298,7 @@ namespace Ext {
                 auto s = GetNativeObject<::Shader>(self);
                 size_t size = s->byte_code->GetBufferSize();
                 VALUE a = rb_ary_new();
-                rb_ary_resize(a, size);
+                rb_ary_resize(a, (long)size);
                 VALUE *p = RARRAY_PTR(a);
                 char *pcode = (char *)s->byte_code->GetBufferPointer();
                 for (size_t i = 0; i < size; i++) {

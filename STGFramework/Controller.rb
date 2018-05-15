@@ -3,6 +3,8 @@ module Controller
 	def self.init
 		@fps = $config[:logic].fps or 60
 		@timer = FPSTimer.new(@fps)
+		
+		@keyboard = DX::Input::Keyboard.new($window)
 	end
 	
 	def self.fps
@@ -17,5 +19,12 @@ module Controller
 	end
 	def self.restart
 		@timer.restart(@fps)
+	end
+	def self.keyboard
+		return @keyboard
+	end
+	
+	def self.shutdown
+		@keyboard.release
 	end
 end
