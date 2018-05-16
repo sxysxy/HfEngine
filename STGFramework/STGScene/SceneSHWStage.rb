@@ -22,6 +22,9 @@ class SceneSHWStage < SceneStage
 		@sp_reimu_left = Sprite.new(DX::Texture2D.new($device, 32, 48))
 		@sp_reimu_right = Sprite.new(DX::Texture2D.new($device, 32, 48))
 		@sp_reimu_back = Sprite.new(DX::Texture2D.new($device, 32, 49))
+		@sp_point = Sprite.new(TextureCache.load("/th14/player/point.png"))
+		#@sp_shoot = Sprite.new(DX::Texture2D.new($device, 40, 16*27)
+		
 		Graphics.re.lock
 		@rd_content.immdiate_copy2d(@sp_reimu_forward.texture, @reimus, HFRect(0, 0, 32, 48), 
 																		HFRect(32, 0, 32, 48))
@@ -31,11 +34,13 @@ class SceneSHWStage < SceneStage
 																		HFRect(96, 96, 32, 48))
 		@rd_content.immdiate_copy2d(@sp_reimu_back.texture, @reimus, HFRect(0, 0, 32, 48), 
 																		HFRect(32, 48, 32, 48))
+		
 		Graphics.re.unlock
 		Graphics.re.insert(@rd_content, 100)
-		[@sp_reimu_forward, @sp_reimu_back, @sp_reimu_left, @sp_reimu_right].each {|s|
+		[@sp_reimu_forward, @sp_reimu_back, @sp_reimu_left, @sp_reimu_right, @sp_point].each {|s|
 			s.viewport = HFRect(25, 25, 400, 420)
 			s.origin_center
+			s.z = 0.5
 		}
 		@dir2sp = {:up => @sp_reimu_forward, :down => @sp_reimu_back, :left => @sp_reimu_left, :right => @sp_reimu_right}
 	end
@@ -67,5 +72,10 @@ class SceneSHWStage < SceneStage
 		sp.x = @logic.player_x
 		sp.y = @logic.player_y
 		@rd_content.draw_sprite(sp)
+		if @logic.slow
+			@sp_point.x = sp.x
+			@sp_point.y = sp.y
+			@rd_content.draw_sprite(@sp_point)
+		end
 	end
 end

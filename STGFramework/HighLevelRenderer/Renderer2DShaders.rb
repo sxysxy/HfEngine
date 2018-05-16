@@ -16,8 +16,8 @@ Program("Draw") {
 		
 		VSOut VSDraw(Input ipt) {
 			VSOut opt;
-			opt.position.x = ipt.position.x * 2.0 / vp_w - 1.0f;
-			opt.position.y = -(ipt.position.y * 2.0 / vp_h) + 1.0f;
+			opt.position.x = (ipt.position.x + vp_x) * 2.0 / vp_w - 1.0f;
+			opt.position.y = -((ipt.position.y + vp_y) * 2.0 / vp_h) + 1.0f;
 			opt.position.z = ipt.position.z;
 			opt.position.w = 1.0f;
 			opt.color = ipt.color;
@@ -42,15 +42,19 @@ Program("Draw") {
 		cbuffer VSTextureExParam : register(b1) {
 			float svp_x, svp_y, svp_w, svp_h;
 			float angle;
-			int vmirror, hmirror;			//Vertical Mirror & Horizon Mirror
+			float vmirror, hmirror;			//Vertical Mirror & Horizon Mirror
 			int emm; //unused 
 		}
 		VSOut VSTextureEx(Input ipt) {
 			VSOut opt;
 			float x1 = (ipt.position.x + svp_x) * 2.0 / svp_w - 1.0f;
 			float y1 = -((ipt.position.y + svp_y) * 2.0 / svp_h) + 1.0f;
-			opt.position.x = x1 * cos(angle) - y1 * sin(angle);
-			opt.position.y = x1 * sin(angle) + y1 * cos(angle);
+			float x2 = x1 * cos(angle) - y1 * sin(angle);
+			float y2 = x1 * sin(angle) + y1 * cos(angle);
+			float x3 = x2 * hmirror;
+			float y3 = y2 * vmirror;
+			opt.position.x = x3;
+			opt.position.y = y3;
 			opt.position.z = ipt.position.z;
 			opt.position.w = 1.0f;
 			opt.tex = ipt.tex;
@@ -92,7 +96,10 @@ Program("Draw") {
 		}
 		Sampler("LQSampler") {
 			use_default
+			#msgbox self.class
+			
 			set_filter DX::FILTER_MIN_MAG_MIP_POINT, 0
+			
 		}
 		Sampler("HQSampler") {
 			use_default
@@ -149,6 +156,10 @@ Program("Draw") {
 			use_default
 			enable true
 		}
+		
+		DepthStencilState("dss") {
+			use_default
+		}
 	}
 	
 	Section("basic") {
@@ -156,6 +167,7 @@ Program("Draw") {
 		set_vs_cbuffer(0, "viewport")
 		set_vs_cbuffer(1, "VSTextureEXParam")
 		set_blender("alpha_blend")
+		set_depth_stencil_state("dss")
 	}
 	Section("draw_solid") {
 		set_vshader("VSDraw")

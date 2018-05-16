@@ -3,6 +3,7 @@
 #include "Include/HFWindow.h"
 #include "Include/DX.h"
 #include "Include\MathTool.h"
+#include <inttypes.h>
 
 namespace Ext {
 
@@ -16,18 +17,12 @@ namespace Ext {
 
             if (!NIL_P(pobjs[i]) && !rb_obj_is_kind_of(pobjs[i], t[i].klass)) {
                 static char buf[100];
-#ifdef _WIN64
-                sprintf_s(buf, "ObjectSpace._id2ref(%llu).to_s", t[i].klass / 2);
-#else _WIN32
-                sprintf_s(buf, "ObjectSpace._id2ref(%u).to_s", t[i].klass / 2);
-#endif
+
+                sprintf_s(buf, "ObjectSpace._id2ref(%" PRIuPTR ").to_s", t[i].klass / 2);
                 int p = 0;
                 VALUE klass_name = rb_eval_string_protect(buf, &p);
-#ifdef _WIN64
-                sprintf_s(buf, "ObjectSpace._id2ref(%llu).to_s", rb_obj_class(pobjs[i]) / 2);
-#else _WIN32
-                sprintf_s(buf, "ObjectSpace._id2ref(%u).to_s", rb_obj_class(pobjs[i]) / 2);
-#endif
+                sprintf_s(buf, "ObjectSpace._id2ref(%" PRIuPTR ").to_s", rb_obj_class(pobjs[i]) / 2);
+
                 VALUE arg_type_name = rb_eval_string_protect(buf, &p);
                 rb_raise(rb_eArgError, "Param No.%d should be a %s but got a %s", i + 1, 
                     rb_string_value_cstr(&klass_name), rb_string_value_cstr(&arg_type_name));

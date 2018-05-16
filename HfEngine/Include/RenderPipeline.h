@@ -97,6 +97,8 @@ public:
     void SetBlender(Blender *b);
     void SetTarget(RTT *rtt);
 
+    void SetDepthStencilState(DepthStencilState *dss);
+
     inline void SetTopology(D3D11_PRIMITIVE_TOPOLOGY topo) {
         native_context->IASetPrimitiveTopology(topo);
     }

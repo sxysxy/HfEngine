@@ -35,6 +35,12 @@ class Sprite
 	def y=(y_)
 		@dest_rect.y = y_
 	end
+	def x
+		@dest_rect.x
+	end
+	def y
+		@dest_rect.y
+	end
 	def zoom_x=(zx) 
 		@dest_rect.width = @texture.width * zx
 	end

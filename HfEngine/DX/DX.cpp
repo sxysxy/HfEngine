@@ -48,6 +48,11 @@ namespace Ext{
             GetNativeObject<Utility::Rect>(self)->h = FIX2INT(rb_to_int(sx));
             return sx;
         }
+        static VALUE HFR_clone(VALUE self) {
+            VALUE n = HFRNew(klass_HFRect);
+            memcpy(GetNativeObject<Utility::Rect>(n), GetNativeObject<Utility::Rect>(self), sizeof(Utility::Rect));
+            return n;
+        }
         static VALUE HFR_initialize(int argc, VALUE *argv, VALUE self) {
             if (argc == 1) {
                 if(!rb_obj_is_kind_of(argv[0], klass_HFRect))
@@ -141,6 +146,11 @@ namespace Ext{
             rb_funcall2(c, rb_intern("initialize"), argc, argv);
             return c;
         }
+        static VALUE CRGBA_clone(VALUE self) {
+            VALUE n = CRGBANew(klass_HFColor);
+            memcpy(GetNativeObject<Utility::Color>(n), GetNativeObject<Utility::Color>(self), sizeof(Utility::Color));
+            return n;
+        }
 
         void BasicInit() {
             klass_HFRect = rb_define_class("HFRect", rb_cObject);
@@ -156,6 +166,7 @@ namespace Ext{
             rb_define_method(klass_HFRect, "h=", (rubyfunc)HRF_seth, 1);
             rb_alias(klass_HFRect, rb_intern("height="), rb_intern("h="));
             rb_define_method(klass_HFRect, "initialize", (rubyfunc)HFR_initialize, -1);
+            rb_define_method(klass_HFRect, "clone", (rubyfunc)HFR_clone, 0);
             rb_define_module_function(rb_mKernel, "HFRect", (rubyfunc)HFR, -1);
 
             klass_HFColor = rb_define_class("HFColorRGBA", rb_cObject);
@@ -170,6 +181,7 @@ namespace Ext{
             rb_define_method(klass_HFColor, "a=", (rubyfunc)CRBGA_sa, 1);
             rb_define_method(klass_HFColor, "row_data_ptr", (rubyfunc)CRGBA_row_data_ptr, 0);
             rb_define_method(klass_HFColor, "initialize", (rubyfunc)CRGBA_initialize, -1);
+            rb_define_method(klass_HFColor, "clone", (rubyfunc)CRGBA_clone, 0);
             rb_define_module_function(rb_mKernel, "HFColorRGBA", (rubyfunc)CRGBA, -1);
         }
 #pragma warning(pop)

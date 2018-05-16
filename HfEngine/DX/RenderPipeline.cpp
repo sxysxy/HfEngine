@@ -127,6 +127,10 @@ void RenderPipeline::SetTarget(RTT *rtt) {
          rtt->native_stencil_view.Get());
 }
 
+void RenderPipeline::SetDepthStencilState(DepthStencilState * dss) {
+    native_context->OMSetDepthStencilState(dss ? dss->native_ds_state.Get() : nullptr, 0);
+}
+
 void RenderPipeline::ImmdiateRender() {
     ID3D11CommandList *list;
     native_context->FinishCommandList(true, &list);
@@ -380,6 +384,16 @@ namespace Ext {
             static VALUE get_rasterizer(VALUE self) {
                 return rb_iv_get(self, "@rasterizer");
             }
+            static VALUE set_depth_stencil_state(VALUE self, VALUE dss) {
+                CheckArgs({ dss }, { ArgType {Shader::klass_depth_stencil_state, true} });
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                rp->SetDepthStencilState(GetNULLPTRableNativeObject<DepthStencilState>(dss));
+                rb_iv_set(self, "@depth_stencil_state", dss);
+                return self;
+            }
+            static VALUE get_depth_stencil_state(VALUE self) {
+                return rb_iv_get(self, "@depth_stencil_state");
+            }
 
             static VALUE clear_target(int argc, VALUE *argv, VALUE self) {
                 auto rp = GetNativeObject<::RenderPipeline>(self);
@@ -485,6 +499,8 @@ namespace Ext {
                 rb_define_method(klass, "target", (rubyfunc)get_target, 0);
                 rb_define_method(klass, "set_blender", (rubyfunc)set_blender, 1);
                 rb_define_method(klass, "blender", (rubyfunc)get_blender, 0);
+                rb_define_method(klass, "set_depth_stencil_state", (rubyfunc)set_depth_stencil_state, 1);
+                rb_define_method(klass, "depth_stencil_state", (rubyfunc)get_depth_stencil_state, 0);
 
                 //Draw
                 rb_define_method(klass, "clear", (rubyfunc)clear_target, -1);

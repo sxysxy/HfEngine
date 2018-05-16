@@ -39,10 +39,16 @@ class Generator
 					raise GeneratingLogicError, "You should not create a #{g} in #{self.class}"
 				end
 				generator = new_area.new(*arg)
-				generator.instance_eval(&block) if block
+				
+				begin
+					generator.instance_eval(&block) if block
+				rescue NameError => e
+					msgbox e.message
+				end
 				
 				@list.push generator
-			else
+			else 
+				
 				super
 			end
 		end
@@ -95,6 +101,9 @@ end
 
 #RasterizerGenerator *
 RasterizerGenerator = ResourcesBase.new(DX::Rasterizer)
+
+#DepthStencilState
+DepthStencilStateGenerator = ResourcesBase.new(DX::DepthStencilState)
 
 #Base abstract for BufferGenerators 
 class BufferGeneratorBase < Generator
@@ -175,6 +184,7 @@ class SectionGenerator < Generator
 	
 	BLENDER_INFO = Struct.new(:blender)
 	RASTERIZER_INFO = Struct.new(:rasterizer)
+	DSS_INFO = Struct.new(:depth_stencil_state)
 	attr_reader :sets
 	
 	def initialize(name)
@@ -227,6 +237,11 @@ class SectionGenerator < Generator
 	#RS (Rasterizer)
 	def set_rasterizer(r)
 		@sets.push RASTERIZER_INFO.new(r)
+	end
+	
+	#DepthStencilState
+	def set_depth_stencil_state(dss)
+		@sets.push DSS_INFO.new(dss)
 	end
 	
 	def compile(context)
@@ -411,11 +426,13 @@ class SFResource < SFData
 	attr_accessor :sampler
 	attr_accessor :cbuffer
 	attr_accessor :rasterizer
+	attr_accessor :depth_stencil_state
 	def initialize
 		@blender = {}
 		@sampler = {}
 		@cbuffer = {}
 		@rasterizer = {}
+		@depth_stencil_state = {}
 	end
 =begin
 	#copy. It does nnt copy constant buffer's data.
@@ -449,7 +466,7 @@ class SFResource < SFData
 =end
 	
 	def release
-		[@blender, @sampler, @cbuffer, @rasterizer].each {|e|
+		[@blender, @sampler, @cbuffer, @rasterizer, @depth_stencil_state].each {|e|
 			e.each {|name, s| s.release}
 		}
 	end
@@ -537,6 +554,14 @@ def self.load_section(device, program, sdata)
 				raise GeneratingLogicError, "#{set.rasterizer} is not a DX::Rasterizer" if !r.is_a?(DX::Rasterizer)
 				section.eval_code += "set_rasterizer(ObjectSpace._id2ref(#{r.object_id}))\n"
 			end
+		when SectionGenerator::DSS_INFO
+			if set.depth_stencil_state.nil?
+				section.eval_code += "set_depth_stencil_state(nil)\n"
+			else
+				r = program.resource.depth_stencil_state[set.depth_stencil_state.to_sym]
+				raise GeneratingLogicError, "#{set.depth_stencil_state} is not a DX::DepthStencilState" if !r.is_a?(DX::DepthStencilState)
+				section.eval_code += "set_depth_stencil_state(ObjectSpace._id2ref(#{r.object_id}))\n"
+			end
 		end
 	}
 	
@@ -568,6 +593,11 @@ def self.load_resource(device, program, rdata)
 			r.load_description element[1][:row_data].pack("C*")
 			r.create_state(device)
 			resource.rasterizer[name.to_sym] = r
+		elsif element[0] == DepthStencilStateGenerator
+			ds = DX::DepthStencilState.new
+			ds.load_description element[1][:row_data].pack("C*")
+			ds.create_state(device)
+			resource.depth_stencil_state[name.to_sym] = ds
 		end
 	}
 	return resource

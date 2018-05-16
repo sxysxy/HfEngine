@@ -189,6 +189,7 @@ namespace Ext {
             VALUE klass_sampler;
             VALUE klass_blender;
             VALUE klass_rasterizer;
+            VALUE klass_depth_stencil_state;
             VALUE klass_eShaderCompileError;
 
             template<class T>
@@ -474,6 +475,13 @@ namespace Ext {
                 return self;
             }
 
+
+            //Depth Stencil State:
+            static VALUE set_depth_enable(VALUE self, VALUE enable) {
+                GetNativeObject<DepthStencilState>(self)->SetDepthEnable(enable == Qtrue);
+                return self;
+            }
+
             void Init() {
                 klass_eShaderCompileError = rb_define_class_under(module, "ShaderCompileError", rb_eException);
                 klass = rb_define_class_under(module, "Shader", rb_cObject);
@@ -690,6 +698,20 @@ namespace Ext {
                 rb_define_const(module, "CULL_NONE", INT2FIX(D3D11_CULL_NONE));
                 rb_define_const(module, "CULL_FRONT", INT2FIX(D3D11_CULL_FRONT));
                 rb_define_const(module, "CULL_BACK", INT2FIX(D3D11_CULL_BACK));
+
+                //Depth Stencil State
+                klass_depth_stencil_state = rb_define_class_under(module, "DepthStencilState", rb_cObject);
+                rb_include_module(klass_depth_stencil_state, module_release);
+                rb_define_alloc_func(klass_depth_stencil_state, RefObjNew<DepthStencilState>);
+                rb_define_method(klass_depth_stencil_state, "initialize", (rubyfunc)initialize, 0);
+                rb_define_method(klass_depth_stencil_state, "use_default", (rubyfunc)use_default<DepthStencilState>, 0);
+                rb_define_method(klass_depth_stencil_state, "create_state", (rubyfunc)create_state<DepthStencilState>, 1);
+                rb_define_method(klass_depth_stencil_state, "dump_description",
+                    (rubyfunc)dump_description<DepthStencilState, D3D11_DEPTH_STENCIL_DESC>, 0);
+                rb_define_method(klass_depth_stencil_state, "load_description",
+                    (rubyfunc)load_description<DepthStencilState, D3D11_DEPTH_STENCIL_DESC>, 1);
+                rb_define_method(klass_depth_stencil_state, "set_depth_enable", 
+                    (rubyfunc)set_depth_enable, 1);
             }
         }
     }

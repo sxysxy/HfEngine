@@ -157,7 +157,8 @@ public:
         desc.MaxLOD = D3D11_FLOAT32_MAX;
     }
     void CreateState(D3DDevice *device) {
-        device->native_device->CreateSamplerState(&desc, &native_sampler);
+        auto hr = device->native_device->CreateSamplerState(&desc, &native_sampler);
+        if (FAILED(hr))MAKE_ERRMSG<std::runtime_error>("Fail to create sampler state", hr);
     }
 
     virtual void Release() { UnInitialize(); }
@@ -198,7 +199,8 @@ public:
         SetBlendFactor({1.0, 1.0, 1.0, 1.0});
     }
     void CreateState(D3DDevice *device) {
-        device->native_device->CreateBlendState(&desc, &native_blender);
+        auto hr = device->native_device->CreateBlendState(&desc, &native_blender);
+        if (FAILED(hr))MAKE_ERRMSG<std::runtime_error>("Fail to create blend state", hr);
     }
 
     void UnInitialize() {
@@ -246,10 +248,51 @@ public:
         desc.AntialiasedLineEnable = enable;
     }
     void CreateState(D3DDevice *device) {
-        device->native_device->CreateRasterizerState(&desc, &native_rasterizer);
+        auto hr = device->native_device->CreateRasterizerState(&desc, &native_rasterizer);
+        if(FAILED(hr))MAKE_ERRMSG<std::runtime_error>("Fail to create rasterizer state", hr);
     }
     void UnInitialize() {
         native_rasterizer.ReleaseAndGetAddressOf();
+    }
+    virtual void Release() {
+        UnInitialize();
+    }
+};
+
+class DepthStencilState : public Utility::ReferredObject, public WithDescriptionStruct<D3D11_DEPTH_STENCIL_DESC> {
+public:
+    ComPtr<ID3D11DepthStencilState> native_ds_state;
+    void Initialize() {}
+
+    void UseDefault() {
+        memset(&desc, 0, sizeof desc);
+        SetDepthEnable(true);
+        SetDepthWriteMask(D3D11_DEPTH_WRITE_MASK_ALL);
+        SetDepthFunc(D3D11_COMPARISON_LESS_EQUAL);
+    }
+    void SetDepthEnable(bool b) {
+        desc.DepthEnable = b;
+    }
+    void SetDepthWriteMask(D3D11_DEPTH_WRITE_MASK m) {
+        desc.DepthWriteMask = m;
+    }
+    void SetDepthFunc(D3D11_COMPARISON_FUNC f) {
+        desc.DepthFunc = f;
+    }
+    void SetStencilEnable(bool b) {
+        desc.StencilEnable = b;
+    }
+    void SetStencilRWMask(UINT8 RMask, UINT8 WMask) {
+        desc.StencilReadMask = RMask;
+        desc.StencilWriteMask = WMask;
+    }
+
+    void CreateState(D3DDevice *device) {
+        auto hr = device->native_device->CreateDepthStencilState(&desc, &native_ds_state);
+        if (FAILED(hr))MAKE_ERRMSG<std::runtime_error>("Fail to create depth stencil state", hr);
+    }
+    void UnInitialize() {
+        native_ds_state.ReleaseAndGetAddressOf();
     }
     virtual void Release() {
         UnInitialize();
@@ -266,6 +309,7 @@ namespace Ext {
             extern VALUE klass_sampler;
             extern VALUE klass_blender;
             extern VALUE klass_rasterizer;
+            extern VALUE klass_depth_stencil_state;
             extern VALUE klass_eShaderCompileError;
 
             void Init();

@@ -28,7 +28,7 @@ class Renderer2D < DX::RenderPipelineM
 		@sf.input_layout.apply(self)
 		set_target(Graphics.rtt)
 		set_viewport(HFRect(0, 0, $window.width, $window.height))
-		update_subresource @sf.resource.cbuffer[:viewport], [viewport.x, viewport.y, viewport.w, viewport.h].pack("f*")
+		update_viewport(viewport)
 		Graphics.re.lock
 		immdiate_render
 		Graphics.re.unlock
@@ -38,6 +38,10 @@ class Renderer2D < DX::RenderPipelineM
 		
 		#common vertex buffer for drawing rect or texturing
 		@common_vbuffer = DX::VertexBuffer.new($device, 9*4, 4)
+	end
+	
+	def update_viewport(v)
+		update_subresource @sf.resource.cbuffer[:viewport], [v.x, v.y, v.w, v.h].pack("f*")
 	end
 	
 	def pre_draw_solid
@@ -160,7 +164,8 @@ class Renderer2D < DX::RenderPipelineM
 		update_subresource @sf.resource.cbuffer[:PSTextureParamSprite], 
 				[s.color_mod.r, s.color_mod.g, s.color_mod.b, s.color_mod.a, s.opacity, 0.0, 0.0, 0.0].pack("f*")
 		update_subresource @sf.resource.cbuffer[:VSTextureEXParam], 
-			[s.viewport.x, s.viewport.y, s.viewport.w, s.viewport.h, s.angle, s.vmirror ? 1 : 0, s.hmirror ? 1 : 0, 0].pack("fffffiii")			
+			[s.viewport.x, s.viewport.y, s.viewport.w, s.viewport.h, 
+			s.angle, s.vmirror ? -1.0 : 1.0, s.hmirror ? -1.0 : 1.0, 0].pack("fffffffi")			
 		set_viewport(s.viewport)
 		set_topology(DX::TOPOLOGY_TRIANGLESTRIP)
 		set_vbuffer(@common_vbuffer)

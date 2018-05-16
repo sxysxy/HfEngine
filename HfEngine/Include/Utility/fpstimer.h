@@ -9,6 +9,7 @@ struct FPSTimer {
 	long long startt;
 	double tick;
 	int rate;
+    int rate_warning;
 	void Restart(int r) {
 		rate = r;
 
@@ -17,6 +18,8 @@ struct FPSTimer {
 		QueryPerformanceCounter((PLARGE_INTEGER)&startt);
 		tick = 1.0 * freq / rate;
 		time = 0;
+
+        rate_warning = rate / 10;
 	}
 	
 	void Await() {
@@ -26,7 +29,7 @@ struct FPSTimer {
 			QueryPerformanceCounter((PLARGE_INTEGER)&nowt);
 			long long d = nowt - startt;
             if (d >= ticktime) {
-                if(d - ticktime >= 100000 * tick )Restart(rate);
+                if(d - ticktime >= rate_warning * tick )Restart(rate); //Skip 
                 break;
             }
 			if (d >= 20000)cls::Wait(1);
