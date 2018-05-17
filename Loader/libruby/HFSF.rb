@@ -334,7 +334,7 @@ class Compiled
 		}
 	end
 	def save_sfm(filename)
-		if File.extname filename == ""
+		if File.extname(filename) == "" 
 			filename += ".sfm"
 		end
 		File.open(filename, "wb") {|f|
@@ -344,7 +344,7 @@ class Compiled
 	def save_sfo(filename)
 		raise "save_sfo, not imp"
 	end
-	def self.load_marshal_file(filename)
+	def self.load_sfm(filename)
 		x = nil
 		File.open(filename, "rb") {|f|
 			x = Marshal.load(f.read) 

@@ -158,7 +158,9 @@ namespace Ext{
             rb_define_method(klass_HFRect, "x", (rubyfunc)HFR_x, 0);
             rb_define_method(klass_HFRect, "y", (rubyfunc)HFR_y, 0);
             rb_define_method(klass_HFRect, "w", (rubyfunc)HFR_w, 0);
+            rb_alias(klass_HFRect, rb_intern("width"), rb_intern("w"));
             rb_define_method(klass_HFRect, "h", (rubyfunc)HFR_h, 0);
+            rb_alias(klass_HFRect, rb_intern("height"), rb_intern("h"));
             rb_define_method(klass_HFRect, "x=", (rubyfunc)HRF_setx, 1);
             rb_define_method(klass_HFRect, "y=", (rubyfunc)HRF_sety, 1);
             rb_define_method(klass_HFRect, "w=", (rubyfunc)HRF_setw, 1);

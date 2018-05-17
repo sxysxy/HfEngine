@@ -156,7 +156,6 @@ namespace Ext {
             if(argc < 2 || argc > 3)
                 rb_raise(rb_eArgError,
                 "Mathtool::lookat(eyepos, target, [up = [0.0, 1.0, 0.0, 0.0]] expecting (2..3) args but got %d", argc);
-            CheckAllFloat({argv[0], argv[1]});
             VALUE eyepos = argv[0];
             VALUE target = argv[1];
             VALUE up = argc == 3? argv[2] : 0;

@@ -482,6 +482,11 @@ namespace Ext {
                 return self;
             }
 
+            static VALUE set_depth_func(VALUE self, VALUE f) {
+                GetNativeObject<DepthStencilState>(self)->SetDepthFunc((D3D11_COMPARISON_FUNC)FIX2INT(f));
+                return self;
+            }
+
             void Init() {
                 klass_eShaderCompileError = rb_define_class_under(module, "ShaderCompileError", rb_eException);
                 klass = rb_define_class_under(module, "Shader", rb_cObject);
@@ -712,6 +717,17 @@ namespace Ext {
                     (rubyfunc)load_description<DepthStencilState, D3D11_DEPTH_STENCIL_DESC>, 1);
                 rb_define_method(klass_depth_stencil_state, "set_depth_enable", 
                     (rubyfunc)set_depth_enable, 1);
+                rb_define_method(klass_depth_stencil_state, "set_depth_func", rubyfunc(set_depth_func), 1);
+
+
+                rb_define_const(module, "COMPARISON_ALWAYS", INT2FIX(D3D11_COMPARISON_ALWAYS));
+                rb_define_const(module, "COMPARISON_EQUAL", INT2FIX(D3D11_COMPARISON_EQUAL));
+                rb_define_const(module, "COMPARISON_LESS", INT2FIX(D3D11_COMPARISON_LESS));
+                rb_define_const(module, "COMPARISON_LESS_EQUAL", INT2FIX(D3D11_COMPARISON_LESS_EQUAL));
+                rb_define_const(module, "COMPARISON_GREATER", INT2FIX(D3D11_COMPARISON_GREATER));
+                rb_define_const(module, "COMPARISON_GREATER_EQUAL", INT2FIX(D3D11_COMPARISON_GREATER_EQUAL));
+                rb_define_const(module, "COMPARISON_NOT_EQUAL", INT2FIX(D3D11_COMPARISON_NOT_EQUAL));
+                rb_define_const(module, "COMPARISON_NEVER", INT2FIX(D3D11_COMPARISON_NEVER));
             }
         }
     }

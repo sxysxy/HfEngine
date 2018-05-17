@@ -96,10 +96,7 @@ Program("Draw") {
 		}
 		Sampler("LQSampler") {
 			use_default
-			#msgbox self.class
-			
 			set_filter DX::FILTER_MIN_MAG_MIP_POINT, 0
-			
 		}
 		Sampler("HQSampler") {
 			use_default
@@ -158,7 +155,8 @@ Program("Draw") {
 		}
 		
 		DepthStencilState("dss") {
-			use_default
+			set_depth_enable true
+			set_depth_func DX::COMPARISON_LESS_EQUAL;
 		}
 	}
 	

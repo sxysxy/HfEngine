@@ -8,7 +8,8 @@ require_relative "./Graphics2D.rb"
 
 class Renderer2D < DX::RenderPipelineM
 	SHADERS_FILE = "./HighLevelRenderer/Renderer2DShaders.rb"
-
+	SHADERS_FILE_BIN = "./HighLevelRenderer/Renderer2DShaders.sfm"
+	
 	PHASE_DRAW_SOLID = 0
 	PHASE_DRAW_WIREFRAME = 1
 	PHASE_DRAW_TEXTURE = 2
@@ -20,7 +21,7 @@ class Renderer2D < DX::RenderPipelineM
 	#quality = 0, low quality
 	def initialize(quality = 1)
 		super($device)
-	
+
 		@sf = HFSF.loadsf_file($device, SHADERS_FILE)[0]
 		@quality = quality
 		

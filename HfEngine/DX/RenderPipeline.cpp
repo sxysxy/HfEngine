@@ -151,6 +151,11 @@ void RenderPipeline::ImmdiateCopy2D(Texture2D *dest, Texture2D *src,
             src->native_texture2d.Get(), 0, &box);
 }
 
+void RenderPipeline::ImmdiateSavePNG(Texture2D *tex, const cstring &filename) {
+    D3DX11SaveTextureToFileW(native_context.Get(), tex->native_texture2d.Get(), 
+        D3DX11_IFF_PNG, filename.c_str());
+}
+
 
 namespace Ext {
     namespace DX {
@@ -433,7 +438,14 @@ namespace Ext {
                     *GetNativeObject<Utility::Rect>(dest_rect), *GetNativeObject<Utility::Rect>(src_rect));
                 return self;
             }
-
+            static VALUE immdiate_save_png(VALUE self, VALUE tex, VALUE filename) {
+                CheckArgs({ tex, filename }, { Texture::klass_texture2d, rb_cString});
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                std::wstring s;
+                U8ToU16(rb_string_value_cstr(&filename), s);
+                rp->ImmdiateSavePNG(GetNativeObject<Texture2D>(tex), s);
+                return self;
+            }
             //--
             static VALUE update_subresource(VALUE self, VALUE buf, VALUE d) {
                 if (!rb_obj_is_kind_of(buf, Ext::DX::D3DBuffer::klass))
@@ -510,6 +522,7 @@ namespace Ext {
                 //
                 rb_define_method(klass, "immdiate_render", (rubyfunc)immdiate_render, 0);
                 rb_define_method(klass, "immdiate_copy2d", (rubyfunc)immdiate_copy2d, 4);
+                rb_define_method(klass, "immdiate_savepng", (rubyfunc)immdiate_save_png, 2);
                 
                 //
                 rb_define_method(klass, "update_subresource", (rubyfunc)update_subresource, 2);

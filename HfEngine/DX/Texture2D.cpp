@@ -173,7 +173,11 @@ namespace Ext { namespace DX{
             auto rtt = GetNativeObject<::RTT>(self);
             auto t = GetNativeObject<::Texture2D>(tex);
             rtt->Initialize(t);
+            rb_iv_set(self, "@texture", tex);
             return self;
+        }
+        static VALUE rtt_get_texture(VALUE self) {
+            return rb_iv_get(self, "@texture");
         }
         void Init() {
             klass_texture = rb_define_class_under(module, "Texture", rb_cObject);
@@ -199,6 +203,7 @@ namespace Ext { namespace DX{
                 return Data_Wrap_Struct(k, nullptr, Delete<::RTT>, t);
             });
             rb_define_method(klass_rtt, "initialize", (rubyfunc)rtt_initialize, 1);
+            rb_define_method(klass_rtt, "texture", (rubyfunc)rtt_get_texture, 0);
         }
     }
 }}

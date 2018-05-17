@@ -28,8 +28,10 @@ int __cdecl cmain(wchar_t *path) {
                 std::string s;
                 Ext::U16ToU8(buffer->ptr, s);
                 rb_define_global_const("EXECUTIVE_FILENAME", rb_str_new_cstr(s.c_str()));
-                s[p] = 0;
+                buffer->ptr[p] = 0;
+                Ext::U16ToU8(buffer->ptr, s);
                 rb_define_global_const("EXECUTIVE_DIRECTORY", rb_str_new_cstr(s.c_str()));
+                buffer->ptr[p] = L'\\';
                 static const char *require_lib = " \
                     alias :o_require :require \n \
                     def require(lib)   \n \
@@ -73,10 +75,10 @@ int __cdecl cmain(wchar_t *path) {
         VALUE script = rb_str_new_cstr(filename.c_str());
         int state = 0;
         rb_load_protect(script, 0, &state);
+        
         if (state) {
             VALUE errorinfo = rb_errinfo();
             rb_funcall(rb_mKernel, rb_intern("show_console"), 0);
-            
             
             VALUE pos = rb_eval_string("$@");
             rb_funcall(rb_mKernel, rb_intern("puts"), 1, pos);

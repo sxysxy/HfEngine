@@ -112,6 +112,7 @@ public:
     void ImmdiateRender();
     void ImmdiateCopy2D(Texture2D *dest, Texture2D *src,
         const Utility::Rect &dest_rect, const Utility::Rect &src_rect);
+    void ImmdiateSavePNG(Texture2D *tex, const cstring &filename);
 
     template<class T>
     void UpdateSubResource(D3DBuffer *bf, const T *data) {

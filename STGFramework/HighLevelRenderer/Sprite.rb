@@ -54,6 +54,12 @@ class Sprite
 		@ox = @texture.width / 2
 		@oy = @texture.height / 2
 	end
+	def width
+		@dest_rect.width
+	end
+	def height
+		@dest_rect.height
+	end
 	
 	def release_texture
 		@texture.release
