@@ -1,3 +1,4 @@
+#When multi-thread(using a RemoteRenderExecutive, check whether it works properly)
 require 'libcore'
 include DX
 SHADER_FILE = File.join(File.dirname(__FILE__), "Shaders.rb")
@@ -6,7 +7,7 @@ HFWindow.new("RTT", 500, 500) {
 	show
 	set_handler(:on_closed) {exit_mainloop}
 	device = D3DDevice.new
-	rp = RenderPipeline.new(device)
+	rp = RenderPipelineM.new(device)
 	sf = HFSF::loadsf_file(device, SHADER_FILE)[0]
 	sf.section[:set].apply(rp)
 	sf.input_layout.apply(rp)
@@ -23,28 +24,34 @@ HFWindow.new("RTT", 500, 500) {
 			1.0, -1.0, 1.0, 1.0, 0.0, 0.0].pack("f*")
 	vb2 = VertexBuffer.new(device, 6*4, 4, vecs2)
 	
+	re = RemoteRenderExecutive.new(device, swapchain, 60)
+	re.insert(rp, 100)
+	
 	#RTT
 	tex = Texture2D.new(device, width, height)
 	rtt = RTT.new(tex)
-	sf.section[:draw_shape].apply(rp)
-	rp.set_target(rtt)
-	rp.clear(HFColorRGBA(1.0, 1.0, 1.0, 1.0))
-	rp.set_vbuffer(vb)
-	rp.draw(0, 4)
-	sf.section[:draw_texture].apply(rp)
-	rp.set_target(swapchain.rtt)
-	rp.set_vbuffer(vb2)
-	
+		
 	timer = FPSTimer.new(60)
 	messageloop {
+		re.lock #purposely in the loop
+		sf.section[:draw_shape].apply(rp)
+		rp.set_target(rtt)
+		rp.clear(HFColorRGBA(1.0, 1.0, 1.0, 1.0))
+		rp.set_vbuffer(vb)
+		rp.draw(0, 4)
+		rp.immdiate_render
+		re.unlock
+
+		sf.section[:draw_texture].apply(rp)
+		rp.set_target(swapchain.rtt)
+		rp.set_vbuffer(vb2)
 		rp.clear(HFColorRGBA(0.0, 0.0, 0.0, 0.0))
 		rp.set_ps_resource(0, tex)
 		rp.draw(0, 4)
 		rp.set_ps_resource(0, nil)
 		
-		rp.immdiate_render
-		swapchain.present
+		rp.swap_commands
 		timer.await
 	}
-	[rp, swapchain, vb, vb2, sf, tex, rtt, device].each &:release
+	[rp, swapchain, re, vb, vb2, sf, tex, rtt, device].each &:release
 }

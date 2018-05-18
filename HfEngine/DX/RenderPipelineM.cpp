@@ -45,7 +45,9 @@ void RPMTreap::DoRender(RPMNode *u) {
     ID3D11CommandList *l = u->rpm->ReadRef().load();
     if (l) {
         l->AddRef();
+        device->AcquireImmdiateContext(true);
         device->native_immcontext->ExecuteCommandList(l, false);
+        device->AcquireImmdiateContext(false);
         l->Release();
     }
     if(u->left)DoRender(u->left);
