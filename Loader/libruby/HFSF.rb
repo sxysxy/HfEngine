@@ -629,7 +629,11 @@ def self.load_program(device, p)
 	
 	#load resource
 	resdata = p.find {|k, v| v[0] == HFSF::ResourceGenerator}
-	program.resource = self.load_resource(device, program, resdata[1][1])
+	if resdata
+		program.resource = self.load_resource(device, program, resdata[1][1]) 
+	else
+		program.resource = SFResource.new
+	end
 	
 	#after loading resources, load others
 	program.section = {}
