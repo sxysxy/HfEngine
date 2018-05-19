@@ -24,14 +24,14 @@ HFWindow.new("RTT", 500, 500) {
 			1.0, -1.0, 1.0, 1.0, 0.0, 0.0].pack("f*")
 	vb2 = VertexBuffer.new(device, 6*4, 4, vecs2)
 	
-	re = RemoteRenderExecutive.new(device, swapchain, 60)
+	re = RemoteRenderExecutive.new(device, swapchain, 600)
 	re.insert(rp, 100)
 	
 	#RTT
 	tex = Texture2D.new(device, width, height)
 	rtt = RTT.new(tex)
 		
-	timer = FPSTimer.new(60)
+	timer = FPSTimer.new(600)
 	messageloop {
 		re.lock #purposely in the loop
 		sf.section[:draw_shape].apply(rp)
@@ -53,5 +53,6 @@ HFWindow.new("RTT", 500, 500) {
 		rp.swap_commands
 		timer.await
 	}
-	[rp, swapchain, re, vb, vb2, sf, tex, rtt, device].each &:release
+	re.terminate
+	[rp, re, swapchain, vb, vb2, sf, tex, rtt, device].each &:release
 }

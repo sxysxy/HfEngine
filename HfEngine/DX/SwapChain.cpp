@@ -24,7 +24,7 @@ void SwapChain::Initialize(D3DDevice * device, HFWindow * wnd, bool fullscreen) 
 
     HRESULT hr = S_FALSE;
     if (FAILED(hr = device->native_dxgi_factory->CreateSwapChain(native_device.Get(),
-        &sd, &native_swap_chain)))
+        &sd, &native_swap_chain)) || !native_swap_chain)
         MAKE_ERRMSG<std::runtime_error>("Fail to Create SwapChain, Error code:", hr);
     //Usually cause a _com_error because of DXGI_STATUS_OCCLUDED.
     //See https://msdn.microsoft.com/en-us/library/windows/desktop/cc308061(v=vs.85).aspx

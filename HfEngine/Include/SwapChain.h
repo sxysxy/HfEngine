@@ -34,11 +34,9 @@ public:
     };
 
     void Present() {
-        assert(native_swap_chain);
         native_swap_chain->Present(0, 0);
     }
     void SetFullScreen(bool fullscreen = true) {
-        assert(native_swap_chain);
         native_swap_chain->SetFullscreenState(fullscreen, nullptr);
     }
     inline RTT *GetRTT() {

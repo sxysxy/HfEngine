@@ -134,9 +134,9 @@ void RenderPipeline::SetDepthStencilState(DepthStencilState * dss) {
 void RenderPipeline::ImmdiateRender() {
     ID3D11CommandList *list;
     native_context->FinishCommandList(true, &list);
-    device->AcquireImmdiateContext(true);
+    //device->AcquireImmdiateContext(true);
     device->native_immcontext->ExecuteCommandList(list, false);
-    device->AcquireImmdiateContext(false);
+    //device->AcquireImmdiateContext(false);
     list->Release();
 }
 
@@ -149,17 +149,17 @@ void RenderPipeline::ImmdiateCopy2D(Texture2D *dest, Texture2D *src,
     box.left = src_rect.x;
     box.right = box.left + src_rect.width;
     box.bottom = box.top + src_rect.height;
-    device->AcquireImmdiateContext(true);
+   // device->AcquireImmdiateContext(true);
     device->native_immcontext->CopySubresourceRegion(dest->native_texture2d.Get(), 0, dest_rect.x, dest_rect.y, 0, 
             src->native_texture2d.Get(), 0, &box);
-    device->AcquireImmdiateContext(false);
+  //  device->AcquireImmdiateContext(false);
 }
 
 void RenderPipeline::ImmdiateSavePNG(Texture2D *tex, const cstring &filename) {
-    device->AcquireImmdiateContext();
+   // device->AcquireImmdiateContext();
     D3DX11SaveTextureToFileW(native_context.Get(), tex->native_texture2d.Get(), 
         D3DX11_IFF_PNG, filename.c_str());
-    device->AcquireImmdiateContext(false);
+   // device->AcquireImmdiateContext(false);
 }
 
 

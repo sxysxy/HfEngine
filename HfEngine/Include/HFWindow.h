@@ -14,7 +14,8 @@ class HFWindow : public Utility::ReferredObject{
 	static bool _native_inited;
 
 public:
-   static LRESULT CALLBACK _WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+    static LRESULT CALLBACK _WndProcAsyncMove(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+    static LRESULT CALLBACK _WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 public:
     //pretend to be private.
     bool __ncl_button_down;
@@ -25,6 +26,7 @@ public:
 	const HWND &native_handle = _native_handle;
 	const int &width = _width, &height = _height;
     UINT style;
+    bool async_move;
 
 
 	HFWindow() {
@@ -32,6 +34,7 @@ public:
 		_width = _height = 0;
         style = wstyle;
         __ncl_button_down = false;
+        async_move = false;
 	}
 	HFWindow(const cstring &_title, int w, int h) :HFWindow() {
 		Initialize(_title, w, h);
@@ -120,6 +123,9 @@ public:
         RECT r = { 0, 0, w, h };
         AdjustWindowRect(&r, style, false);
         SetWindowPos(_native_handle, 0, 0, 0, r.right - r.left, r.bottom - r.top, SWP_NOMOVE);
+    }
+    inline void SetAsyncMove(bool b) {
+        async_move = b;
     }
 
 	virtual void OnResized();

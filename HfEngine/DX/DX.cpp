@@ -61,11 +61,10 @@ namespace Ext{
             }
             else if (argc == 4) {
                 auto rect = GetNativeObject<Utility::Rect>(self);
-                CheckAllFixnum({argv[0], argv[1], argv[2], argv[3]});
-                rect->x = FIX2INT(argv[0]);
-                rect->y = FIX2INT(argv[1]);
-                rect->w = FIX2INT(argv[2]);
-                rect->h = FIX2INT(argv[3]);
+                rect->x = FIX2INT(rb_to_int(argv[0]));
+                rect->y = FIX2INT(rb_to_int(argv[1]));
+                rect->w = FIX2INT(rb_to_int(argv[2]));
+                rect->h = FIX2INT(rb_to_int(argv[3]));
             }
             else {
                 rb_raise(rb_eArgError, "HFRect::initialize: Wrong number of arguments. expecting 1 or 4 but got %d", argc);
@@ -100,19 +99,19 @@ namespace Ext{
             return rb_float_new(GetNativeObject<Utility::Color>(self)->a);
         }
         static VALUE CRBGA_sr(VALUE self, VALUE r) {
-            GetNativeObject<Utility::Color>(self)->r = rb_float_value(r);
+            GetNativeObject<Utility::Color>(self)->r = rb_float_value(rb_to_float(r));
             return r;
         }
         static VALUE CRBGA_sg(VALUE self, VALUE r) {
-            GetNativeObject<Utility::Color>(self)->g = rb_float_value(r);
+            GetNativeObject<Utility::Color>(self)->g = rb_float_value(rb_to_float(r));
             return r;
         }
         static VALUE CRBGA_sb(VALUE self, VALUE r) {
-            GetNativeObject<Utility::Color>(self)->b = rb_float_value(r);
+            GetNativeObject<Utility::Color>(self)->b = rb_float_value(rb_to_float(r));
             return r;
         }
         static VALUE CRBGA_sa(VALUE self, VALUE r) {
-            GetNativeObject<Utility::Color>(self)->a = rb_float_value(r);
+            GetNativeObject<Utility::Color>(self)->a = rb_float_value(rb_to_float(r));
             return r;
         }
         static VALUE CRGBA_row_data_ptr(VALUE self) {
@@ -130,11 +129,10 @@ namespace Ext{
             }
             else if (argc == 4) {
                 auto color = GetNativeObject<Utility::Color>(self);
-                CheckAllFloat({argv[0], argv[1], argv[2], argv[3]});
-                color->r = rb_float_value(argv[0]);
-                color->g = rb_float_value(argv[1]);
-                color->b = rb_float_value(argv[2]);
-                color->a = rb_float_value(argv[3]);
+                color->r = rb_float_value(rb_to_float(argv[0]));
+                color->g = rb_float_value(rb_to_float(argv[1]));
+                color->b = rb_float_value(rb_to_float(argv[2]));
+                color->a = rb_float_value(rb_to_float(argv[3]));
             }
             else {
                 rb_raise(rb_eArgError, "HFColor::initialize: Wrong number of arguments. expecting 1 or 4 but got %d", argc);

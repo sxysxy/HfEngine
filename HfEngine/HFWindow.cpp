@@ -10,30 +10,59 @@
 #endif
 
 bool HFWindow::_native_inited = false;
+
 LRESULT CALLBACK HFWindow::_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg)
+    {
+    case WM_PAINT: 
+    {
+        PAINTSTRUCT ps;
+        auto HDC = BeginPaint(hWnd, &ps);
+        EndPaint(hWnd, &ps);
+        return 0;
+    }
+    case WM_CREATE:
+    {
+        CREATESTRUCT * pc = (CREATESTRUCT *)lParam;
+        HFWindow * w = (HFWindow *)pc->lpCreateParams;
+        SetWindowLongV(hWnd, GWLP_USERDATA, (PTR_VALUE_T)pc->lpCreateParams);
+        return 0;
+    }
+    case WM_DESTROY:
+    case WM_CLOSE:
+    {
+        HFWindow * w = (HFWindow *)GetWindowLongV(hWnd, GWLP_USERDATA);
+        w->OnClosed();
+        return 0;
+    }
+    return 0;
+    case WM_SIZE:
+    {
+        HFWindow * w = (HFWindow *)GetWindowLongV(hWnd, GWLP_USERDATA);
+        w->OnResized();
+        return 0;
+    }
+    case WM_SYSCOMMAND:
+    case WM_LBUTTONUP:
+    case WM_NCLBUTTONUP:
+    case WM_NCMOUSEMOVE:
+    case WM_MOUSEMOVE:
+    case WM_NCRBUTTONDOWN:
+    {
+        HFWindow * w = (HFWindow *)GetWindowLongV(hWnd, GWLP_USERDATA);
+        if(w->async_move)
+            return _WndProcAsyncMove(hWnd, uMsg, wParam, lParam);
+        else return DefWindowProc(hWnd, uMsg, wParam, lParam);
+    }
+    default:
+        return DefWindowProc(hWnd, uMsg, wParam, lParam);
+        break;
+    }
+}
+
+LRESULT CALLBACK HFWindow::_WndProcAsyncMove(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	switch (uMsg)
 	{
-	case WM_CREATE:
-		{
-			CREATESTRUCT * pc = (CREATESTRUCT *)lParam;
-            HFWindow * w = (HFWindow *)pc->lpCreateParams;
-			SetWindowLongV(hWnd, GWLP_USERDATA, (PTR_VALUE_T)pc->lpCreateParams);
-			return 0;
-		}
-	case WM_DESTROY:
-	case WM_CLOSE:
-		{
-			HFWindow * w = (HFWindow *)GetWindowLongV(hWnd, GWLP_USERDATA);
-            w->OnClosed();
-            return 0;
-		}
-		return 0;
-	case WM_SIZE:
-		{
-			HFWindow * w = (HFWindow *)GetWindowLongV(hWnd, GWLP_USERDATA);
-            w->OnResized();
-			return 0;
-		}
     case WM_SYSCOMMAND: 
         {
             HFWindow * w = (HFWindow *)GetWindowLongV(hWnd, GWLP_USERDATA);
@@ -235,6 +264,12 @@ namespace Ext {
             return rb_ary_new3(2, INT2FIX(x), INT2FIX(y));
         }
 
+        static VALUE set_async_move(VALUE self, VALUE async) {
+            auto window = GetNativeObject<RHFWindow>(self);
+            window->SetAsyncMove(async == Qtrue);
+            return self;
+        }
+
 		void Init() {
 			klass = rb_define_class("HFWindow", rb_cObject);
 			rb_define_alloc_func(klass, New);
@@ -250,6 +285,7 @@ namespace Ext {
             rb_define_method(klass, "moveto", (rubyfunc)moveto, 2);
             rb_define_alias(klass, "move_to", "moveto");
             rb_define_method(klass, "get_position", (rubyfunc)get_position, 0);
+            rb_define_method(klass, "set_async_move", (rubyfunc)set_async_move, 1);
 		}
 	}
 }
