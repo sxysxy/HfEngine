@@ -543,6 +543,8 @@ namespace Ext {
                 rb_define_const(module, "R8G8_UINT", INT2FIX(DXGI_FORMAT_R8G8_UINT));
                 rb_define_const(module ,"R16G16_UINT", INT2FIX(DXGI_FORMAT_R16G16_UINT));
                 rb_define_const(module, "R16G16B16A16_UINT", INT2FIX(DXGI_FORMAT_R16G16B16A16_UINT));
+                rb_define_const(module, "R32G32_UINT", INT2FIX(DXGI_FORMAT_R32G32_UINT));
+                rb_define_const(module, "R64_DOUBLE", INT2FIX(DXGI_FORMAT_R32G32_UINT));
 
                 //primitive topology
                 rb_define_const(module, "TOPOLOGY_TRIANGLELIST", INT2FIX(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST));

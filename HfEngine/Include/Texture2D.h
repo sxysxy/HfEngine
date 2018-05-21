@@ -15,8 +15,12 @@ public:
 
     const int& width = _width, &height = _height;
     void Initialize() {};
-    void Initialize(D3DDevice *device, const std::wstring &filename); 
-    void Initialize(D3DDevice *deivce, int w, int h);
+    void Initialize(D3DDevice *device, const std::wstring &filename);
+    void Initialize(D3DDevice *deivce, int w, int h, const void *init_data = nullptr);
+    template<class T = void>
+    void Initialize(D3DDevice *device, int w, int h, const T *init_data = nullptr) {
+        Initialize(device, w, h, (void*)init_data);
+    }
     void CreateFromNativeTexture2D(ID3D11Texture2D *tex);
 
     void UnInitialize() {
@@ -45,6 +49,7 @@ public:
     void Initialize(Texture2D *tex);
     void CreateFromNativeTexture2D(ID3D11Texture2D *t); //only used in swap chain...
     void UnInitialize() {
+        texture.Release();
         native_rtt_view.ReleaseAndGetAddressOf();
         native_stencil_buffer.ReleaseAndGetAddressOf();
         native_stencil_view.ReleaseAndGetAddressOf();

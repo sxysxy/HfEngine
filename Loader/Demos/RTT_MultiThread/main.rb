@@ -5,6 +5,7 @@ SHADER_FILE = File.join(File.dirname(__FILE__), "Shaders.rb")
 
 HFWindow.new("RTT", 500, 500) {
 	show
+	#set_async_move true
 	set_handler(:on_closed) {exit_mainloop}
 	device = D3DDevice.new
 	rp = RenderPipelineM.new(device)
@@ -24,14 +25,14 @@ HFWindow.new("RTT", 500, 500) {
 			1.0, -1.0, 1.0, 1.0, 0.0, 0.0].pack("f*")
 	vb2 = VertexBuffer.new(device, 6*4, 4, vecs2)
 	
-	re = RemoteRenderExecutive.new(device, swapchain, 600)
+	re = RemoteRenderExecutive.new(device, swapchain, 60)
 	re.insert(rp, 100)
 	
 	#RTT
 	tex = Texture2D.new(device, width, height)
 	rtt = RTT.new(tex)
 		
-	timer = FPSTimer.new(600)
+	timer = FPSTimer.new(60)
 	messageloop {
 		re.lock #purposely in the loop
 		sf.section[:draw_shape].apply(rp)

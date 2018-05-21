@@ -113,7 +113,7 @@ public:
     }
 
     inline void Render() {
-        std::lock_guard<std::mutex> g(tree_lock);
+        //std::lock_guard<std::mutex> g(tree_lock);
         DoRender(root);
     }
 
@@ -152,8 +152,10 @@ public:
         render_thread = std::thread([this]() {
             ResetFPS(fps);
             while(!exit_flag) {
+                Lock();
                 tree->Render();
                 swapchain->Present();
+                UnLock();
                 timer.Await();
             }
         });

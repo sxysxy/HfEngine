@@ -32,7 +32,7 @@ void Texture2D::Initialize(D3DDevice * device, const std::wstring & filename) {
     CreateViews(device);
 }
 
-void Texture2D::Initialize(D3DDevice * device, int w, int h) {
+void Texture2D::Initialize(D3DDevice * device, int w, int h, const void *init_data) {
     _width = w, _height = h;
 
     D3D11_TEXTURE2D_DESC td;
@@ -46,7 +46,14 @@ void Texture2D::Initialize(D3DDevice * device, int w, int h) {
     td.Usage = D3D11_USAGE_DEFAULT;
     td.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
     HRESULT hr;
-    if (FAILED(hr = device->native_device->CreateTexture2D(&td, nullptr, &native_texture2d))) {
+    
+    D3D11_SUBRESOURCE_DATA data;
+    if (init_data) {
+        memset(&data, 0, sizeof data);
+        data.pSysMem = init_data;
+        data.SysMemPitch = w * 4;
+    }
+    if (FAILED(hr = device->native_device->CreateTexture2D(&td, init_data ? &data : nullptr, &native_texture2d))) {
         MAKE_ERRMSG<std::runtime_error>("Failed to create D3D Texture2D, Error code:", hr);
     }
 
@@ -134,8 +141,8 @@ namespace Ext { namespace DX{
         }
 
         static VALUE T2D_initialize(int argc, VALUE *argv, VALUE self) {
-            if(argc < 2 || argc > 3)
-                rb_raise(rb_eArgError, "Texutre2D::initialize : expected (2..3) args( (device, filename) or (device, width, height)) but got %d", argc);
+            if(argc < 2 || argc > 4)
+                rb_raise(rb_eArgError, "Texutre2D::initialize : expected (2..4) args( (device, filename) or (device, width, height, [init_data])) but got %d", argc);
             auto tex = GetNativeObject<::Texture2D>(self);
             if ((!rb_obj_is_kind_of(argv[0], Ext::DX::D3DDevice::klass))) {
                 rb_raise(rb_eArgError,
@@ -149,8 +156,16 @@ namespace Ext { namespace DX{
                     tex->Initialize(device, filename);
                 }
                 else {
-
-                    tex->Initialize(device, FIX2INT(argv[1]), FIX2INT(argv[2]));
+                    void *data = nullptr;
+                    if (argc == 4) {
+                        if (rb_obj_is_kind_of(argv[3], rb_cInteger)) {
+                            data = (void*)FIX2PTR(argv[3]);
+                        }
+                        else if (rb_obj_is_kind_of(argv[3], rb_cString)) {
+                            data = (void*)rb_string_value_ptr(&argv[3]);
+                        }
+                    }
+                    tex->Initialize(device, FIX2INT(argv[1]), FIX2INT(argv[2]), data);
                 }
             }
             catch (LoadTextureFailed le) {

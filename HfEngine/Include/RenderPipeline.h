@@ -103,7 +103,7 @@ public:
         native_context->IASetPrimitiveTopology(topo);
     }
 
-    inline void Draw(int start_pos, int count) {
+    inline void Draw(int start_pos, int count) {    
         native_context->Draw(count, start_pos);
     }
     inline void DrawIndex(int start_pos, int count) {
@@ -127,6 +127,7 @@ public:
     }
 
     void UnInitialize() {
+        native_context->ClearState();
         native_context.ReleaseAndGetAddressOf();
         device.Release();
         vshader.Release();

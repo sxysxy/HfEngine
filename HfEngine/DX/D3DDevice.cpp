@@ -146,6 +146,11 @@ namespace Ext {
                 return self;
             }
 
+            static VALUE vsdebug_report(VALUE self) {
+                GetNativeObject<::D3DDevice>(self)->VSDebugReport();
+                return self;
+            }
+
             void Init() {
                 klass = rb_define_class_under(module, "D3DDevice", rb_cObject);
                 rb_include_module(klass, module_release);
@@ -155,6 +160,7 @@ namespace Ext {
                 rb_define_method(klass, "query_monitor_info", (rubyfunc)query_monitor_info, 0);
                 rb_define_method(klass, "enum_adapters", (rubyfunc)enum_adapters, 0);
                 rb_define_method(klass, "acquire_immcontext", (rubyfunc)acquire_immcontext, 1);
+                rb_define_method(klass, "vsdebug_report", (rubyfunc)vsdebug_report, 0);
             }
         }
     }

@@ -31,7 +31,17 @@ public:
 
     void AcquireImmdiateContext(bool occupy = true);
 
-    
+    void VSDebugReport() {
+#ifdef _DEBUG
+         ComPtr<ID3D11Debug> debug;
+         HRESULT hr = native_device->QueryInterface(__uuidof(ID3D11Debug), &debug);
+         if (SUCCEEDED(hr)) {
+             debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+         }
+#else
+        
+#endif
+    }
 };
 
 namespace Ext {
