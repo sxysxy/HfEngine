@@ -51,5 +51,35 @@ namespace Utility{
 			r = _r, g = _g, b = _b, a = _a;
 		}
 	};
+    using Color32 = Color;
+
+    struct Color8 {
+        union {
+            union {
+                unsigned char r;
+                unsigned char red;
+            };
+            union {
+                unsigned char g;
+                unsigned char green;
+            };
+            union {
+                unsigned char b;
+                unsigned char blue;
+            };
+            union {
+                unsigned char a;
+                unsigned char alpha;
+            };
+            unsigned int rgba;
+        };
+        Color8() {r = b = g = a = 0;}
+        Color8(unsigned int c) {
+            rgba =  c;
+        }
+        Color8(unsigned char _r, unsigned char _g, unsigned char _b, unsigned char _a) {
+            r = _r, g = _g, b = _b, a = _a;
+        }
+    };
 
 }

@@ -3,6 +3,7 @@ require 'libcore'
 include DX
 SHADER_FILE = File.join(File.dirname(__FILE__), "Shaders.rb")
 PICTURE_FILE = File.join(File.dirname(__FILE__), "point.png")
+show_console
 HFWindow.new("Create Texture", 400, 400) {
 	show
 	set_handler(:on_closed) {exit_mainloop}
@@ -25,6 +26,9 @@ HFWindow.new("Create Texture", 400, 400) {
 	
 	#Create from file
 	t2 = Texture2D.new(device, PICTURE_FILE)
+	data = rp.immdiate_dump_pixels2d(t2)
+	print data.unpack("C*")
+	STDOUT.flush
 	
 	messageloop {
 		rp.set_viewport(HFRect(0, 0, height, width))

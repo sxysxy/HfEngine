@@ -134,9 +134,7 @@ void RenderPipeline::SetDepthStencilState(DepthStencilState * dss) {
 void RenderPipeline::ImmdiateRender() {
     ID3D11CommandList *list;
     native_context->FinishCommandList(true, &list);
-    //device->AcquireImmdiateContext(true);
     device->native_immcontext->ExecuteCommandList(list, false);
-    //device->AcquireImmdiateContext(false);
     list->Release();
 }
 
@@ -149,17 +147,39 @@ void RenderPipeline::ImmdiateCopy2D(Texture2D *dest, Texture2D *src,
     box.left = src_rect.x;
     box.right = box.left + src_rect.width;
     box.bottom = box.top + src_rect.height;
-   // device->AcquireImmdiateContext(true);
     device->native_immcontext->CopySubresourceRegion(dest->native_texture2d.Get(), 0, dest_rect.x, dest_rect.y, 0, 
             src->native_texture2d.Get(), 0, &box);
-  //  device->AcquireImmdiateContext(false);
 }
 
 void RenderPipeline::ImmdiateSavePNG(Texture2D *tex, const cstring &filename) {
-   // device->AcquireImmdiateContext();
     D3DX11SaveTextureToFileW(native_context.Get(), tex->native_texture2d.Get(), 
         D3DX11_IFF_PNG, filename.c_str());
-   // device->AcquireImmdiateContext(false);
+}
+
+void RenderPipeline::ImmdiateDumpPixels2D(Texture2D *tex, Utility::HFBuffer<Utility::Color8> *buf) {
+    int size = tex->width * tex->height * sizeof(Utility::Color8);
+    if (buf->size < size) {
+        throw std::invalid_argument("RenderPipeline::ImmdiateDumpPixel2D:, buffer is not large enough");
+    }
+    ComPtr<ID3D11Texture2D> buffer;
+    D3D11_TEXTURE2D_DESC td;
+    tex->native_texture2d->GetDesc(&td);
+    td.Usage = D3D11_USAGE_STAGING;
+    td.BindFlags = 0;
+    td.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+    auto hr = device->native_device->CreateTexture2D(&td, nullptr, &buffer);
+    if (FAILED(hr)) {
+        MAKE_ERRMSG<std::runtime_error>("Fail to dump pixels 2D (when creating buffer)", hr);
+    }
+    native_context->CopyResource(buffer.Get(), tex->native_texture2d.Get());
+    D3D11_MAPPED_SUBRESOURCE ms = {0, 0, 0};
+    hr = native_context->Map(buffer.Get(), 0, D3D11_MAP_READ, 0, &ms);
+    if (FAILED(hr)) {
+        MAKE_ERRMSG<std::runtime_error>("Fail to dump pixels 2D (when mapping resource)", hr);
+    }
+    memcpy(buf->ptr, ms.pData, size);
+    native_context->Unmap(buffer.Get(), 0);
+    buffer.ReleaseAndGetAddressOf();
 }
 
 
@@ -452,6 +472,26 @@ namespace Ext {
                 rp->ImmdiateSavePNG(GetNativeObject<Texture2D>(tex), s);
                 return self;
             }
+            static VALUE immdiate_dump_pixels2d(VALUE self, VALUE tex) {
+                CheckArgs({ tex }, {Texture::klass_texture2d});
+                auto texture = GetNativeObject<::Texture2D>(tex);
+                int size = texture->width * texture->height * sizeof(Utility::Color8);
+                Utility::HFBuffer<Utility::Color8> buffer;
+                VALUE sbuffer = rb_str_buf_new(size);
+                buffer.Initialize((Utility::Color8 *)rb_string_value_ptr(&sbuffer), size / sizeof(Utility::Color8));
+                try {
+                    GetNativeObject<::RenderPipeline>(self)->ImmdiateDumpPixels2D(
+                        texture, &buffer
+                    );
+                }
+                catch (const std::runtime_error &e) {
+                    buffer.FroceToNULL();
+                    rb_raise(rb_eRuntimeError, e.what());
+                }
+                buffer.FroceToNULL();
+
+                return sbuffer;
+            }
             //--
             static VALUE update_subresource(VALUE self, VALUE buf, VALUE d) {
                 if (!rb_obj_is_kind_of(buf, Ext::DX::D3DBuffer::klass))
@@ -529,6 +569,7 @@ namespace Ext {
                 rb_define_method(klass, "immdiate_render", (rubyfunc)immdiate_render, 0);
                 rb_define_method(klass, "immdiate_copy2d", (rubyfunc)immdiate_copy2d, 4);
                 rb_define_method(klass, "immdiate_savepng", (rubyfunc)immdiate_save_png, 2);
+                rb_define_method(klass, "immdiate_dump_pixels2d", (rubyfunc)immdiate_dump_pixels2d, 1);
                 
                 //
                 rb_define_method(klass, "update_subresource", (rubyfunc)update_subresource, 2);

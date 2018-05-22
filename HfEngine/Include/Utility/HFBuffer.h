@@ -17,13 +17,22 @@ public:
     HFBuffer() {
         _ptr = nullptr;
     }
-    void Initialize(int s) {
-        assert(s > 0);
-        _size = s;
-        _ptr = (pT)malloc(sizeof(T)*size);
+    void Initialize(int elem_count) {
+        assert(elem_count > 0);
+        _size = elem_count * sizeof(T);
+        _ptr = (pT)malloc(_size);
     }
-    HFBuffer(int s) : HFBuffer() {
-        Initialize(s);
+    void Initialize(T *vptr, int elem_count) {
+        assert(vptr);
+        _ptr = vptr;
+        _size = elem_count * sizeof(T);
+    }
+    HFBuffer(int elem_count) : HFBuffer() {
+        Initialize(elem_count);
+    }
+    void FroceToNULL() {
+        _ptr = nullptr;
+        _size = 0;
     }
     pT Get() {
         return _ptr;
@@ -33,15 +42,15 @@ public:
         return _ptr[index];
     }
     ~HFBuffer() {
-        free(ptr);
+        UnInitialize();
     }
-    void Resize(int s) {
-        assert(ptr && s > 0);
-        _size = s;
-        _ptr = (pT)realloc(_ptr, _size);
-        
+    void UnInitialize() {
+        if(_ptr){
+            free(ptr);
+            _ptr = nullptr;
+        }
     }
-    virtual void Release() {};
+    virtual void Release() {UnInitialize();};
 };
 
 }
