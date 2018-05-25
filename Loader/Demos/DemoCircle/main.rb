@@ -50,7 +50,7 @@ HFWindow.new("Circle", SIZE, SIZE) {
 	show
 	set_handler(:on_closed) {exit_mainloop}
 	device = DX::D3DDevice.new
-	rp = DX::RenderPipeline.new(device)
+	rp = DX::RenderPipelineM.new(device)
 	sf = HFSF::loadsf(device, c)[0]
 	sf.section[:set].apply(rp)
 	sf.input_layout.apply(rp)
@@ -59,14 +59,16 @@ HFWindow.new("Circle", SIZE, SIZE) {
 	vecs = [-1.0, 1.0, 0.0, 1.0, 1.0, 0.0, -1.0, -1.0, 0.0, 1.0, -1.0, 0.0].pack("f*")
 	vb = DX::VertexBuffer.new(device, 12, 4, vecs)
 	rp.set_vbuffer(vb)
+	re = DX::RemoteRenderExecutive.new(device, swapchain, 3000)
+	re.insert(rp, 100)
 	timer = FPSTimer.new(60)
 	messageloop {
 		rp.clear(HFColorRGBA(0.0, 0.0, 0.0, 0.0))
 		rp.draw(0, 4)
-		rp.immdiate_render
-		swapchain.present
+		rp.swap_commands
 		timer.await
 	}
+	re.terminate
 }
 
 
