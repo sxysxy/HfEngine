@@ -20,6 +20,7 @@ module G2D
 		end
 		
 		def texture=(t)
+			@texture = t
 			if(t)
 				@src_rect = HFRect(0, 0, t.width, t.height)
 				@dest_rect = @src_rect.clone

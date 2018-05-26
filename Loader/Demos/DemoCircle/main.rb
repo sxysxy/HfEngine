@@ -1,6 +1,6 @@
 require 'libcore'
 
-SIZE = 500
+SIZE = 400
 
 c = HFSF::Compiler.compile_code {
 	Program("e") {
@@ -20,7 +20,7 @@ c = HFSF::Compiler.compile_code {
 				float x = #{SIZE / 2};
 				t.x -= x;
 				t.y -= x;
-				if(t.x * t.x + t.y * t.y <= 250*250)
+				if(t.x * t.x + t.y * t.y <= x*x)
 					return color;
 				else return float4(0.0f, 0.0f, 0.0f, 0.0f);
 			}
@@ -55,7 +55,7 @@ HFWindow.new("Circle", SIZE, SIZE) {
 	sf.section[:set].apply(rp)
 	sf.input_layout.apply(rp)
 	swapchain = DX::SwapChain.new(device, self)
-	rp.set_target(swapchain.rtt).set_viewport(HFRect(0, 0, width, height)).set_topology(DX::TOPOLOGY_TRIANGLESTRIP)
+	rp.set_target(swapchain.rtt).set_viewport(HFRect(0, 0, SIZE, SIZE)).set_topology(DX::TOPOLOGY_TRIANGLESTRIP)
 	vecs = [-1.0, 1.0, 0.0, 1.0, 1.0, 0.0, -1.0, -1.0, 0.0, 1.0, -1.0, 0.0].pack("f*")
 	vb = DX::VertexBuffer.new(device, 12, 4, vecs)
 	rp.set_vbuffer(vb)

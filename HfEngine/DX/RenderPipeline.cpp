@@ -551,7 +551,7 @@ namespace Ext {
                 rb_define_method(klass, "set_rasterizer", (rubyfunc)set_rasterizer, 1);
                 rb_define_method(klass, "rasterizer", (rubyfunc)get_rasterizer, 0);
                 rb_define_method(klass, "set_scissor_rect", (rubyfunc)set_scissor_rect, 1);
-
+               
                 //om
                 rb_define_method(klass, "set_target", (rubyfunc)set_target, 1);
                 rb_define_method(klass, "target", (rubyfunc)get_target, 0);

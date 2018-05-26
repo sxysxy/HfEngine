@@ -183,6 +183,10 @@ class Renderer2D < DX::RenderPipelineM
 		set_target Graphics.rtt
 	end
 	
+	def clear(c = HFColorRGBA(0.0, 0.0, 0.0, 0.0))
+		super(c)
+	end
+	
 	def release
 		super
 		@sf.release

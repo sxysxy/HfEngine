@@ -76,7 +76,7 @@ class RPMTreap : public Utility::ReferredObject {
 
     std::unordered_map<unsigned, RPMNode *> uid2node;
     Utility::ReferPtr<D3DDevice> device;
-    std::mutex tree_lock;
+    std::recursive_mutex tree_lock;
     RPMNode *root;
 public:
     inline void Insert(RenderPipelineM *rp, int priority) {
@@ -85,14 +85,14 @@ public:
         RPMNode *node = new RPMNode;
         node->rpm = rp;
 
-        std::lock_guard<std::mutex> g(tree_lock);
+        std::lock_guard<std::recursive_mutex> g(tree_lock);
         uid2node[rp->access.second] = node;
         int k = GetRank(root, node);
         auto p = DoSplit(root, k);
         root = DoInsert(DoInsert(p.first, node), p.second);
     }
     inline void Clear() {
-        std::lock_guard<std::mutex> g(tree_lock);
+        std::lock_guard<std::recursive_mutex> g(tree_lock);
         uid2node.clear();
         DoClear(root);
         root = nullptr;
@@ -113,7 +113,6 @@ public:
     }
 
     inline void Render() {
-        //std::lock_guard<std::mutex> g(tree_lock);
         DoRender(root);
     }
 
@@ -125,7 +124,7 @@ public:
     }
 
     inline void Erase(RenderPipelineM *rpm) {
-        std::lock_guard<std::mutex> g(tree_lock);
+        std::lock_guard<std::recursive_mutex> g(tree_lock);
         DoErase(rpm);
     }
 };
