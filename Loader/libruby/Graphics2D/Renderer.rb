@@ -37,8 +37,8 @@ Program("Renderer2D") {
 		}
 		
 		cbuffer sprite_vsparam : register(b1) {
-			float angle, mirror;
-			float2 svs_useless;
+			float angle, ox, oy;
+			float svs_useless;
 		};
 		cbuffer sprite_psparam : register(b2) {
 			float4 color_mod;
@@ -46,7 +46,22 @@ Program("Renderer2D") {
 			float3 sp_useless; //only for align
 		}
 		VSOut VSSprite(VSInput vi) {
-			return VSJustPass(vi);
+			VSOut opt;
+			float x0 = (ox + vp_x) * 2.0 / vp_w - 1.0f;
+			float y0 = -((oy + vp_y) * 2.0 / vp_h) + 1.0f;
+			
+			float x1 = (vi.pos.x + vp_x) * 2.0 / vp_w - 1.0f - x0 - 0.5f;
+			float y1 = -((vi.pos.y + vp_y) * 2.0 / vp_h) + 1.0f - y0 - 0.5f;
+			
+			float x2 = x1 * cos(angle) - y1 * sin(angle);
+			float y2 = x1 * sin(angle) + y1 * cos(angle);
+			
+			opt.pos.x = x2 + x0 + 0.5f;
+			opt.pos.y = y2 + y0 + 0.5f;
+			opt.pos.z = vi.pos.z;
+			opt.pos.w = 1.0f;
+			opt.data = vi.data;
+			return opt;
 		}
 		
 		SamplerState color_sampler : register(s0);
@@ -198,7 +213,6 @@ Program("Renderer2D") {
 		
 		def set_viewport(r)
 			super(r)
-			msgbox "sv"
 			update_subresource @__cb_common_param, [r.x, r.y, r.w, r.h].pack("f*")
 		end
 		
@@ -280,21 +294,29 @@ Program("Renderer2D") {
 			x4 = x2
 			y4 = y3
 			
+			dest_rect = s.dest_rect
+			dx = Float(dest_rect.x - s.ox)
+			dy = Float(dest_rect.y - s.oy)
+			
 			set_ps_resource(0, s.texture)
-			vecs = [-1.0, +1.0, s.z, x1, y1, 0.0, 0.0,
-					+1.0, +1.0, s.z, x2, y2, 0.0, 0.0,
-					-1.0, -1.0, s.z, x3, y3, 0.0, 0.0,
-					+1.0, -1.0, s.z, x4, y4, 0.0, 0.0].pack("f*")
+			vecs = [dx, dy, 					    s.z, x1, y1, 0.0, 0.0,
+					dx+dest_rect.w, dy, 		    s.z, x2, y2, 0.0, 0.0,
+					dx, dy+dest_rect.h, 		    s.z, x3, y3, 0.0, 0.0,
+					dx+dest_rect.w, dy+dest_rect.h, s.z, x4, y4, 0.0, 0.0].pack("f*")
 			update_subresource @__vb_rect, vecs
 			update_subresource @__cb_sprite_psparam, [s.color_mod.r, s.color_mod.g, s.color_mod.b, s.color_mod.a,
 													 s.opacity, 0.0, 0.0, 0.0].pack("f*")
-			update_subresource @__cb_sprite_vsparam, [s.angle, s.mirror ? -1.0 : 1.0].pack("f*")
+			update_subresource @__cb_sprite_vsparam, [s.angle, s.ox, s.oy, 0.0].pack("f*")
 			draw(0, 4)
 			set_ps_resource(0, nil)
 		end
 		
 		def use_default_target
 			set_target @graphics.rtt
+		end
+		
+		def clear(c = HFColorRGBA(0.0, 0.0, 0.0, 0.0))
+			super(c)
 		end
 		
 		alias render swap_commands #you know

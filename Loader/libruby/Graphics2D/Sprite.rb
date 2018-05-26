@@ -52,5 +52,10 @@ module G2D
 		def y
 			@dest_rect.y
 		end
+		
+		def origin_center
+			@ox = @dest_rect.width / 2
+			@oy = @dest_rect.height / 2
+		end
 	end
 end
