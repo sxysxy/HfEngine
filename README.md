@@ -1,22 +1,17 @@
 # HfEngine
 A engine based on dx11. Easy to use (compared with using dx-api directly)
+I want to make Touhou doujin STG.
 
 # Features
-\* 2D,3D rendering 
+\* 2D,3D rendering(MathTool for 3D Rendering is provided)
 
-\* Multi-thread rendering
+\* Multi-thread rendering(With a multi-thread rendering framework)
 
 \* High performance with low CPU occupying
 
 \* Input device support (Mouse, Keyboard, Joystick ...)
 
 \* C++ and Ruby interfaces.
-
-# How To Use
-
-\* You can simply download the release versions from https://github.com/sxysxy/HfEngine/releases, (Source code(zip)) and run HfEngine.exe. Modify main.rb to implemente your rendering task.
-
-\* Further usage: To use C++ interface or develop this engine itself, you need get VS2017(or above), DirectX 11 SDK, ruby(compiled by msvc).
 
 LICENSE:
 The MIT LICENSE(see LICENSE)
