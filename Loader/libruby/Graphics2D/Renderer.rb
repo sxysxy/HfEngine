@@ -2,6 +2,7 @@
 
 module G2D
 
+#HSSF DSL
 $__sf_code__ = HFSF::Compiler.compile_code {
 Program("Renderer2D") {
 	Code(%{
@@ -47,17 +48,15 @@ Program("Renderer2D") {
 		}
 		VSOut VSSprite(VSInput vi) {
 			VSOut opt;
-			float x0 = (ox + vp_x) * 2.0 / vp_w - 1.0f;
-			float y0 = -((oy + vp_y) * 2.0 / vp_h) + 1.0f;
 			
-			float x1 = (vi.pos.x + vp_x) * 2.0 / vp_w - 1.0f - x0 - 0.5f;
-			float y1 = -((vi.pos.y + vp_y) * 2.0 / vp_h) + 1.0f - y0 - 0.5f;
+			float x1 = (vi.pos.x + vp_x) * 2.0 / vp_w - 1.0f;
+			float y1 = -((vi.pos.y + vp_y) * 2.0 / vp_h) + 1.0f;
 			
 			float x2 = x1 * cos(angle) - y1 * sin(angle);
 			float y2 = x1 * sin(angle) + y1 * cos(angle);
 			
-			opt.pos.x = x2 + x0 + 0.5f;
-			opt.pos.y = y2 + y0 + 0.5f;
+			opt.pos.x = x2;
+			opt.pos.y = y2;
 			opt.pos.z = vi.pos.z;
 			opt.pos.w = 1.0f;
 			opt.data = vi.data;

@@ -1,8 +1,52 @@
 #encoding : utf-8
 =begin
-	HFSF.rb
-		HfEngine Shaders Framework
-    by sxysxy
+HFSF.rb
+	HfEngine Shaders Framework
+by sxysxy
+
+  This is a shaders framework, like Effects, which helps you manage your shaders and relative resources more conviniently.
+  It mainly contains two parts:
+	1. HFSF DSL. A DSL descripting your shaders framework.
+	2. HFSF Runtime. It allows you access the resources descripted in HSFS DSL and execute the codes in Section fragments.
+  It can manage VertexShader, PixelShader, GeometryShader, SamplerState, BlendState, RasterizerState, DepthStencilState, 
+	ConstantBuffer, InputLayout, you can just descript them in the DSL, and HSFS Runtime will create then when loading it.
+  You can also set rendering state in DSL(in Section fragments), like Pass fragments in Effects.
+  HFSF is fully compatible with ruby, so all ruby features can be used in it, for example, you can use some ruby's tricks to
+    pass arguments to Section fragments.(This feature is not supported offically because it's too ruby, I want its binary 
+	file(HFSF DSL can be compiled into universal binary file) can be used by C++). HFSF DSL has syntax and logic reviewing, 
+	and can give you friendly error massages if your codes have something wrong.
+  for more details about HFSF DSL, see the HFSF DSL Document(Document/HFSF_DSL.md)
+  The whole HFSF system is totally written in Ruby(700+ lines), cool!
+	
+Interfaces:
+	Compile your HFSF Code:
+		compiled = HFSF.compile_code(code = nil, &block)
+			You can pass a String or a block representing your code, Recommand passing a block.
+		compiled = HFSF.compile_file(filename)
+			Complie a file
+	The two methods above returns a HFSF::Compiled, it contains the compiled data. 
+	
+	HFSF::Compiled: 
+		compiled.format_inspect
+			Inspect the compile data, this method will return a String, you can use 'print' to print it.
+		compiled.save_sfm
+			Save the compiled data into a binary file.(using ruby Marshal)
+		compiled.load_sfm
+			Load a binary file which was saved by using save_sfm
+	
+	Load a shaders-framework: 
+		HFSF.loadsf(device, compiled)
+			You should pass a DX::D3DDevice and a HFSF::Compiled
+			This method returns an Array which contains your Programs(in HFSF) in order.
+			example: 
+				shaders = HFSF.loadsf(device, compiled)
+				draw = shaders[0]
+		HFSF.loadsf_code(device, &block)
+		HFSF.loadsf_file(device, filename) 
+			Load a shaders-framework directly from codes or a file, not through a HFSF::Compiled
+		
+	Examples : see Loader/libruby/Graphics2D/Renderer.rb 
+			   and Loader/Demos/*
 =end
 
 module HFSF
@@ -657,6 +701,16 @@ def self.load_program(device, p)
 		p.name = name.to_s if p
 	}
 	return program
+end
+
+
+#Public Interfaces:
+def self.compile_code(code = nil, &block) 
+	return Compiler.compile_code(code, &block)
+end
+
+def self.compile_file(filename)
+	return Compiler.compile_file(filename)
 end
 
 def self.loadsf(device, compd)
