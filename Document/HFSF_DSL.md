@@ -60,12 +60,28 @@ A typical Resources fragment may look like this:
 ```ruby
 	#...In a Program
 	Resource {
-		Sampler("sampler") {}
-		Blender{"blender"} {}
-		Rasterizer("rasterizer") {}
-		DepthStencilState("dss") {}
+		Sampler("sampler") {
+			#this code block will be instance_execed by a DX::Sampler
+			set_filter DX::FILTER_MIN_MAG_MIP_LINEAR, 0
+			set_uvwaddress DX::ADDRESS_WRAP, DX::ADDRESS_MIRROR, DX::ADDRESS_BORDER, HFColorRGBA(1.0, 1.0, 0.0, 1.0)
+		}
+		Blender{"alpha_blender"} {
+			#this code block will be instance_execed by a DX::Blender
+			enable true
+			set_color_blend DX::BLEND_SRC_ALPHA, DX::BLEND_INV_SRC_ALPHA, DX::BLEND_OP_ADD 
+			set_alpha_blend DX::BLEND_SRC_ALPHA, DX::BLEND_INV_SRC_ALPHA, DX::BLEND_OP_ADD
+		}
+		Rasterizer("rasterizer") {
+			#this code block will be instance_execed by a DX::Rasterizer
+			set_cull_mode DX::CULL_NONE
+		}
+		DepthStencilState("dss") {
+			#this code block will be instance_execed by a DX::DepthStencilState
+			set_depth_func DX::COMPARISON_LESS_EQUAL
+		}
 		ConstantBuffer("cb00") {
 			set_size 16
+			set_init_data [1.0, 0.0, 0.0, 0.0].pack("f*") #able to set initial data
 		}
 		ConstantBuffer("cb01") {
 			set_size 64
@@ -74,6 +90,20 @@ A typical Resources fragment may look like this:
 	#...other parts
 ```
 
+## Section :
+  Describe rendering state in Section fragment. You can use these keywords : 
+  
+  set_vshader(name), set_pshader(name), set_gshader(name)
+  
+  set_vs_sampler(slot, name), set_ps_sampler(slot, name), set_gs_sampler(slot, name),
+  
+  set_vs_cbuffer(slot, name), set_ps_cbuffer(slot, name), set_gs_cbuffer(slot, name),
+  
+  set_blender(name), set_rasterizer(name), set_depth_stencil_state(name)
+  
+  Shader's name is the function name in HLSL code, resources' name is the name you gave in Resource fragment. 
+  slot is the slot number which you want to bind.  
+  
 (to be continued)
 	
 	
