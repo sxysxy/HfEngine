@@ -61,7 +61,7 @@ A typical Resources fragment may look like this:
 	#...In a Program
 	Resource {
 		Sampler("sampler") {}
-		Blender{"blender"}
+		Blender{"blender"} {}
 		Rasterizer("rasterizer") {}
 		DepthStencilState("dss") {}
 		ConstantBuffer("cb00") {
