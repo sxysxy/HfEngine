@@ -62,6 +62,7 @@ A typical Resources fragment may look like this:
 	Resource {
 		Sampler("sampler") {
 			#this code block will be instance_execed by a DX::Sampler
+			#All methods in Class DX::Sampler can be used here
 			set_filter DX::FILTER_MIN_MAG_MIP_LINEAR, 0
 			set_uvwaddress DX::ADDRESS_WRAP, DX::ADDRESS_MIRROR, DX::ADDRESS_BORDER, HFColorRGBA(1.0, 1.0, 0.0, 1.0)
 		}
@@ -80,8 +81,9 @@ A typical Resources fragment may look like this:
 			set_depth_func DX::COMPARISON_LESS_EQUAL
 		}
 		ConstantBuffer("cb00") {
-			set_size 16
-			set_init_data [1.0, 0.0, 0.0, 0.0].pack("f*") #able to set initial data
+			#In ConstantBuffer, you have these two operations:
+			set_size 16    #This is compulsory, if you forget to set it, HFSF will give an Error Message
+			set_init_data [1.0, 0.0, 0.0, 0.0].pack("f*") #able to set initial data, this is optional
 		}
 		ConstantBuffer("cb01") {
 			set_size 64
@@ -92,7 +94,7 @@ A typical Resources fragment may look like this:
 
 ## Section :
   Describe rendering state in Section fragment. You can use these keywords : 
-  
+```
   set_vshader(name), set_pshader(name), set_gshader(name)
   
   set_vs_sampler(slot, name), set_ps_sampler(slot, name), set_gs_sampler(slot, name),
@@ -100,11 +102,12 @@ A typical Resources fragment may look like this:
   set_vs_cbuffer(slot, name), set_ps_cbuffer(slot, name), set_gs_cbuffer(slot, name),
   
   set_blender(name), set_rasterizer(name), set_depth_stencil_state(name)
-  
-  Shader's name is the function name in HLSL code, resources' name is the name you gave in Resource fragment. 
+```
+  Shader's name is the function name in HLSL code, resources' name is the name you gave in Resource fragment, 
+It's OK to pass nil, then it will clear its corresponding state.(for example. set_gshader(nil) will disable 
+geometry shader stage, set_ps_cbuffer(0, nil) will set ConstantBuffer slot 0 to null) 
   slot is the slot number which you want to bind.  
   
-(to be continued)
 	
 	
 
