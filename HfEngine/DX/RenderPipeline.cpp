@@ -152,7 +152,7 @@ void RenderPipeline::ImmdiateCopy2D(Texture2D *dest, Texture2D *src,
 }
 
 void RenderPipeline::ImmdiateSavePNG(Texture2D *tex, const cstring &filename) {
-    D3DX11SaveTextureToFileW(native_context.Get(), tex->native_texture2d.Get(), 
+    D3DX11SaveTextureToFileW(device->native_immcontext.Get(), tex->native_texture2d.Get(), 
         D3DX11_IFF_PNG, filename.c_str());
 }
 

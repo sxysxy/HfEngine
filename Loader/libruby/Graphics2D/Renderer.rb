@@ -243,6 +243,9 @@ Program("Renderer2D") {
 				@__draw_sprite.apply(self)
 			end
 		end
+		def mark_dirty
+			@phase -1
+		end
 		
 		#draw 
 		def draw_rect(rect, z, color)

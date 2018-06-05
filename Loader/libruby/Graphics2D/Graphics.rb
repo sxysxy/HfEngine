@@ -46,5 +46,16 @@ module G2D
 		def backbuffer
 			@swapchain.backbuffer
 		end
+		def lock
+			@render_exec.lock
+		end
+		def unlock
+			@render_exec.unlock
+		end
+		def lock_exec
+			lock
+			yield if block_given?
+			unlock
+		end
 	end
 end
