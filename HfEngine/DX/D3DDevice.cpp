@@ -110,7 +110,7 @@ namespace Ext {
                 std::string s;
                 U16ToU8(d.Description, s, CP_UTF8);
                 rb_hash_aset(info, ID2SYM(rb_intern("description")), rb_str_new(s.c_str(), (int)s.length()));
-                rb_hash_aset(info, ID2SYM(rb_intern("dedicated_vide_memory")), LONG2NUM((long)(d.DedicatedVideoMemory / 1024 / 1024)));
+                rb_hash_aset(info, ID2SYM(rb_intern("dedicated_video_memory")), LONG2NUM((long)(d.DedicatedVideoMemory / 1024 / 1024)));
                 rb_hash_aset(info, ID2SYM(rb_intern("delicated_system_memory")), LONG2NUM((long)(d.DedicatedSystemMemory / 1024 / 1024)));
                 rb_hash_aset(info, ID2SYM(rb_intern("shared_system_memory")), LONG2NUM((long)(d.SharedSystemMemory / 1024 / 1024)));
                 return info;

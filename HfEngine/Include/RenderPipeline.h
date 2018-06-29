@@ -128,7 +128,7 @@ public:
     }
 
     void UnInitialize() {
-        native_context->ClearState();
+        if(native_context)native_context->ClearState();
         native_context.ReleaseAndGetAddressOf();
         device.Release();
         vshader.Release();

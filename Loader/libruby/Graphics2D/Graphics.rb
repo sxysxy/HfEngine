@@ -7,16 +7,24 @@ module G2D
 		attr_reader :render_exec
 		attr_accessor :on_exit
 		
-		def initialize(title, width, height, fps = 60, &block)
+		alias :re :render_exec
+
+		def initialize(title, width, height, fps = :vsync)
 			@window = HFWindow.new(title, width, height)
 			@window.show
 			@window.set_handler(:on_closed) {@on_exit.call if @on_exit.respond_to?(:call)}
 			
 			@device = DX::D3DDevice.new
 			@swapchain = DX::SwapChain.new(@device, @window)
-			@render_exec = DX::RemoteRenderExecutive.new(@device, @swapchain, fps)
+			if fps == :vsync
+				@render_exec = DX::RemoteRenderExecutive.new(@device, @swapchain, @device.query_monitor_info[:refresh_frequency])
+			elsif fps.is_a?(Integer)
+				@render_exec = DX::RemoteRenderExecutive.new(@device, @swapchain, fps)
+			else
+				raise ArgumentError, "Unknown fps #{fps}"
+			end
 			
-			exec &block
+			yield(self) if block_given?
 		end
 		
 		def update
@@ -27,12 +35,6 @@ module G2D
 			@render_exec.terminate
 			[@render_exec, @swapchain, @device].each &:release
 		end
-		
-		def exec(&block)
-			raise "No block given" if !block
-			block.call(self)
-		end
-		private :exec
 		
 		def width
 			@window.width
@@ -57,5 +59,6 @@ module G2D
 			yield if block_given?
 			unlock
 		end
+
 	end
 end

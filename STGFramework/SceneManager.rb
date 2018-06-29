@@ -1,5 +1,4 @@
 #encoding :utf-8
-require_relative "./HighLevelRenderer/Graphics2D.rb"
 require "./Controller.rb"
 
 class Scene
@@ -12,7 +11,7 @@ class Scene
 	def main
 		start
 		while self == SceneManager.scene
-			process_message
+			Graphics.update
 			Controller.keyboard.update
 			update
 			Controller.wait_next_frame
@@ -60,6 +59,6 @@ module SceneManager
 	end
 	
 	def self.clear
-	
+		@stack.clear
 	end
 end

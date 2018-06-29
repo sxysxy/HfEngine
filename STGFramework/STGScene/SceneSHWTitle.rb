@@ -14,11 +14,14 @@ class SceneSHWTitle < SceneTitle
 		set_handler(:confirm, method(:on_confirm))
 		
 		#res
-		@back = TextureCache.load("title/back.png")
-		@option_bar = TextureCache.load("title/cursor.png")
+		@s_back = Sprite.new(TextureCache.load("title/back.png"))
+		@s_option_bar = Sprite.new(TextureCache.load("title/cursor.png"))
+		@s_option_bar.opacity = 0.5
 		@s_circle = Sprite.new(TextureCache.load("title/circle.png"))
-		@s_circle.x = 400
-		@s_circle.y = 300
+		@s_circle.x = 420
+		@s_circle.y = 280
+		@s_circle.origin_center
+
 		@option_index = 0
 	end
 	
@@ -30,13 +33,13 @@ class SceneSHWTitle < SceneTitle
 	def update
 		super
 		@renderer.clear(HFColorRGBA(0.0, 0.0, 0.0, 0.0))
-		@renderer.z_depth = 0.9
-		@renderer.draw_texture(@back, HFRect(0, 0, Graphics.width, Graphics.height))
-		@renderer.z_depth = 0.1
-		@renderer.draw_texture(@option_bar, HFRect(380, 170+@option_index*80, @option_bar.width, @option_bar.height),
-						HFRect(0, 0, @option_bar.width, @option_bar.height), 0.5)
 		
-		@s_circle.angle += 0.1 / MathTool::PI
+		@renderer.draw_sprite(@s_back)
+		@s_option_bar.x = 380
+		@s_option_bar.y = 170 + @option_index * 80
+		@renderer.draw_sprite(@s_option_bar)
+		
+		@s_circle.angle += 3
 		@renderer.draw_sprite(@s_circle)
 		@renderer.render
 	end

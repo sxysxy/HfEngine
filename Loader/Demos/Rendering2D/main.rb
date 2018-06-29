@@ -6,6 +6,12 @@ G2D::Graphics.new("Renderer2D", 960, 720) { |g| #graphics
 
 	renderer = G2D::Renderer.new(g)
 	time = 0
+
+	koishi = G2D::Sprite.new(g, DX::Texture2D.new(g.device, "300px-Komeiji Koishi.jpg"))
+	koishi.x = 400
+	koishi.y = 400
+	koishi.z = 0.2
+
 	update_scene = -> {
 		renderer.clear
 		renderer.draw_rect(HFRect(100, 100, 500, 500), 0.3, HFColorRGBA(1.0, 0.0, 1.0, 1.0))
@@ -15,21 +21,33 @@ G2D::Graphics.new("Renderer2D", 960, 720) { |g| #graphics
 		s.x = time % g.window.width
 		s.y = time % g.window.height
 		s.opacity = [(time % 255) / 255.0 + 0.5, 1.0].min
+		s.origin_center
+		s.angle = time % 360;
+		s.z = 0.0
 		#And RTT(Render to texture)
 		renderer.set_target(DX::RTT.new(s.texture))
 		renderer.clear
-		renderer.draw_rect(HFRect(0, 0, 100, 100), 0.4, HFColorRGBA((time % 255) / 255.0, ((time+30) % 255) / 255.0, ((time+100) % 255) / 255.0, 1.0))
+		renderer.draw_rect(HFRect(0, 0, 100, 100), 0.4, 
+				HFColorRGBA((time % 255) / 255.0, ((time+30) % 255) / 255.0, ((time+100) % 255) / 255.0, 1.0))
 		renderer.target.release
 		#Then render to backbuffer
 		renderer.set_target(g.rtt)
 		renderer.draw_sprite(s)
 		s.texture.release
-		
+
+		renderer.draw_sprite(koishi)
+		koishi.mirror = true
+		koishi.x -= 300
+		renderer.draw_sprite(koishi)
+		koishi.x += 300
+		koishi.mirror = false
+
 		time += 1
 		renderer.render
 	}
 	
 	clean_up = -> {
+		koishi.texture.release
 		renderer.release
 		g.shutdown
 	}

@@ -11,7 +11,7 @@ class SceneSHWStage < SceneStage
 	end
 	
 	def init_back
-		@sp_panel = TextureCache.load("./stage/back.png")
+		@sp_panel = Sprite.new TextureCache.load("./stage/back.png")
 		
 		Graphics.re.insert(@rd_back, 200)
 	end
@@ -65,7 +65,7 @@ class SceneSHWStage < SceneStage
 	derive(:draw_background) 
 	def draw_background
 		super
-		@rd_back.draw_texture(@sp_panel, HFRect(0, 0, @sp_panel.width, @sp_panel.height))
+		@rd_back.draw_sprite(@sp_panel)
 	end
 	
 	derive(:draw_content)
@@ -79,14 +79,13 @@ class SceneSHWStage < SceneStage
 		sp.y = @logic.player_y
 		@rd_content.draw_sprite(sp)
 		if @logic.slow
-			@sp_point.x = sp.x
-			@sp_point.y = sp.y
+			@sp_point.x = sp.x + sp.width / 2 - 4
+			@sp_point.y = sp.y + sp.height / 2 - 4
 			@rd_content.draw_sprite(@sp_point)
 		end
 		if @logic.shooting
-			@sp_shoots.x = sp.x
-			@sp_shoots.ox = @sp_shoots.width / 2
-			@sp_shoots.y = sp.y - 12 * 20 - 24
+			@sp_shoots.x = sp.x - 8
+			@sp_shoots.y = sp.y - 12 * 40 - 24
 			dy = rand(-12..12)
 			@sp_shoots.oy -= dy
 			@sp_shoots.y += dy

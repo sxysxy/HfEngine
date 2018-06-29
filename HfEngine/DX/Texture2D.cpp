@@ -22,6 +22,12 @@ void Texture2D::Initialize(D3DDevice * device, const std::wstring & filename) {
     HRESULT hr;
     if (FAILED(hr = D3DX11CreateTextureFromFileW(device->native_device.Get(), filename.c_str(), &info, nullptr,
         reinterpret_cast<ID3D11Resource **>(native_texture2d.GetAddressOf()), 0))) {
+        if (hr == 0x887c0002) {
+            std::string s;
+            Ext::U16ToU8(filename.c_str(), s);
+            MAKE_ERRMSG<LoadTextureFailed>("Failed to create D3D Texture2D from file(file : " + s + " not found), " + "Error code:", hr);
+        }
+    
         MAKE_ERRMSG<LoadTextureFailed>("Failed to create D3D Texture2D from file, Error code:", hr);
     }
     D3D11_TEXTURE2D_DESC desc;

@@ -100,7 +100,8 @@ public:
         if ((*this) != _optr) {
             Release();
             _ptr = _optr;
-            _ptr->AddRefer();
+            if(_ptr)
+                _ptr->AddRefer();
         }
 		return _ptr;
 	}
@@ -108,7 +109,8 @@ public:
         if ((*this) != _optr) {
             Release();
             _ptr = _optr.Get();
-            _ptr->AddRefer();
+            if(_ptr)
+                _ptr->AddRefer();
         }
 		return _optr;
 	}

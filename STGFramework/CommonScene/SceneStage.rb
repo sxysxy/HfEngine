@@ -6,9 +6,6 @@ class SceneStage < Scene
 		@rd_back = Renderer2D.new  #using to draw background and the panel
 		@rd_content = Renderer2D.new  #using to draw content(in battle area)
 		@rd_weather = Renderer2D.new  #using to draw weather 
-		@rd_back.z_depth = 0.9
-		@rd_content.z_depth = 0.5
-		@rd_weather.z_depth = 0.1
 		@renderers = [@rd_back, @rd_content, @rd_weather]
 	end
 	

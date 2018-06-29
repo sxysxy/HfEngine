@@ -44,19 +44,53 @@ Program("Renderer2D") {
 		cbuffer sprite_psparam : register(b2) {
 			float4 color_mod;
 			float opacity;
-			float3 sp_useless; //only for align
+			float tex_x, tex_width;
+			float sps_useless;
+		}
+
+			//transform window's position to d3d coordinate position
+		inline float3 normalize_position(float2 pos) {
+			return float3(pos.x * 2.0 / vp_w - 1.0f, -pos.y * 2.0 / vp_h + 1.0f, 1.0f);
 		}
 		VSOut VSSprite(VSInput vi) {
 			VSOut opt;
 			
-			float x1 = (vi.pos.x + vp_x) * 2.0 / vp_w - 1.0f;
-			float y1 = -((vi.pos.y + vp_y) * 2.0 / vp_h) + 1.0f;
-			
-			float x2 = x1 * cos(angle) - y1 * sin(angle);
-			float y2 = x1 * sin(angle) + y1 * cos(angle);
-			
-			opt.pos.x = x2;
-			opt.pos.y = y2;
+			float3 pos = normalize_position(float2(vi.pos.x, vi.pos.y));
+			opt.pos.xy = pos.xy;
+			opt.pos.z = vi.pos.z;
+			opt.pos.w = 1.0f;
+			opt.data = vi.data;
+			return opt; 
+		}
+		VSOut VSSpriteEx(VSInput vi) {  //with rotation
+			VSOut opt;
+
+			float3 pos = normalize_position(float2(vi.pos.x, vi.pos.y));
+			float3 origin = normalize_position(float2(ox, oy)); //rotation origin point
+
+			float3x3 move = {{1, 0, 0},
+							 {0, 1, 0},
+							 {-origin.x, -origin.y, 1}};
+			float3x3 move_inv = {{1, 0, 0},
+							 {0, 1, 0},
+							 {origin.x, origin.y, 1}};
+			float ang = angle * 3.14159265358979323f / 180.0f;
+			float sina = sin(ang);
+			float cosa = cos(ang);
+
+			float3x3 rot = {{cosa, sina, 0}, 
+							{-sina, cosa, 0}, 
+							{0, 0, 1}};
+
+			float3x3 resize = {{1, 0, 0}, 
+							   	   {0,  vp_h / vp_w, 0},
+							       {0, 0, 1}};
+			float3x3 resize_inv =  {{1, 0, 0}, 
+								   {0, vp_w / vp_h, 0},
+								   {0, 0, 1}};
+			float3x3 trans = mul(mul(mul(mul(resize, move), rot), move_inv), resize_inv);
+
+			opt.pos.xy = mul(pos, trans).xy; 
 			opt.pos.z = vi.pos.z;
 			opt.pos.w = 1.0f;
 			opt.data = vi.data;
@@ -82,10 +116,12 @@ Program("Renderer2D") {
 	Resource {
 		Rasterizer("RS_fill_solid") {
 			set_cull_mode DX::CULL_NONE
+			set_scissor_enable true
 		}
 		Rasterizer("RS_fill_wireframe") {
 			set_cull_mode DX::CULL_NONE
 			set_fill_mode DX::FILL_WIREFRAME
+			set_scissor_enable true
 		}
 	
 		#destRGBA = srcRGBA
@@ -170,6 +206,10 @@ Program("Renderer2D") {
 		set_pshader("PSSprite")
 		set_rasterizer("RS_fill_solid")
 	}
+
+	Section("draw_sprite_ex") {
+		set_vshader("VSSpriteEx")
+	}
 }
 }#endof $__sf_code__	
 
@@ -200,6 +240,8 @@ Program("Renderer2D") {
 			@__cb_common_param = @sf.resource.cbuffer[:common_param]
 			@__cb_sprite_vsparam = @sf.resource.cbuffer[:sprite_vsparam]
 			@__cb_sprite_psparam = @sf.resource.cbuffer[:sprite_psparam]
+			@__vs_sprite = @sf.shaders[:VSSprite]
+			@__vs_sprite_ex = @sf.shaders[:VSSpriteEx]
 			
 			#make a vertex buffer which covers an area of rectangle.
 			@__vb_rect = DX::VertexBuffer.new(@device, 7*4, 4)
@@ -278,7 +320,7 @@ Program("Renderer2D") {
 		
 		def draw_sprite(s)
 			pre_sprite
-			set_viewport(s.viewport)
+			set_viewport(HFRect(0, 0, @graphics.width, @graphics.height))
 			
 			rect = s.src_rect
 			w = s.texture.width
@@ -297,20 +339,39 @@ Program("Renderer2D") {
 			y4 = y3
 			
 			dest_rect = s.dest_rect
-			dx = Float(dest_rect.x - s.ox)
-			dy = Float(dest_rect.y - s.oy)
+			dx = dest_rect.x + s.viewport.x
+			dy = dest_rect.y + s.viewport.y
+			set_scissor_rect(s.viewport)
 			
 			set_ps_resource(0, s.texture)
-			vecs = [dx, dy, 					    s.z, x1, y1, 0.0, 0.0,
+			if s.mirror
+				vecs = [dx, dy, 					    s.z, x2, y2, 0.0, 0.0,
+						dx+dest_rect.w, dy, 		    s.z, x1, y1, 0.0, 0.0,
+						dx, dy+dest_rect.h, 		    s.z, x4, y4, 0.0, 0.0,
+						dx+dest_rect.w, dy+dest_rect.h, s.z, x3, y3, 0.0, 0.0].pack("f*")
+				update_subresource @__vb_rect, vecs
+				update_subresource @__cb_sprite_psparam, [s.color_mod.r, s.color_mod.g, s.color_mod.b, s.color_mod.a,
+													 s.opacity, 0.0, 0.0, 0.0].pack("f*")
+				update_subresource @__cb_sprite_vsparam, [s.angle, s.ox + s.x, s.oy + s.y, 0.0].pack("f*")
+			else
+				vecs = [dx, dy, 					    s.z, x1, y1, 0.0, 0.0,
 					dx+dest_rect.w, dy, 		    s.z, x2, y2, 0.0, 0.0,
 					dx, dy+dest_rect.h, 		    s.z, x3, y3, 0.0, 0.0,
 					dx+dest_rect.w, dy+dest_rect.h, s.z, x4, y4, 0.0, 0.0].pack("f*")
-			update_subresource @__vb_rect, vecs
-			update_subresource @__cb_sprite_psparam, [s.color_mod.r, s.color_mod.g, s.color_mod.b, s.color_mod.a,
-													 s.opacity, 0.0, 0.0, 0.0].pack("f*")
-			update_subresource @__cb_sprite_vsparam, [s.angle, s.ox, s.oy, 0.0].pack("f*")
-			draw(0, 4)
+				update_subresource @__vb_rect, vecs
+				update_subresource @__cb_sprite_psparam, [s.color_mod.r, s.color_mod.g, s.color_mod.b, s.color_mod.a,
+												 s.opacity, 0.0, 0.0, 0.0].pack("f*")
+				update_subresource @__cb_sprite_vsparam, [s.angle, s.ox + s.x, s.oy + s.y, 0.0].pack("f*")
+			end
+			if s.angle != 0
+				set_vshader @__vs_sprite_ex
+				draw(0, 4)
+				set_vshader @__vs_sprite
+			else
+				draw(0, 4)
+			end
 			set_ps_resource(0, nil)
+			set_scissor_rect(HFRect(0, 0, @graphics.width, @graphics.height))
 		end
 		
 		def use_default_target

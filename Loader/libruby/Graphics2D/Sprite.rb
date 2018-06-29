@@ -10,7 +10,7 @@ module G2D
 		
 		def initialize(graphics, t = nil)
 			@ox = @oy = @angle = 0
-			@z = 0.0
+			@z = 1.0
 			@mirror = false
 			@opacity = 1.0
 			@color_mod = HFColorRGBA(1.0, 1.0, 1.0, 1.0)

@@ -1,7 +1,7 @@
 ﻿#include "Include/stdafx.h"
 #include "Include/extension.h"
 #include "Include/HFWindow.h"
-#include "Include/Input.h"
+#include "Include/Input.h"  
 #include <regex>
 using namespace Utility;
 
@@ -106,6 +106,7 @@ int HFEngineRubyEntry() {
             op.nFilterIndex = 0;
             op.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_EXPLORER;
             GetOpenFileNameW(&op);
+            if(path_buffer[0] == 0)return 0;
             return cmain(path_buffer);
         }
         else

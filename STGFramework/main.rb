@@ -8,10 +8,12 @@ class Class
 end
 
 require 'libcore'
-require "./ConfigLoader.rb"
-require "./TextureCache.rb"
-require "./SceneManager.rb"
-require "./Controller.rb"
+require_relative "./ConfigLoader.rb"
+require_relative "./TextureCache.rb"
+require_relative "./SceneManager.rb"
+require_relative "./Controller.rb"
+
+require_lib "Graphics2D.rb"
 
 if File.exist?("./STGScene/SceneSHWTitle.rb")
 	require_relative "./STGScene/SceneSHWTitle.rb"
@@ -27,15 +29,15 @@ $config = ConfigLoader.load("./config.rb")
 title = $config[:graphics].title or "A STG Game"
 width, height = $config[:graphics].resolution ? $config[:graphics].resolution : [640, 480]
 
-$window = HFWindow.new(title, width, height)
-$window.show
-$device = DX::D3DDevice.new
+$graphics = G2D::Graphics.new(title, width, height, $config[:graphics].vsync ? (:vsync) : ($config[:graphics].fps ? $config[:graphics].fps : 60))
+Graphics = $graphics
+
+$window = $graphics.window
+$device = $graphics.device
 Controller.init
-Graphics.init
 SceneManager.run(TITLE_CLASS)
 
 #do release
 Controller.shutdown
-Graphics.shutdown
 TextureCache.clear
 $device.release

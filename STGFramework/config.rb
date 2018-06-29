@@ -6,7 +6,7 @@ Config("logic") {
 Config("graphics") {
     title "STG Test"
     resolution 640, 480
-    fps_vsync true
+    vsync true
     fullscreen false
 }
 

@@ -466,6 +466,10 @@ namespace Ext {
                 GetNativeObject<Rasterizer>(self)->SetClip(depth_clip == Qtrue, scissor_clip == Qtrue);
                 return self;
             }
+            static VALUE set_scissor_enable(VALUE self, VALUE b) {
+                GetNativeObject<Rasterizer>(self)->SetScissorEnable(b == Qtrue);
+                return self;
+            }
             static VALUE set_multisample(VALUE self, VALUE msample_enable) {
                 GetNativeObject<Rasterizer>(self)->SetMultiSample(msample_enable == Qtrue);
                 return self;
@@ -697,6 +701,7 @@ namespace Ext {
                 rb_define_method(klass_rasterizer, "set_clip", (rubyfunc)set_clip, 2);
                 rb_define_method(klass_rasterizer, "set_multisample", (rubyfunc)set_multisample, 1);
                 rb_define_method(klass_rasterizer, "set_antialiased_line", (rubyfunc)set_antialiased_line, 1);
+                rb_define_method(klass_rasterizer, "set_scissor_enable", (rubyfunc)set_scissor_enable, 1);
 
                 rb_define_const(module, "FILL_SOLID", INT2FIX(D3D11_FILL_SOLID));
                 rb_define_const(module, "FILL_WIREFRAME", INT2FIX(D3D11_FILL_WIREFRAME));

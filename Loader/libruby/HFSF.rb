@@ -336,7 +336,9 @@ class ProgramGenerator < Generator
 		
 		x[:compiled] = {}
 		@tobe_compiled.each do |emm|
-			x[:compiled][emm[0].to_sym] = DX::Shader.load_string(cp.device, @code, emm[1], emm[0]).byte_code
+			if !x[:compiled][emm[0].to_sym]  #Avoid re-compiling
+				x[:compiled][emm[0].to_sym] = DX::Shader.load_string(cp.device, @code, emm[1], emm[0]).byte_code
+			end
 		end
 		return x
 	end

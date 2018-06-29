@@ -247,6 +247,9 @@ public:
     inline void SetAntialiasedLine(bool enable) {
         desc.AntialiasedLineEnable = enable;
     }
+    inline void SetScissorEnable(bool enable) {
+        desc.ScissorEnable = enable;
+    }
     void CreateState(D3DDevice *device) {
         auto hr = device->native_device->CreateRasterizerState(&desc, &native_rasterizer);
         if(FAILED(hr))MAKE_ERRMSG<std::runtime_error>("Fail to create rasterizer state", hr);
