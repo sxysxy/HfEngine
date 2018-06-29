@@ -68,15 +68,18 @@ Program("Renderer2D") {
 			float3 pos = normalize_position(float2(vi.pos.x, vi.pos.y));
 			float3 origin = normalize_position(float2(ox, oy)); //rotation origin point
 
+			float ang = angle * 3.14159265358979323f / 180.0f;
+			float sina = sin(ang);
+			float cosa = cos(ang);
+			float ratio = vp_h / vp_w;
+
+			/*
 			float3x3 move = {{1, 0, 0},
 							 {0, 1, 0},
 							 {-origin.x, -origin.y, 1}};
 			float3x3 move_inv = {{1, 0, 0},
 							 {0, 1, 0},
 							 {origin.x, origin.y, 1}};
-			float ang = angle * 3.14159265358979323f / 180.0f;
-			float sina = sin(ang);
-			float cosa = cos(ang);
 
 			float3x3 rot = {{cosa, sina, 0}, 
 							{-sina, cosa, 0}, 
@@ -89,8 +92,17 @@ Program("Renderer2D") {
 								   {0, vp_w / vp_h, 0},
 								   {0, 0, 1}};
 			float3x3 trans = mul(mul(mul(mul(resize, move), rot), move_inv), resize_inv);
-
-			opt.pos.xy = mul(pos, trans).xy; 
+			*/
+			//optimize it(Mathematica big law is good)
+			/*
+			float3x3 trans = {{cosa, sina / ratio, 0},
+							  {-ratio * sina, cosa, 0},
+							  {origin.x * (1 - cosa) + origin.y * sina, 
+							   (origin.y * (1 - cosa) - origin.x * sina) / ratio, 1}};
+			opt.pos.xy = mul(pos, trans).xy;
+			*/
+			opt.pos.x = origin.x * (1-cosa) + sina * origin.y + cosa * pos.x - ratio * sina * pos.y;
+			opt.pos.y = (origin.y * (1-cosa) - origin.x * sina + sina * pos.x) / ratio + cosa * pos.y;
 			opt.pos.z = vi.pos.z;
 			opt.pos.w = 1.0f;
 			opt.data = vi.data;
