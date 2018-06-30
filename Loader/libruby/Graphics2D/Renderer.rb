@@ -91,18 +91,12 @@ Program("Renderer2D") {
 			float3x3 resize_inv =  {{1, 0, 0}, 
 								   {0, vp_w / vp_h, 0},
 								   {0, 0, 1}};
-			float3x3 trans = mul(mul(mul(mul(resize, move), rot), move_inv), resize_inv);
+			float3x3 trans = mul(mul(mul(mul(move, resize), rot), resize_inv), move_inv);  
 			*/
 			//optimize it(Mathematica big law is good)
-			/*
-			float3x3 trans = {{cosa, sina / ratio, 0},
-							  {-ratio * sina, cosa, 0},
-							  {origin.x * (1 - cosa) + origin.y * sina, 
-							   (origin.y * (1 - cosa) - origin.x * sina) / ratio, 1}};
-			opt.pos.xy = mul(pos, trans).xy;
-			*/
-			opt.pos.x = origin.x * (1-cosa) + sina * origin.y + cosa * pos.x - ratio * sina * pos.y;
-			opt.pos.y = (origin.y * (1-cosa) - origin.x * sina + sina * pos.x) / ratio + cosa * pos.y;
+			opt.pos.x = origin.x*(1-cosa) + origin.y*ratio*sina + cosa*pos.x - ratio*sina*pos.y;
+			opt.pos.y = origin.y + ((-cosa*origin.y*ratio-origin.x*sina)+sina*pos.x)/ratio + cosa*pos.y;
+			
 			opt.pos.z = vi.pos.z;
 			opt.pos.w = 1.0f;
 			opt.data = vi.data;
@@ -373,7 +367,7 @@ Program("Renderer2D") {
 				update_subresource @__vb_rect, vecs
 				update_subresource @__cb_sprite_psparam, [s.color_mod.r, s.color_mod.g, s.color_mod.b, s.color_mod.a,
 												 s.opacity, 0.0, 0.0, 0.0].pack("f*")
-				update_subresource @__cb_sprite_vsparam, [s.angle, s.ox + s.x, s.oy + s.y, 0.0].pack("f*")
+				update_subresource @__cb_sprite_vsparam, [s.angle, s.ox + dx, s.oy + dy, 0.0].pack("f*")
 			end
 			if s.angle != 0
 				set_vshader @__vs_sprite_ex

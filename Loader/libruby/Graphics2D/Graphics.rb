@@ -59,6 +59,12 @@ module G2D
 			yield if block_given?
 			unlock
 		end
+		def fullscreen
+			@swapchain.set_fullscreen true
+		end
+		def windowed_screen
+			@swapchain.set_fullscreen false
+		end
 
 	end
 end

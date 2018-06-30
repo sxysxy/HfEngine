@@ -31,6 +31,9 @@ width, height = $config[:graphics].resolution ? $config[:graphics].resolution : 
 
 $graphics = G2D::Graphics.new(title, width, height, $config[:graphics].vsync ? (:vsync) : ($config[:graphics].fps ? $config[:graphics].fps : 60))
 Graphics = $graphics
+if $config[:graphics].fullscreen 
+	Graphics.fullscreen
+end
 
 $window = $graphics.window
 $device = $graphics.device

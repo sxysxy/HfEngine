@@ -18,8 +18,8 @@ class SceneSHWTitle < SceneTitle
 		@s_option_bar = Sprite.new(TextureCache.load("title/cursor.png"))
 		@s_option_bar.opacity = 0.5
 		@s_circle = Sprite.new(TextureCache.load("title/circle.png"))
-		@s_circle.x = 420
-		@s_circle.y = 280
+		@s_circle.x = 410
+		@s_circle.y = 330
 		@s_circle.origin_center
 
 		@option_index = 0
