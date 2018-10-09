@@ -67,6 +67,27 @@ namespace Ext {
         else ShowWindowAsync(hwnd, SW_SHOWNORMAL);
         return Qnil;
     }
+    VALUE filebox(VALUE self, VALUE title) {
+        OPENFILENAMEW op;
+        WCHAR path_buffer[MAX_PATH+1];
+        ZeroMemory(path_buffer, sizeof(path_buffer));
+        std::wstring c_title;
+        U8ToU16(rb_string_value_cstr(&title), c_title);
+        ZeroMemory(&op, sizeof op);
+        op.lStructSize = sizeof(op);
+        op.lpstrFilter = L"All files(*.*)\0*.*\0\0";
+        op.lpstrInitialDir = L"./";
+        op.lpstrFile = path_buffer;
+        op.lpstrTitle = c_title.c_str();
+        op.nMaxFile = MAX_PATH;
+        op.nFilterIndex = 0;
+        op.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_EXPLORER;
+        GetOpenFileNameW(&op);
+        DWORD d = GetLastError();
+        std::string s;
+        U16ToU8(path_buffer, s);
+        return rb_str_new(s.c_str(), s.length());
+    }
     VALUE hide_console(VALUE self) {
         HWND hwnd = get_console_window();
         if (hwnd)
@@ -87,6 +108,7 @@ namespace Ext {
         rb_define_module_function(rb_mKernel, "show_console", (rubyfunc)show_console, 0);
         rb_define_module_function(rb_mKernel, "hide_console", (rubyfunc)hide_console, 0);
         rb_define_module_function(rb_mKernel, "exit_process", (rubyfunc)exit_process, 1);
+        rb_define_module_function(rb_mKernel, "filebox", (rubyfunc)filebox, 1);
         
     }
 

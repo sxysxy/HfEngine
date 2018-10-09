@@ -22,13 +22,13 @@ HFWindow.new("Create Texture", 400, 400) {
 	rp.set_target(swapchain.rtt).set_vbuffer(vb).set_topology(TOPOLOGY_TRIANGLESTRIP)
 	
 	#Create from row data(RGBA array)
-	t1 = Texture2D.new(device, 100, 100, [255, 0, 255, 255].pack("C*")*10000)
+	t1 = Texture2D.new(device, 100, 100, [0, 0, 255, 255].pack("C*")*10000)
 	
 	#Create from file
 	t2 = Texture2D.new(device, PICTURE_FILE)
-	data = rp.immdiate_dump_pixels2d(t2)
-	print data.unpack("C*")
-	STDOUT.flush
+	#data = rp.immdiate_dump_pixels2d(t2)
+	#print data.unpack("C*")
+	#STDOUT.flush
 	
 	messageloop {
 		rp.set_viewport(HFRect(0, 0, height, width))

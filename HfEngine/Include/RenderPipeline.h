@@ -113,6 +113,7 @@ public:
     void ImmdiateCopy2D(Texture2D *dest, Texture2D *src,
         const Utility::Rect &dest_rect, const Utility::Rect &src_rect);
     void ImmdiateSavePNG(Texture2D *tex, const cstring &filename);
+    void ImmdiateSaveJPG(Texture2D *tex, const cstring &filename);
     void ImmdiateDumpPixels2D(Texture2D *tex, Utility::HFBuffer<Utility::Color8> *buffer);
 
     template<class T>

@@ -156,6 +156,13 @@ void RenderPipeline::ImmdiateSavePNG(Texture2D *tex, const cstring &filename) {
         D3DX11_IFF_PNG, filename.c_str());
 }
 
+void RenderPipeline::ImmdiateSaveJPG(Texture2D *tex, const cstring &filename) {
+    auto hr = D3DX11SaveTextureToFileW(device->native_immcontext.Get(), tex->native_texture2d.Get(),
+        D3DX11_IFF_JPG, filename.c_str());
+    hr;
+}
+
+
 void RenderPipeline::ImmdiateDumpPixels2D(Texture2D *tex, Utility::HFBuffer<Utility::Color8> *buf) {
     int size = tex->width * tex->height * sizeof(Utility::Color8);
     if (buf->size < size) {
@@ -238,6 +245,7 @@ namespace Ext {
                 catch (std::runtime_error re) {
                     rb_raise(rb_eRuntimeError, re.what());
                 }
+
                 return self;
             }
             
@@ -472,6 +480,14 @@ namespace Ext {
                 rp->ImmdiateSavePNG(GetNativeObject<Texture2D>(tex), s);
                 return self;
             }
+            static VALUE immdiate_save_jpg(VALUE self, VALUE tex, VALUE filename) {
+                CheckArgs({ tex, filename }, { Texture::klass_texture2d, rb_cString });
+                auto rp = GetNativeObject<::RenderPipeline>(self);
+                std::wstring s;
+                U8ToU16(rb_string_value_cstr(&filename), s);
+                rp->ImmdiateSaveJPG(GetNativeObject<Texture2D>(tex), s);
+                return self;
+            }
             static VALUE immdiate_dump_pixels2d(VALUE self, VALUE tex) {
                 CheckArgs({ tex }, {Texture::klass_texture2d});
                 auto texture = GetNativeObject<::Texture2D>(tex);
@@ -569,6 +585,7 @@ namespace Ext {
                 rb_define_method(klass, "immdiate_render", (rubyfunc)immdiate_render, 0);
                 rb_define_method(klass, "immdiate_copy2d", (rubyfunc)immdiate_copy2d, 4);
                 rb_define_method(klass, "immdiate_savepng", (rubyfunc)immdiate_save_png, 2);
+                rb_define_method(klass, "immdiate_savejpg", (rubyfunc)immdiate_save_jpg, 2);
                 rb_define_method(klass, "immdiate_dump_pixels2d", (rubyfunc)immdiate_dump_pixels2d, 1);
                 
                 //

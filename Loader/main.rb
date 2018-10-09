@@ -1,1 +1,0 @@
-load EXECUTIVE_DIRECTORY + "/../STGFramework/main.rb"

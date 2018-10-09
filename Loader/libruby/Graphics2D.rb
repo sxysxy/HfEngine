@@ -9,3 +9,4 @@ require_relative "./Graphics2D/Graphics.rb"
 require_relative "./Graphics2D/Sprite.rb"
 require_relative "./Graphics2D/Animation.rb"
 
+#require_relative "./Graphics2D/G2DExt.so"
