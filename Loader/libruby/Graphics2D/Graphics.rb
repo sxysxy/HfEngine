@@ -1,15 +1,17 @@
 #encoding: utf-8
 module G2D
 	class Graphics
-		attr_reader :window
-		attr_reader :device
-		attr_reader :swapchain
-		attr_reader :render_exec
-		attr_accessor :on_exit
-		
-		alias :re :render_exec
 
-		def initialize(title, width, height, fps = :vsync)
+		class << self
+			attr_reader :window
+			attr_reader :device
+			attr_reader :swapchain
+			attr_reader :render_exec
+			alias :re :render_exec
+			attr_accessor :on_exit
+		end	
+
+		def self.init(title, width, height, fps = :vsync)
 			@window = HFWindow.new(title, width, height)
 			@window.show
 			@window.set_handler(:on_closed) {@on_exit.call if @on_exit.respond_to?(:call)}
@@ -25,44 +27,45 @@ module G2D
 			end
 			
 			yield(self) if block_given?
+			return self
 		end
 		
-		def update
+		def self.update
 			process_message
 		end
 		
-		def shutdown
+		def self.shutdown
 			@render_exec.terminate
 			[@render_exec, @swapchain, @device].each &:release
 		end
 		
-		def width
+		def self.width
 			@window.width
 		end
-		def height
+		def self.height
 			@window.height
 		end
-		def rtt
+		def self.rtt
 			@swapchain.rtt
 		end
-		def backbuffer
+		def self.backbuffer
 			@swapchain.backbuffer
 		end
-		def lock
+		def self.lock
 			@render_exec.lock
 		end
-		def unlock
+		def self.unlock
 			@render_exec.unlock
 		end
-		def lock_exec
+		def self.lock_exec
 			lock
 			yield if block_given?
 			unlock
 		end
-		def fullscreen
+		def self.fullscreen
 			@swapchain.set_fullscreen true
 		end
-		def windowed_screen
+		def self.windowed_screen
 			@swapchain.set_fullscreen false
 		end
 

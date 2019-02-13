@@ -1,13 +1,13 @@
 require_lib 'Graphics2D'
 
-G2D::Graphics.new("Renderer2D", 960, 720) { |g| #graphics 
+G2D::Graphics.init("Renderer2D", 960, 720) { |g| #graphics 
 	exit_flag = false
 	g.on_exit = -> { exit_flag = true }
 
-	renderer = G2D::Renderer.new(g)
+	renderer = G2D::Renderer.new
 	time = 0
 
-	koishi = G2D::Sprite.new(g, DX::Texture2D.new(g.device, "300px-Komeiji Koishi.jpg"))
+	koishi = G2D::Sprite.new(DX::Texture2D.new(g.device, "300px-Komeiji Koishi.jpg"))
 	koishi.x = 400
 	koishi.y = 400
 	koishi.z = 0.2
@@ -17,7 +17,7 @@ G2D::Graphics.new("Renderer2D", 960, 720) { |g| #graphics
 		renderer.draw_rect(HFRect(100, 100, 500, 500), 0.3, HFColorRGBA(1.0, 0.0, 1.0, 1.0))
 		
 		#Test Sprite
-		s = G2D::Sprite.new(g, DX::Texture2D.new(g.device, 100, 100))
+		s = G2D::Sprite.new(DX::Texture2D.new(g.device, 100, 100))
 		s.x = time % g.window.width
 		s.y = time % g.window.height
 		s.opacity = [(time % 255) / 255.0 + 0.5, 1.0].min

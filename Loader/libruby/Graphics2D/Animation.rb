@@ -8,8 +8,10 @@ require_relative "./Sprite.rb"
 
 module G2D 
 	
-class Animation
+class Animation < Sprite
+	def initialize
 
+	end
 
 end
 	

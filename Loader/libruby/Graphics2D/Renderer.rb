@@ -226,16 +226,16 @@ Program("Renderer2D") {
 		DRAW_WIREFRAME = 2
 		DRAW_SPRITE = 3
 	
-		def initialize(graphics, priority = 100)
-			super(graphics.device)
-			@graphics = graphics
-			@re = graphics.render_exec
+		def initialize(priority = 100)
+			super(G2D::Graphics.device)
+			@graphics = G2D::Graphics
+			@re = @graphics.render_exec
 			
 			@sf = HFSF::loadsf(device, $__sf_code__)[0]
 			@sf.section[:basic_set].apply(self)
 			@sf.input_layout.apply(self)
 			
-			set_target(graphics.rtt)
+			set_target(@graphics.rtt)
 			set_topology(DX::TOPOLOGY_TRIANGLESTRIP)
 			
 			@phase = -1

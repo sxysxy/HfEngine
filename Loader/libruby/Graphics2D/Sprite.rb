@@ -8,13 +8,13 @@ module G2D
 		attr_accessor :color_mod, :viewport
 		attr_accessor :opacity
 		
-		def initialize(graphics, t = nil)
+		def initialize(t = nil)
 			@ox = @oy = @angle = 0
 			@z = 1.0
 			@mirror = false
 			@opacity = 1.0
 			@color_mod = HFColorRGBA(1.0, 1.0, 1.0, 1.0)
-			@viewport = HFRect(0, 0, graphics.width, graphics.height)
+			@viewport = HFRect(0, 0, G2D::Graphics.width, G2D::Graphics.height)
 			
 			self.texture=(t)
 		end
@@ -56,6 +56,9 @@ module G2D
 		def origin_center
 			@ox = @dest_rect.width / 2
 			@oy = @dest_rect.height / 2
+		end
+		def release_texture
+			@texture.release if @texture.is_a?(DX::Texture2D)
 		end
 	end
 end
