@@ -1,10 +1,11 @@
 #encoding :utf-8
 Dir.chdir File.dirname(__FILE__)
-show_console
+show_console if ARGV && ARGV.include?("--DEBUG")
 class Class
 	def derive(m)
 		self.superclass.instance_method(m)
 	end
+	alias override derive
 end
 
 require 'libcore'
@@ -14,6 +15,7 @@ require_relative "./SceneManager.rb"
 require_relative "./Controller.rb"
 
 require_lib "Graphics2D.rb"
+include G2D
 
 if File.exist?("./STGScene/SceneSHWTitle.rb")
 	require_relative "./STGScene/SceneSHWTitle.rb"
@@ -22,14 +24,12 @@ else
 	require_relative "./CommonScene/SceneTitle.rb"
 	TITLE_CLASS = SceneTitle
 end
-require_relative "./HighLevelRenderer/Renderer2D.rb"
-
 $config = ConfigLoader.load("./config.rb")
 
 title = $config[:graphics].title or "A STG Game"
 width, height = $config[:graphics].resolution ? $config[:graphics].resolution : [640, 480]
 
-$graphics = G2D::Graphics.new(title, width, height, $config[:graphics].vsync ? (:vsync) : ($config[:graphics].fps ? $config[:graphics].fps : 60))
+$graphics = G2D::Graphics.init(title, width, height, $config[:graphics].vsync ? (:vsync) : ($config[:graphics].fps ? $config[:graphics].fps : 60))
 Graphics = $graphics
 if $config[:graphics].fullscreen 
 	Graphics.fullscreen

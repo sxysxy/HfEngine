@@ -2,6 +2,7 @@ require_relative "../CommonScene/SceneStage.rb"
 require_relative '../STGLogic/LogicStage.rb'
 
 class SceneSHWStage < SceneStage
+	include G2D
 	def start
 		super
 		init_back
@@ -39,7 +40,7 @@ class SceneSHWStage < SceneStage
 			@rd_content.immdiate_copy2d(@sp_shoots.texture, @shoots, HFRect(0, i*12, 63, 12),
 																	HFRect(0, 0, 63, 12))
 		end
-		@sp_shoots.zoom_x = 0.8
+		@sp_shoots.scale_x = 0.8
 		Graphics.re.unlock
 		Graphics.re.insert(@rd_content, 100)
 		[@sp_reimu_forward, @sp_reimu_back, @sp_reimu_left, @sp_reimu_right, @sp_point, 

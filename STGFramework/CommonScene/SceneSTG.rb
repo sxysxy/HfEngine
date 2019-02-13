@@ -10,6 +10,10 @@ class DX::Input::Keyboard
 	def is_triggled(key) #judge triggled
 		return is_pressed_now(key) && !is_pressed_before(key)
 	end
+
+	def is_upspringed(key)
+		return !is_pressed_now(key) && is_pressed_before(key)
+	end
 end
 
 class SceneSTG < Scene

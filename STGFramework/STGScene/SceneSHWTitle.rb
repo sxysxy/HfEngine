@@ -1,12 +1,9 @@
 require_relative '../CommonScene/SceneTitle.rb'
-require_relative '../HighLevelRenderer/Renderer2D.rb'
-require_relative '../HighLevelRenderer/Sprite.rb'
 require_relative './SceneSHWStage.rb'
 
 class SceneSHWTitle < SceneTitle
-	
 	def start
-		@renderer = Renderer2D.new
+		@renderer = Renderer.new
 		Graphics.re.insert(@renderer, 100)
 		
 		#handlers
