@@ -1,6 +1,5 @@
 #encoding :utf-8
 Dir.chdir File.dirname(__FILE__)
-show_console if ARGV && ARGV.include?("--DEBUG")
 class Class
 	def derive(m)
 		self.superclass.instance_method(m)
@@ -14,7 +13,7 @@ require_relative "./TextureCache.rb"
 require_relative "./SceneManager.rb"
 require_relative "./Controller.rb"
 
-require_lib "Graphics2D.rb"
+require "Graphics2D.rb"
 include G2D
 
 if File.exist?("./STGScene/SceneSHWTitle.rb")
@@ -25,6 +24,7 @@ else
 	TITLE_CLASS = SceneTitle
 end
 $config = ConfigLoader.load("./config.rb")
+show_console if $config[:graphics].console
 
 title = $config[:graphics].title or "A STG Game"
 width, height = $config[:graphics].resolution ? $config[:graphics].resolution : [640, 480]
@@ -35,12 +35,16 @@ if $config[:graphics].fullscreen
 	Graphics.fullscreen
 end
 
-$window = $graphics.window
-$device = $graphics.device
-Controller.init
-SceneManager.run(TITLE_CLASS)
+begin
+	$window = $graphics.window
+	$device = $graphics.device
+	Controller.init
 
-#do release
-Controller.shutdown
-TextureCache.clear
-$device.release
+	SceneManager.run(TITLE_CLASS)
+rescue Exception => e
+	msgbox e.message
+ensure #do release
+	Controller.shutdown
+	TextureCache.clear
+	$device.release
+end

@@ -47,7 +47,7 @@ namespace Input {
 
     class Keyboard : public Input::Device {
         int buffer_index;
-        Utility::ReferPtr<Utility::HFBuffer<char>> data_buffer[2]; //double buffer 
+        Utility::HFBuffer<char> data_buffer[2]; //double buffer 
     public:
         Keyboard() {}
         Keyboard(HWND www) { Initialize(www); }
@@ -57,7 +57,7 @@ namespace Input {
         bool IsKeyPressedBefore(int keycode);
         bool ReadDeviceData() {
             buffer_index ^= 1; 
-            return Device::ReadDeviceData<char>(data_buffer[buffer_index&1].Get());
+            return Device::ReadDeviceData<char>(&data_buffer[buffer_index&1]);
         }
         void UnInitialize() {
             Device::UnInitialize();

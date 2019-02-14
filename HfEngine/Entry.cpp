@@ -32,21 +32,11 @@ int __cdecl cmain(wchar_t *path) {
                 Ext::U16ToU8(buffer->ptr, s);
                 rb_define_global_const("EXECUTIVE_DIRECTORY", rb_str_new_cstr(s.c_str()));
                 buffer->ptr[p] = L'\\';
-                static const char *require_lib = " \
-                    alias :o_require :require \n \
-                    def require(lib)   \n \
-                        begin         \n \
-                            o_require(lib) \n \
-                        rescue LoadError \n \
-                            o_require(EXECUTIVE_DIRECTORY+'/'+lib) \n \
-                        end   \n \
-                    end    \n \
-                    def require_lib(lib) \n \
-                        require('/libruby/'+lib)\n \
-                    end \n \
+                static const char *set_load_path = " \
+                   $:.unshift(EXECUTIVE_DIRECTORY)                       \n \
+                   $:.unshift(File.join(EXECUTIVE_DIRECTORY, 'libruby')) \n \
                 ";
-                rb_eval_string(require_lib);
-                break;
+                rb_eval_string(set_load_path);
             }
         }
         if (!path) {

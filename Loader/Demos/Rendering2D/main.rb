@@ -1,4 +1,4 @@
-require_lib 'Graphics2D'
+require 'Graphics2D'
 
 G2D::Graphics.init("Renderer2D", 960, 720) { |g| #graphics 
 	exit_flag = false

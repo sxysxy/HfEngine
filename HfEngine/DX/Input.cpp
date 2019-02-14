@@ -21,8 +21,8 @@ namespace Input {
     void Keyboard::Initialize(HWND hWnd) {
         if (!native_dinput_object)throw std::runtime_error("Call Input::Initialize first");
         using namespace Utility;
-        data_buffer[0] = ReferPtr<HFBuffer<char>>::New(256);
-        data_buffer[1] = ReferPtr<HFBuffer<char>>::New(256);
+        data_buffer[0].Initialize(256);
+        data_buffer[1].Initialize(256);
         buffer_index = 0;
         HRESULT hr = native_dinput_object->CreateDevice(GUID_SysKeyboard, &native_dinput_device, nullptr);
         if (FAILED(hr))
@@ -45,10 +45,10 @@ namespace Input {
         ReadDeviceData();
     }
     bool Keyboard::IsKeyPressedNow(int keycode) {
-        return data_buffer[buffer_index]->ptr[keycode] & 0x80;
+        return data_buffer[buffer_index].ptr[keycode] & 0x80;
     }
     bool Keyboard::IsKeyPressedBefore(int keycode) {
-        return data_buffer[buffer_index^1]->ptr[keycode] & 0x80;
+        return data_buffer[buffer_index^1].ptr[keycode] & 0x80;
     }
     void Mouse::Initialize(HWND hwnd){
         HRESULT hr;
@@ -213,6 +213,7 @@ namespace Ext {
                 rb_define_method(klass_Keyboard, "is_pressed_before", (rubyfunc)keyboard_is_pressed_before, 1);
                 rb_define_method(klass_Keyboard, "update", (rubyfunc)Device_update<::Input::Keyboard>, 0);
 
+                /* //Mouse
                 klass_Mouse = rb_define_class_under(module_Input, "Mouse", klass_device);
                 rb_define_alloc_func(klass_Mouse, [](VALUE k)->VALUE{
                     auto *m = new ::Input::Mouse;
@@ -225,7 +226,7 @@ namespace Ext {
                 rb_define_method(klass_Mouse, "get_delta_params", (rubyfunc)Mouse_get_delta_params, 0);
                 rb_define_method(klass_Mouse, "update", (rubyfunc)Device_update<::Input::Mouse>, 0);
                 rb_define_const(module, "MOUSE_LEFT", INT2FIX(0));
-
+                */
                 
             }
         }

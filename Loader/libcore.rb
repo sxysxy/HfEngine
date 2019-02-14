@@ -1,4 +1,4 @@
-require_lib('HFWindow.rb')
-require_lib('Shaders.rb')
-require_lib('DXInput')
-require_lib('HFSF')
+require 'HFWindow.rb'
+require 'Shaders.rb'
+require 'DXInput'
+require 'HFSF'
