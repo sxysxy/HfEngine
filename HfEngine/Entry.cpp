@@ -33,8 +33,8 @@ int __cdecl cmain(wchar_t *path) {
                 rb_define_global_const("EXECUTIVE_DIRECTORY", rb_str_new_cstr(s.c_str()));
                 buffer->ptr[p] = L'\\';
                 static const char *set_load_path = " \
-                   $:.unshift(EXECUTIVE_DIRECTORY)                       \n \
                    $:.unshift(File.join(EXECUTIVE_DIRECTORY, 'libruby')) \n \
+                   $: << (EXECUTIVE_DIRECTORY)                       \n \
                 ";
                 rb_eval_string(set_load_path);
             }
