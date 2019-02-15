@@ -46,7 +46,7 @@ public:
     }
     void UnInitialize() {
         if(_ptr){
-            free(ptr);
+            free(_ptr);
             _ptr = nullptr;
         }
     }

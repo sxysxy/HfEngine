@@ -4,10 +4,14 @@ Config("logic") {
 }
 
 Config("graphics") {
-    title "STG Test"        #窗口标题
+    title "东方捉虫记 ~ A Story of debug"        #窗口标题
     console true            #显示控制台
     resolution 640, 480     #分辨率
     vsync true              #垂直同步
     fullscreen false        #全屏
 }
 
+Config("audio") {
+    bgm_volume 20
+    se_volume 20
+}

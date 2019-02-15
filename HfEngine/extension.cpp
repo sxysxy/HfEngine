@@ -2,7 +2,7 @@
 #include "Include/extension.h"
 #include "Include/HFWindow.h"
 #include "Include/DX.h"
-#include "Include\MathTool.h"
+#include "Include/MathTool.h"
 #include <inttypes.h>
 
 namespace Ext {
@@ -202,9 +202,9 @@ namespace Ext {
         rb_define_module_function(rb_mKernel, "messageloop", (rubyfunc)messageloop, 0);
         rb_define_module_function(rb_mKernel, "process_message", (rubyfunc)process_message, 0);
         rb_define_module_function(rb_mKernel, "exit_mainloop", (rubyfunc)exit_mainloop, 0);
-		Ext::DX::Init();
+		Ext::DX::Init();        //初始化DX模块(包括图形和输入功能)
         Ext::FPSTimer::Init();
-        Ext::MathTool::Init();
-
+        Ext::MathTool::Init();  //初始化
+        
 	}
 }

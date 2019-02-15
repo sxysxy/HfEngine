@@ -1,5 +1,6 @@
 #encoding :utf-8
-Dir.chdir File.dirname(__FILE__)
+MAIN_DIR = File.dirname(__FILE__)
+Dir.chdir MAIN_DIR
 class Class
 	def derive(m)
 		self.superclass.instance_method(m)
@@ -12,6 +13,7 @@ require_relative "./ConfigLoader.rb"
 require_relative "./TextureCache.rb"
 require_relative "./SceneManager.rb"
 require_relative "./Controller.rb"
+require_relative "./SoundManager.rb"
 
 require "Graphics2D.rb"
 include G2D
@@ -29,20 +31,21 @@ show_console if $config[:graphics].console
 title = $config[:graphics].title or "A STG Game"
 width, height = $config[:graphics].resolution ? $config[:graphics].resolution : [640, 480]
 
-$graphics = G2D::Graphics.init(title, width, height, $config[:graphics].vsync ? (:vsync) : ($config[:graphics].fps ? $config[:graphics].fps : 60))
-Graphics = $graphics
+$graphics = Graphics.init(title, width, height, $config[:graphics].vsync ? (:vsync) : ($config[:graphics].fps ? $config[:graphics].fps : 60))
 if $config[:graphics].fullscreen 
-	Graphics.fullscreen
+	$graphics.fullscreen
 end
+
+SoundManager.se_volume = $config[:audio].se_volume or 20
+SoundManager.bgm_volume = $config[:audio].bgm_volume or 20
 
 begin
 	$window = $graphics.window
 	$device = $graphics.device
 	Controller.init
-
 	SceneManager.run(TITLE_CLASS)
 rescue Exception => e
-	msgbox e.message
+	msgbox $@.to_s + e.message
 ensure #do release
 	Controller.shutdown
 	TextureCache.clear

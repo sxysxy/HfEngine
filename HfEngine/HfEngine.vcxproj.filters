@@ -21,9 +21,6 @@
     <ClCompile Include="HFWindow.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="libmsvcrt.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -61,6 +58,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="DX\RenderPipelineM.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="libmsvcrt.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

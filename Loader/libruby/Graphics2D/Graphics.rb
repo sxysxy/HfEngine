@@ -69,5 +69,9 @@ module G2D
 			@swapchain.set_fullscreen false
 		end
 
+		def self.delay(time)
+			time.times {self.update}
+		end
+
 	end
 end

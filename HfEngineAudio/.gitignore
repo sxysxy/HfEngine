@@ -9,5 +9,3 @@ x64
 *.pdb
 Debug
 Release
-*.lib
-*.exp

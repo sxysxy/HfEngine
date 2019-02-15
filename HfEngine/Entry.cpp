@@ -19,50 +19,52 @@ int __cdecl cmain(wchar_t *path) {
         ruby_init();
         Ext::ApplyExtensions();
 
-        auto buffer = ReferPtr<HFBuffer<wchar_t>>::New(MAX_PATH + 10);
-        GetModuleFileNameW(GetModuleHandle(0), buffer->ptr, MAX_PATH);
-        int len = lstrlenW(buffer->ptr);
+        wchar_t buffer[MAX_PATH + 10];
+        GetModuleFileNameW(GetModuleHandle(0), buffer, MAX_PATH);
+        int len = lstrlenW(buffer);
         int p;
         for (p = len - 1; ~p; p--) {
-            if (buffer->ptr[p] == L'\\') {
+            if (buffer[p] == L'\\') {
                 std::string s;
-                Ext::U16ToU8(buffer->ptr, s);
+                Ext::U16ToU8(buffer, s);
                 rb_define_global_const("EXECUTIVE_FILENAME", rb_str_new_cstr(s.c_str()));
-                buffer->ptr[p] = 0;
-                Ext::U16ToU8(buffer->ptr, s);
+                buffer[p] = 0;
+                Ext::U16ToU8(buffer, s);
                 rb_define_global_const("EXECUTIVE_DIRECTORY", rb_str_new_cstr(s.c_str()));
-                buffer->ptr[p] = L'\\';
+                buffer[p] = L'\\';
                 static const char *set_load_path = " \
                    $:.unshift(File.join(EXECUTIVE_DIRECTORY, 'libruby')) \n \
                    $: << (EXECUTIVE_DIRECTORY)                       \n \
                 ";
                 rb_eval_string(set_load_path);
+                break;
             }
         }
         if (!path) {
-            buffer->ptr[p + 1] = L'm';
-            buffer->ptr[p + 2] = L'a';
-            buffer->ptr[p + 3] = L'i';
-            buffer->ptr[p + 4] = L'n';
-            buffer->ptr[p + 5] = L'.';
-            buffer->ptr[p + 6] = L'r';
-            buffer->ptr[p + 7] = L'b';
-            buffer->ptr[p + 8] = 0;
+            buffer[p + 1] = L'm';
+            buffer[p + 2] = L'a';
+            buffer[p + 3] = L'i';
+            buffer[p + 4] = L'n';
+            buffer[p + 5] = L'.';
+            buffer[p + 6] = L'r';
+            buffer[p + 7] = L'b';
+            buffer[p + 8] = 0;
         }
         else {
-            lstrcpyW(buffer->ptr, path);
-            len = lstrlenW(buffer->ptr);
+            lstrcpyW(buffer, path);
+            len = lstrlenW(buffer);
             for (p = len - 1; ~p; p--) {
-                if (buffer->ptr[p] == L'\\')break;
+                if (buffer[p] == L'\\')break;
             }
         }
-        buffer->ptr[p] = 0;
-        SetCurrentDirectory(buffer->ptr);
-        buffer->ptr[p] = L'\\';
+        buffer[p] = 0;
+        SetCurrentDirectory(buffer);
+        buffer[p] = L'\\';
 
         std::string filename;
-        Ext::U16ToU8(buffer->ptr, filename, CP_UTF8);
+        Ext::U16ToU8(buffer, filename, CP_UTF8);
         VALUE script = rb_str_new_cstr(filename.c_str());
+       
         int state = 0;
         rb_load_protect(script, 0, &state);
         

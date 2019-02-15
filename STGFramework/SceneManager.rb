@@ -20,7 +20,7 @@ class Scene
 	end
 	
 	def start
-	
+		
 	end
 	
 	def terminate

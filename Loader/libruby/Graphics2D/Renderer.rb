@@ -292,7 +292,7 @@ Program("Renderer2D") {
 			end
 		end
 		def mark_dirty
-			@phase -1
+			@phase = -1
 		end
 		
 		#draw 

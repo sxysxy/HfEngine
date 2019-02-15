@@ -12,14 +12,16 @@ class SceneSHWTitle < SceneTitle
 		
 		#res
 		@s_back = Sprite.new(TextureCache.load("title/back.png"))
-		@s_option_bar = Sprite.new(TextureCache.load("title/cursor.png"))
-		@s_option_bar.opacity = 0.5
-		@s_circle = Sprite.new(TextureCache.load("title/circle.png"))
-		@s_circle.x = 410
-		@s_circle.y = 330
+		@s_option_bar = Sprite.new(TextureCache.load("title/selector.png"))
+		@s_circle = Sprite.new(TextureCache.load("title/star.png"))
+		@s_circle.x = 450
+		@s_circle.y = 80
+		@s_circle.z = 0.5
 		@s_circle.origin_center
 
 		@option_index = 0
+
+		SoundManager.play_bgm("上海アリス幻樂団 - 死霊の夜桜.mp3")
 	end
 	
 	def terminate
@@ -29,14 +31,14 @@ class SceneSHWTitle < SceneTitle
 	
 	def update
 		super
+
 		@renderer.clear(HFColorRGBA(0.0, 0.0, 0.0, 0.0))
 		
 		@renderer.draw_sprite(@s_back)
-		@s_option_bar.x = 380
-		@s_option_bar.y = 170 + @option_index * 80
+		@s_option_bar.y = 250 + @option_index * 125
 		@renderer.draw_sprite(@s_option_bar)
 		
-		@s_circle.angle += 3
+		@s_circle.angle += 1
 		@renderer.draw_sprite(@s_circle)
 		@renderer.render
 	end
@@ -45,8 +47,17 @@ class SceneSHWTitle < SceneTitle
 		super
 		if Controller.keyboard.is_triggled(DX::DIK_UP)
 			@option_index = (@option_index+1)%2
+			SoundManager.play_se("TitleCursor.ogg")
 		elsif Controller.keyboard.is_triggled(DX::DIK_DOWN)
 			@option_index = (@option_index+1)%2
+			SoundManager.play_se("TitleCursor.ogg")
+		end
+		if @option_index == 0 
+			@s_option_bar.x = 380
+			@s_option_bar.scale_x = 1.5
+		else
+			@s_option_bar.x = 415
+			@s_option_bar.scale_x = 0.95
 		end
 	end
 	
