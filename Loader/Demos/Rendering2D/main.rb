@@ -41,7 +41,8 @@ G2D::Graphics.init("Renderer2D", 960, 720) { |g| #graphics
 		renderer.draw_sprite(koishi)
 		koishi.x += 300
 		koishi.mirror = false
-
+		
+		renderer.
 		time += 1
 		renderer.render
 	}

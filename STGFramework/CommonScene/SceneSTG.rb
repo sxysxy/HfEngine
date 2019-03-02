@@ -1,10 +1,7 @@
 #encoding :utf-8
 =begin
 	STG Scene Basic
-
 =end
-require_relative '../SceneManager.rb'
-require_relative '../TextureCache.rb'
 
 class DX::Input::Keyboard
 	def is_triggled(key) #judge triggled

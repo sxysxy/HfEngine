@@ -1,4 +1,3 @@
-require_relative "../SceneManager.rb"
 class LogicStage
 
 	attr_reader :player_x, :player_y #center pos

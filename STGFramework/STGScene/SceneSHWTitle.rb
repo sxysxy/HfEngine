@@ -1,7 +1,7 @@
-require_relative '../CommonScene/SceneTitle.rb'
+require_relative '../CommonScene/SceneSTG.rb'
 require_relative './SceneSHWStage.rb'
 
-class SceneSHWTitle < SceneTitle
+class SceneSHWTitle < SceneSTG
 	def start
 		@renderer = Renderer.new
 		Graphics.re.insert(@renderer, 100)

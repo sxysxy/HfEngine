@@ -9,13 +9,9 @@ class Class
 end
 
 require 'libcore'
-require_relative "./ConfigLoader.rb"
-require_relative "./TextureCache.rb"
-require_relative "./SceneManager.rb"
-require_relative "./Controller.rb"
-require_relative "./SoundManager.rb"
-
+require "ConfigLoader"
 require "Graphics2D.rb"
+require_relative "./Scripts/GameBasic.rb"
 include G2D
 
 if File.exist?("./STGScene/SceneSHWTitle.rb")
