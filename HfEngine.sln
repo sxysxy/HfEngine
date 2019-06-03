@@ -11,6 +11,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Loader", "Loader\Loader.vcx
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HfEngineAudio", "HfEngineAudio\HfEngineAudio.vcxproj", "{49F9D6CB-9646-4127-B53E-1F7FE3A08E15}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FEDD9FDE-20EC-418A-BE38-A28876F935BE} = {FEDD9FDE-20EC-418A-BE38-A28876F935BE}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HfEngineFont", "HfEngineFont\HfEngineFont.vcxproj", "{1E37C561-C323-44CE-881C-7766C26DB083}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FEDD9FDE-20EC-418A-BE38-A28876F935BE} = {FEDD9FDE-20EC-418A-BE38-A28876F935BE}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,6 +52,14 @@ Global
 		{49F9D6CB-9646-4127-B53E-1F7FE3A08E15}.Release|x64.Build.0 = Release|x64
 		{49F9D6CB-9646-4127-B53E-1F7FE3A08E15}.Release|x86.ActiveCfg = Release|Win32
 		{49F9D6CB-9646-4127-B53E-1F7FE3A08E15}.Release|x86.Build.0 = Release|Win32
+		{1E37C561-C323-44CE-881C-7766C26DB083}.Debug|x64.ActiveCfg = Debug|x64
+		{1E37C561-C323-44CE-881C-7766C26DB083}.Debug|x64.Build.0 = Debug|x64
+		{1E37C561-C323-44CE-881C-7766C26DB083}.Debug|x86.ActiveCfg = Debug|Win32
+		{1E37C561-C323-44CE-881C-7766C26DB083}.Debug|x86.Build.0 = Debug|Win32
+		{1E37C561-C323-44CE-881C-7766C26DB083}.Release|x64.ActiveCfg = Release|x64
+		{1E37C561-C323-44CE-881C-7766C26DB083}.Release|x64.Build.0 = Release|x64
+		{1E37C561-C323-44CE-881C-7766C26DB083}.Release|x86.ActiveCfg = Release|Win32
+		{1E37C561-C323-44CE-881C-7766C26DB083}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

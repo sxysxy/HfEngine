@@ -1,4 +1,5 @@
 *.so
+*.lib
 *.iobj
 *.pdb
 *.ipdb

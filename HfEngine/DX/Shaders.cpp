@@ -508,7 +508,7 @@ namespace Ext {
                     s->AddRefer();
                     return Data_Wrap_Struct(k, nullptr, DeleteShader<::VertexShader>, s);
                 });
-                                                                                                      //¡ü
+                                                                                                      //Â¡Ã¼
                 klass_pshader = rb_define_class_under(module, "PixelShader", klass);                   //
                 rb_define_alloc_func(klass_pshader, [](VALUE k)->VALUE {                               //
                     auto s = new ::PixelShader;                                                        //

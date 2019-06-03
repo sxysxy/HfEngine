@@ -150,16 +150,16 @@ namespace Tests {
         auto cb = Utility::ReferPtr<ConstantBuffer>::New(device.Get(), sizeof XMMATRIX);
         rp->SetVSCBuffer(0, cb.Get());
         auto update = [&](int t) {
-            XMVECTOR eyepos = XMVectorSet(0.0, 3.0, -8.0, 0.0);  //ÑÛ¾¦Î»ÖÃ
-            XMVECTOR target = XMVectorSet(0.0, 0.0, 0.0, 0.0);   //Ä¿±êÎ»ÖÃ
-            XMVECTOR up = XMVectorSet(0.0, 1.0, 0.0, 0.0);       //"ÉÏ"·½ÏòÏòÁ¿
+            XMVECTOR eyepos = XMVectorSet(0.0, 3.0, -8.0, 0.0);  //çœ¼ç›ä½ç½®
+            XMVECTOR target = XMVectorSet(0.0, 0.0, 0.0, 0.0);   //ç›®æ ‡ä½ç½®
+            XMVECTOR up = XMVectorSet(0.0, 1.0, 0.0, 0.0);       //"ä¸Š"æ–¹å‘å‘é‡
 
-            XMMATRIX W = XMMatrixRotationY(t * XM_PI * 0.0125f);  //Local Space -> World Space ÈÆYÖáÐý×ª
-            XMMATRIX V = XMMatrixLookAtLH(eyepos, target, up);    //¹Û²ì¾ØÕó View
+            XMMATRIX W = XMMatrixRotationY(t * XM_PI * 0.0125f);  //Local Space -> World Space ç»•Yè½´æ—‹è½¬
+            XMMATRIX V = XMMatrixLookAtLH(eyepos, target, up);    //è§‚å¯ŸçŸ©é˜µ View
             XMMATRIX P = XMMatrixPerspectiveFovLH(XM_PIDIV4, 1.0f * window->width / window->height, 1.0f, 1000.0f); 
-                                                    //Í¸ÊÓÍ¶Ó°(³¡ÊÓ½Ç, ¿í¸ß±È, ½üÆ½Ãæ, Ô¶Æ½Ãæ)
+                                                    //é€è§†æŠ•å½±(åœºè§†è§’, å®½é«˜æ¯”, è¿‘å¹³é¢, è¿œå¹³é¢)
             XMMATRIX wvp = W*V*P;      
-            auto wvpt = XMMatrixTranspose(wvp);  //hlslÌØ(bu)ÐÔ(g)£¬ÐèÒª×ªÖÃÒ»ÏÂ
+            auto wvpt = XMMatrixTranspose(wvp);  //hlslç‰¹(bu)æ€§(g)ï¼Œéœ€è¦è½¬ç½®ä¸€ä¸‹
             rp->UpdateSubResource(cb.Get(), reinterpret_cast<float*>(&wvpt));
         };
         rp->SetTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

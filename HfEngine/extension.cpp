@@ -152,7 +152,7 @@ namespace Ext {
                 }t{0, 1000};  
                 typedef VALUE (*rb_thread_wait_for_t)(struct timeval); 
                 static rb_thread_wait_for_t rth_wait_for = (rb_thread_wait_for_t)(rb_thread_wait_for);
-                    //Ö±½ÓÓÃruby.hÀïµÄrb_thread_wait_for»áÒòÎªÕâÀï¶¨ÒåµÄstruct timevalÓëruby.hÀïÉùÃ÷µÄstrcut timeval²»ÊÇÍ¬Ò»¸ö¶«Î÷¶ø¹ı²»ÁË±àÒë...
+                    //ç›´æ¥ç”¨ruby.hé‡Œçš„rb_thread_wait_forä¼šå› ä¸ºè¿™é‡Œå®šä¹‰çš„struct timevalä¸ruby.hé‡Œå£°æ˜çš„strcut timevalä¸æ˜¯åŒä¸€ä¸ªä¸œè¥¿è€Œè¿‡ä¸äº†ç¼–è¯‘...
                 rth_wait_for(t);
                 //if(ms)
                 //    rb_thread_sleep(ms); //It preforms bad.
@@ -202,9 +202,9 @@ namespace Ext {
         rb_define_module_function(rb_mKernel, "messageloop", (rubyfunc)messageloop, 0);
         rb_define_module_function(rb_mKernel, "process_message", (rubyfunc)process_message, 0);
         rb_define_module_function(rb_mKernel, "exit_mainloop", (rubyfunc)exit_mainloop, 0);
-		Ext::DX::Init();        //³õÊ¼»¯DXÄ£¿é(°üÀ¨Í¼ĞÎºÍÊäÈë¹¦ÄÜ)
+		Ext::DX::Init();        //åˆå§‹åŒ–DXæ¨¡å—(åŒ…æ‹¬å›¾å½¢å’Œè¾“å…¥åŠŸèƒ½)
         Ext::FPSTimer::Init();
-        Ext::MathTool::Init();  //³õÊ¼»¯
+        Ext::MathTool::Init();  //åˆå§‹åŒ–
         
 	}
 }
