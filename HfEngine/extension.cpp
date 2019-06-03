@@ -101,6 +101,13 @@ namespace Ext {
         ExitProcess(FIX2INT(code));
         return code;
     }
+    VALUE u8ansi(VALUE self, VALUE str) {
+        std::wstring tmp;
+        U8ToU16(RSTRING_PTR(str), tmp);
+        std::string s;
+        U16ToU8(tmp.c_str(), s, CP_ACP);
+        return rb_str_new(s.c_str(), s.length());
+    }
 
     void BasicExtensions() {
         rb_mModule = CLASS_OF(rb_mMath);
@@ -109,6 +116,7 @@ namespace Ext {
         rb_define_module_function(rb_mKernel, "hide_console", (rubyfunc)hide_console, 0);
         rb_define_module_function(rb_mKernel, "exit_process", (rubyfunc)exit_process, 1);
         rb_define_module_function(rb_mKernel, "filebox", (rubyfunc)filebox, 1);
+        rb_define_module_function(rb_mKernel, "u8ansi", (rubyfunc)u8ansi, 1);
         
     }
 
