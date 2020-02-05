@@ -1,6 +1,3 @@
-doc
-Debug
-Release
-x64
 .vs
-.tmp
+./HfEngine/Workspace
+./ThirdParty/

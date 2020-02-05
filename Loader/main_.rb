@@ -1,1 +1,0 @@
-load '../STGFramework/main.rb'

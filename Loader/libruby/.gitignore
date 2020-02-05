@@ -1,9 +1,0 @@
-*.so
-*.lib
-*.iobj
-*.pdb
-*.ipdb
-*.exp
-*.tmp
-*.ilk
-*.dll
