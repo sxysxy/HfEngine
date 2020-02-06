@@ -28,6 +28,7 @@ using ComPtr = Microsoft::WRL::ComPtr<T>;
 #include <D3DX11.h>
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "d3dx11.lib")
+#pragma comment(lib, "d3d10.lib")
 #pragma comment(lib, "dxguid.lib")
 
 //ruby
@@ -65,3 +66,6 @@ MRB_API int mrb_cv_defined(mrb_state* mrb, mrb_value mod, mrb_sym sym);
 #pragma comment(lib, "libmruby_core.lib")
 #pragma comment(lib, "ws2_32.lib") //mruby needs it
 #pragma warning(pop)
+
+//SpinLock
+#include <xy_async.h>

@@ -10,7 +10,6 @@ show_console
 puts HEG::GDevice.instance.adapter_info
 
 HEG::Window.new("aaa", 800, 600).instance_exec {
-    fixed false 
     show
     handle(:closed) { exit_process 0 }
     timer = HEG::FPSTimer.new(HEG::GDevice.instance.monitor_info[:refresh_rate])

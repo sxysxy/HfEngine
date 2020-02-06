@@ -180,6 +180,7 @@ mrb_value Kernel_mainloop(mrb_state* mrb, mrb_value self) {
 
 static RClass* ClassFPSTimer;
 static mrb_data_type ClassFPSTimerDataType = mrb_data_type{ "GDevice", [](mrb_state* mrb, void* ptr) {
+    delete ptr;
 } };
 
 

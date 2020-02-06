@@ -125,6 +125,8 @@ void Window::OnResized() {
 
     RECT r;
     GetClientRect(_native_handle, &r);
+    if (r.right - r.left == 0 || r.bottom - r.top == 0)
+        return;
     _width = r.right - r.left;
     _height = r.bottom - r.top;
 
@@ -337,6 +339,22 @@ static mrb_value ClassWindow_entitle(mrb_state* mrb, mrb_value self) {
     return self;
 }
 
+/*[DOCUMENT]
+method: HEG::Window#width -> w : Fixnum
+note: Get the width of client area in the window.
+*/
+mrb_value ClassWindow_width(mrb_state* state, mrb_value self) {
+    return mrb_fixnum_value(GetNativeObject<Window>(self)->width);
+}
+
+/*[DOCUMENT]
+method: HEG::Window#height -> h : Fixnum
+note: Get the height of client area in the window.
+*/
+mrb_value ClassWindow_height(mrb_state* state, mrb_value self) {
+    return mrb_fixnum_value(GetNativeObject<Window>(self)->height);
+}
+
 bool InjectWindowExtension() {
     const RubyVM* vm = currentRubyVM;
     RClass* HEG = mrb_define_module(vm->GetRuby(), "HEG");
@@ -352,6 +370,8 @@ bool InjectWindowExtension() {
     mrb_define_method(vm->GetRuby(), ClassWindow, "swap_buffers", ClassWindow_swap_buffers, MRB_ARGS_ANY());
     mrb_define_method(vm->GetRuby(), ClassWindow, "fullscreen", ClassWindow_fullsreen, MRB_ARGS_REQ(1));
     mrb_define_method(vm->GetRuby(), ClassWindow, "entitle", ClassWindow_entitle, MRB_ARGS_REQ(1));
+    mrb_define_method(vm->GetRuby(), ClassWindow, "width", ClassWindow_width, MRB_ARGS_NONE());
+    mrb_define_method(vm->GetRuby(), ClassWindow, "height", ClassWindow_height, MRB_ARGS_NONE());
     return true;
 }
 

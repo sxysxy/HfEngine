@@ -1,5 +1,6 @@
 #pragma once
 #include <ThirdParties.h>
+#include <xy_async.h>
 
 HFENGINE_NAMESPACE_BEGIN
 
@@ -17,6 +18,8 @@ public:
     ComPtr<IDXGIAdapter> native_dxgi_adapter;
     ComPtr<IDXGIFactory> native_dxgi_factory;
     ComPtr<ID3D11DeviceContext> native_immcontext;
+    SpinLock immcontext_lock;
+
     void Initialize();
     void Release() {
         native_device.ReleaseAndGetAddressOf();
@@ -31,6 +34,11 @@ public:
 
     inline static void CreateInstance();
     inline static GDevice* GetInstance();
+
+    inline void Lock() { immcontext_lock.lock(); }
+    inline void UnLock() { immcontext_lock.unlock(); }
+
+
 };
 extern std::unique_ptr<GDevice> InstanceOfGDevice;
 

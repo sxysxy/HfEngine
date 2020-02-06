@@ -156,10 +156,14 @@ public:
     }
 
     inline void SwapBuffers(int sync_level = 0) {
+        GDevice::GetInstance()->Lock();
         native_swap_chain->Present(sync_level, 0);
+        GDevice::GetInstance()->UnLock();
     }
     inline void SetFullscreen(bool fullscreen) {
+        GDevice::GetInstance()->Lock();
         native_swap_chain->SetFullscreenState(fullscreen, nullptr);
+        GDevice::GetInstance()->UnLock();
     }
 
     virtual void OnResized();

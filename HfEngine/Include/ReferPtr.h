@@ -12,7 +12,7 @@ namespace Utility{
 
 class ReferredObject{
 public:
-     std::atomic<int> __ref_count;
+    mutable std::atomic<int> __ref_count;
 	
 	ReferredObject(){
 		__ref_count = 0;
