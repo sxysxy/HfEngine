@@ -39,8 +39,12 @@ LRESULT CALLBACK Window::_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
     return 0;
     case WM_SIZE:
     {
-        Window* w = (Window*)GetWindowLongV(hWnd, GWLP_USERDATA);
-        w->OnResized();
+        //if((wParam & SIZE_RESTORED) || (wParam & SIZE_MAXIMIZED) || (wParam & SIZE_MAXSHOW)) {
+        
+        {
+         Window* w = (Window*)GetWindowLongV(hWnd, GWLP_USERDATA);
+            w->OnResized();
+        }
         return 0;
     }
     case WM_SYSCOMMAND:
@@ -123,6 +127,16 @@ void Window::OnResized() {
     GetClientRect(_native_handle, &r);
     _width = r.right - r.left;
     _height = r.bottom - r.top;
+
+    if (!native_swap_chain)
+        return;
+
+    HRESULT hr = native_swap_chain->ResizeBuffers(1, _width, _height,
+        DXGI_FORMAT_R8G8B8A8_UNORM, 0);
+    if (FAILED(hr)) {
+        THROW_ERROR_CODE(std::runtime_error, "Fail to resize swapchain buffers, Error code:", hr);
+    }
+
 }
 
 void Window::OnClosed() {
@@ -148,7 +162,7 @@ void Window::Create(const std::wstring& _title, int w, int h) {
         _native_inited = true;
     }
 
-    RECT crect = { 0, 0, width, height };
+    RECT crect = { 0, 0, _width, _height };
     AdjustWindowRect(&crect, style, false);
     int cw = crect.right - crect.left;
     int ch = crect.bottom - crect.top;
@@ -159,35 +173,185 @@ void Window::Create(const std::wstring& _title, int w, int h) {
         0, 0, instance, this);
 }
 
+//special for ruby extension
+class Window2 : public Window {
+public:
+    mrb_value window_obj;
+
+    void OnResized() {
+        Window::OnResized();
+        try {
+        mrb_funcall(currentRubyVM->GetRuby(), window_obj, "call_handler", 1,
+            mrb_symbol_value(mrb_intern_cstr(currentRubyVM->GetRuby(), "resized")));
+        }
+        catch (...){
+
+        }
+    }
+
+    void OnClosed() {
+        try {
+        mrb_funcall(currentRubyVM->GetRuby(), window_obj, "call_handler", 1, 
+            mrb_symbol_value(mrb_intern_cstr(currentRubyVM->GetRuby(), "closed")));
+        }
+        catch (...) {
+
+        }
+    }
+};
 
 //extension:
 thread_local RClass* ClassWindow;
 
-static mrb_value ClassWindow_new(mrb_state* mrb, mrb_value self) {
-    mrb_value obj = mrb_obj_new(mrb, ClassWindow, 0, nullptr);
-    obj.value.p = new Window();
-    return obj;
-}
+mrb_data_type ClassWindowDataType = mrb_data_type{ "Window", [](mrb_state* mrb, void* ptr) {
+    static_cast<Window*>(ptr)->SubRefer();
+} };
 
-static mrb_value ClassWindow_initalize(mrb_state* mrb, mrb_value self) {
+/*[DOCUMENT]
+method: HEG::Window::new(title : String, width : Fixnum, height : Fixnum) -> self
+note: Create a titled window with specified size
+*/
+static mrb_value ClassWindow_new(mrb_state* mrb, mrb_value klass) {
     mrb_value title;
-    int w, h;
-    mrb_get_args(mrb, "sii", &title, &w, &h);
-    const char* atitle = mrb_string_cstr(mrb, title);
+    mrb_int w, h;
+    mrb_get_args(mrb, "Sii", &title, &w, &h);
+    const char* atitle = RSTR_PTR(mrb_str_ptr(title));
     std::wstring wtitle;
     U8ToU16(atitle, wtitle);
-    static_cast<Window*>(self.value.p)->Initialize(wtitle, w, h);
+    auto window = new Window2();
+    window->AddRefer();
+    window->Initialize(wtitle, (int)w, (int)h);
+    window->AddRefer();
+    mrb_value self = mrb_obj_value(mrb_data_object_alloc(mrb, ClassWindow, window, &ClassWindowDataType));
+    window->window_obj = self;
+    mrb_iv_set(mrb, self, mrb_intern_cstr(mrb, "@handlers"), mrb_hash_new(mrb));
+    return self;
+}
+
+/*[DOCUMENT]
+method: HEG::Window#show -> self
+note: Make the window visible
+*/
+static mrb_value ClassWindow_show(mrb_state* mrb, mrb_value self) {
+    GetNativeObject<HEG::Window>(self)->Show();
+    return self;
+}
+
+/*[DOCUMENT]
+method: HEG::Window#hide -> self
+note: Make the window invisible
+*/
+static mrb_value ClassWindow_hide(mrb_state* mrb, mrb_value self) {
+    GetNativeObject<HEG::Window>(self)->Hide();
+    return self;
+}
+
+/*[DOCUMENT]
+method: HEG::Window#fixed(fixed : true or false) -> self
+note: Fix the size of window if fixed is true
+*/
+static mrb_value ClassWindow_fixed(mrb_state* mrb, mrb_value self) {
+    mrb_bool fixed;
+    mrb_get_args(mrb, "b", &fixed);
+    GetNativeObject<HEG::Window>(self)->SetFixed(fixed);
+    return self;
+}
+
+/*[DOCUMENT]
+method: HEG::Window#call_handler(handler_name : Symbol) -> self or return value of called handler
+note: Call the hanlder by its name. For example call_handler(:closed), call_handler(:resized).
+If the handler exist, it will return its return value, or it will return self
+*/
+static mrb_value ClassWindow_call_handler(mrb_state* mrb, mrb_value self) {
+    mrb_value key;
+    mrb_get_args(mrb, "o", &key);
+    mrb_value handlers = mrb_iv_get(mrb, self, mrb_intern_cstr(mrb, "@handlers"));
+    mrb_value handler = mrb_hash_get(mrb, handlers, key);
+    if (mrb_respond_to(mrb, handler, mrb_intern_cstr(mrb, "call"))) {
+        return mrb_funcall(mrb, handler, "call", 0);
+    }
+    else return self;
+}
+
+/*[DOCUMENT]
+method: HEG::Window#handle(hanlder_name : Symbol) {block} -> self
+note: Set the hanlder of handler_name to the given block
+*/
+static mrb_value ClassWindow_handle(mrb_state* mrb, mrb_value self) {
+    mrb_value key, block;
+    mrb_get_args(mrb, "o&!", &key, &block);
+    mrb_value handlers = mrb_iv_get(mrb, self, mrb_intern_cstr(mrb, "@handlers"));
+    mrb_hash_set(mrb, handlers, key, block);
+    return self;
+}
+
+/*[DOCUMENT]
+method: HEG::Window#resize(width : Fixnum, height : Fixnum) -> self
+note: Set new size of the window
+*/
+static mrb_value ClassWindow_resize(mrb_state* mrb, mrb_value self) {
+    mrb_int w, h;
+    mrb_get_args(mrb, "ii", &w, &h);
+    GetNativeObject<HEG::Window>(self)->Resize((int)w, (int)h);
+    return self;
+}
+
+/*[DOCUMENT]
+method: HEG::Window#swap_buffers -> self
+note: Swap the onscreen buffer and the offscreen buffer and present the image on the window.
+*/
+static mrb_value ClassWindow_swap_buffers(mrb_state* mrb, mrb_value self) {
+    mrb_int argc;
+    mrb_value* argv;
+    mrb_get_args(mrb, "*!", &argv, &argc);
+    mrb_int level = 0;
+    if (argc > 0) {
+        level = mrb_fixnum(argv[0]);
+    }
+    GetNativeObject<HEG::Window>(self)->SwapBuffers((int)level);
+    return self;
+}
+
+/*[DOCUMENT]
+method: HEG::Window#fullscreen(fullscreen : true or false) -> self
+note: Set fullscreen or windowed.
+*/
+static mrb_value ClassWindow_fullsreen(mrb_state* mrb, mrb_value self) {
+    mrb_bool f;
+    mrb_get_args(mrb, "b", &f);
+    GetNativeObject<HEG::Window>(self)->SetFullscreen(f);
+    return self;
+}
+
+/*[DOCUMENT]
+method: HEG::Window#entitle(title : String) -> self
+note: Set the title of the window
+*/
+static mrb_value ClassWindow_entitle(mrb_state* mrb, mrb_value self) {
+    mrb_value t;
+    mrb_get_args(mrb, "S", &t);
+    char* titlea = RSTRING_PTR(t);
+    std::wstring titlew;
+    U8ToU16(titlea, titlew);
+    GetNativeObject<HEG::Window>(self)->SetTitle(titlew);
     return self;
 }
 
 bool InjectWindowExtension() {
-    RubyVM* vm = currentRubyVM.get();
+    const RubyVM* vm = currentRubyVM;
     RClass* HEG = mrb_define_module(vm->GetRuby(), "HEG");
     RClass* Object = vm->GetRuby()->object_class;
     ClassWindow = mrb_define_class_under(vm->GetRuby(), HEG, "Window", Object);
-    mrb_define_class_method(vm->GetRuby(), ClassWindow, "new", ClassWindow_new, MRB_ARGS_NONE());
-    mrb_define_method(vm->GetRuby(), ClassWindow, "initialize", ClassWindow_initalize, MRB_ARGS_REQ(3));
-
+    mrb_define_class_method(vm->GetRuby(), ClassWindow, "new", ClassWindow_new, MRB_ARGS_REQ(3));
+    mrb_define_method(vm->GetRuby(), ClassWindow, "show", ClassWindow_show, MRB_ARGS_NONE());
+    mrb_define_method(vm->GetRuby(), ClassWindow, "hide", ClassWindow_hide, MRB_ARGS_NONE());
+    mrb_define_method(vm->GetRuby(), ClassWindow, "fixed", ClassWindow_fixed, MRB_ARGS_REQ(1));
+    mrb_define_method(vm->GetRuby(), ClassWindow, "call_handler", ClassWindow_call_handler, MRB_ARGS_REQ(1));
+    mrb_define_method(vm->GetRuby(), ClassWindow, "handle", ClassWindow_handle, MRB_ARGS_REQ(1));
+    mrb_define_method(vm->GetRuby(), ClassWindow, "resize", ClassWindow_resize, MRB_ARGS_REQ(2));
+    mrb_define_method(vm->GetRuby(), ClassWindow, "swap_buffers", ClassWindow_swap_buffers, MRB_ARGS_ANY());
+    mrb_define_method(vm->GetRuby(), ClassWindow, "fullscreen", ClassWindow_fullsreen, MRB_ARGS_REQ(1));
+    mrb_define_method(vm->GetRuby(), ClassWindow, "entitle", ClassWindow_entitle, MRB_ARGS_REQ(1));
     return true;
 }
 

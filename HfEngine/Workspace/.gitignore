@@ -1,3 +1,7 @@
-./Lib/
+Lib
+Temp
 *exe
 *.ilk
+*.pdb
+*.iobj
+*.ipdb

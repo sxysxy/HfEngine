@@ -151,6 +151,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Include\Core.h" />
+    <ClInclude Include="..\Include\Core\Basic.h" />
+    <ClInclude Include="..\Include\Core\EasyFFI.h" />
+    <ClInclude Include="..\Include\Core\Entry.h" />
+    <ClInclude Include="..\Include\Core\GDevice.h" />
+    <ClInclude Include="..\Include\Core\Input.h" />
+    <ClInclude Include="..\Include\Core\RenderContext.h" />
     <ClInclude Include="..\Include\Core\RubyVM.h" />
     <ClInclude Include="..\Include\Core\Window.h" />
     <ClInclude Include="..\Include\FPSTimer.h" />
@@ -158,7 +164,11 @@
     <ClInclude Include="..\Include\ThirdParties.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Basic.cpp" />
+    <ClCompile Include="EasyFFI.cpp" />
     <ClCompile Include="Entry.cpp" />
+    <ClCompile Include="GDevice.cpp" />
+    <ClCompile Include="RenderContext.cpp" />
     <ClCompile Include="RubyVM.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>

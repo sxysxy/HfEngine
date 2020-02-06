@@ -1,9 +1,10 @@
 #pragma once
 #include <ThirdParties.h>
+#include <xy_async.h>
 
 HFENGINE_NAMESPACE_BEGIN
 
-class RubyVM {
+class RubyVM : public Utility::ReferredObject {
     struct mrb_state* MRBState;
     std::thread* currentThread;
     int lastError;
@@ -13,11 +14,58 @@ public:
         return MRBState;
     }
 
-    void injectExtension(const std::function<bool()>);
+    void Initialize();
+    void Release();
+
+    RubyVM() {
+        Initialize();
+    }
+    ~RubyVM() {
+        Release();
+    }
+
+    //Deal Exception
+    //if there is an exception, return true
+    //else return false
+    bool DealException(); 
 
     operator struct mrb_state*() const { return MRBState; }
 };
 
-extern thread_local std::unique_ptr<RubyVM> currentRubyVM;
+extern thread_local RubyVM* currentRubyVM;
+
+
+namespace RubyVMManager {
+    extern SpinLock lock; 
+    extern std::unordered_map<DWORD, HEG::RubyVM*> RubyVM;
+    inline void RegisterVM(HEG::RubyVM *vm) {
+        lock.lock();
+        DWORD tid = GetCurrentThreadId();
+        if (RubyVM.find(tid) != RubyVM.end()) {
+            lock.unlock();
+            //throw std::runtime_error("Duplicated RubyVM on one thread");
+            return;
+        }
+        RubyVM[tid] = vm;
+        currentRubyVM = vm;
+        lock.unlock();
+    }
+    inline void UnregisterVM() {
+        lock.lock();
+        DWORD tid = GetCurrentThreadId();
+        auto p = RubyVM.find(tid);
+        if (p != RubyVM.end())
+            RubyVM.erase(p);
+        currentRubyVM = nullptr;
+        lock.unlock();
+    }
+    inline HEG::RubyVM* GetCurrentVM() {
+        lock.lock();
+        DWORD tid = GetCurrentThreadId();
+        auto p = RubyVM.find(tid);
+        lock.unlock();
+        return p->second; //do not check null
+    }
+}
 
 HFENGINE_NAMESPACE_END

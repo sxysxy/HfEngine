@@ -1,5 +1,8 @@
 #pragma once
 #include "windows.h"
+#include <chrono>
+#include <thread>
+
 namespace Utility{
 
 template<class cls>
@@ -47,9 +50,10 @@ struct FPSTimer {
 class SleepWait {
 public:
     static void Wait(int ms) {
-        typedef void(__stdcall *pSleep)(DWORD);
-        static pSleep sleep = (pSleep)GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "Sleep");
-        sleep(ms);
+        if (ms > 0)
+            std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+        else
+            std::this_thread::yield();
     }
 };
 typedef FPSTimer<SleepWait> SleepFPSTimer;

@@ -1,5 +1,6 @@
 #pragma once
 #include <ThirdParties.h>
+#include <Core/GDevice.h>
 
 HFENGINE_NAMESPACE_BEGIN
 
@@ -14,6 +15,7 @@ class Window : public Utility::ReferredObject {
     static const UINT wstyle = WS_OVERLAPPEDWINDOW & ~(WS_MAXIMIZEBOX | WS_THICKFRAME);
     static bool _native_inited;
 
+    ComPtr<IDXGISwapChain> native_swap_chain;
 public:
     static LRESULT CALLBACK _WndProcAsyncMove(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     static LRESULT CALLBACK _WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -37,9 +39,6 @@ public:
         __ncl_button_down = false;
         async_move = false;
     }
-    Window(const std::wstring& _title, int w, int h) :Window() {
-        Initialize(_title, w, h);
-    }
     ~Window() {
         Uninitialize();
     }
@@ -52,6 +51,33 @@ public:
         style = wstyle;
         __ncl_button_down = false;
         Create(_arg ...);
+
+        DXGI_SWAP_CHAIN_DESC sd;
+        ZeroMemory(&sd, sizeof sd);
+        sd.BufferCount = 1;
+        sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+        sd.Windowed = 1;
+        sd.OutputWindow = _native_handle;
+        sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+        sd.BufferDesc.Width = _width;
+        sd.BufferDesc.Height = _height;
+        sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        sd.BufferDesc.RefreshRate.Numerator = 60;
+        sd.BufferDesc.RefreshRate.Denominator = 1;
+        sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+        sd.SampleDesc.Count = 1;
+        sd.SampleDesc.Quality = 0;
+        auto& native_device = GDevice::GetInstance()->native_device;
+
+        HRESULT hr = S_FALSE;
+        if (FAILED(hr = GDevice::GetInstance()->native_dxgi_factory->CreateSwapChain(native_device.Get(),
+            &sd, &native_swap_chain)) || !native_swap_chain) { 
+               //THROW_ERROR_CODE(std::runtime_error, "Fail to Create SwapChain, Error code:", hr);
+            throw std::runtime_error(std::string("Fail to Create SwapChain, Error Code: ") + std::to_string(hr));
+        }
+        //Usually cause a _com_error because of DXGI_STATUS_OCCLUDED.
+        //See https://msdn.microsoft.com/en-us/library/windows/desktop/cc308061(v=vs.85).aspx
+
     }
     //destructor.
     void Uninitialize() {
@@ -129,10 +155,18 @@ public:
         async_move = b;
     }
 
+    inline void SwapBuffers(int sync_level = 0) {
+        native_swap_chain->Present(sync_level, 0);
+    }
+    inline void SetFullscreen(bool fullscreen) {
+        native_swap_chain->SetFullscreenState(fullscreen, nullptr);
+    }
+
     virtual void OnResized();
     virtual void OnClosed();
 };
 
 extern thread_local RClass* ClassWindow;
+bool InjectWindowExtension();
 
 HFENGINE_NAMESPACE_END
