@@ -11,6 +11,7 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmd, i
     HEG::InjectEasyFFIExtension();
     HEG::InjectWindowExtension();
     HEG::InjectGDeviceExtension();
+    HEG::InjectCanvasExtension();
     HEG::InjectRenderContextExtension();
     FILE* fp = nullptr;
     try {

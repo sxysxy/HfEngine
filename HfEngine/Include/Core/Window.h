@@ -1,6 +1,7 @@
 #pragma once
 #include <ThirdParties.h>
 #include <Core/GDevice.h>
+#include <Core/Canvas.h>
 
 HFENGINE_NAMESPACE_BEGIN
 
@@ -8,6 +9,7 @@ const UINT WM_EXITLOOP = (WM_USER + 2333);
 const UINT WM_PROCESS_FLAG = (WM_USER + 2332);
 
 class Window : public Utility::ReferredObject {
+protected:
     std::wstring title;
     HWND _native_handle;
     int _width, _height;
@@ -16,6 +18,7 @@ class Window : public Utility::ReferredObject {
     static bool _native_inited;
 
     ComPtr<IDXGISwapChain> native_swap_chain;
+    Utility::ReferPtr<Canvas> back_canvas;
 public:
     static LRESULT CALLBACK _WndProcAsyncMove(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     static LRESULT CALLBACK _WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -38,6 +41,8 @@ public:
         style = wstyle;
         __ncl_button_down = false;
         async_move = false;
+        back_canvas = new Canvas();
+        back_canvas->AddRefer();
     }
     ~Window() {
         Uninitialize();

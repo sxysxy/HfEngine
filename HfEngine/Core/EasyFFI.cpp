@@ -1,4 +1,5 @@
-#include <Core.h>
+#include <Core/RubyVM.h>
+#include <Core/EasyFFI.h>
 
 HFENGINE_NAMESPACE_BEGIN
 

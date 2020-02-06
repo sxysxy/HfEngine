@@ -1,4 +1,5 @@
-#include <Core.h>
+#include <Core/GDevice.h>
+#include <Core/RubyVM.h>
 #include <Core/RenderContext.h>
 
 HFENGINE_NAMESPACE_BEGIN
@@ -63,19 +64,19 @@ void Shader::CreateFromFile(const std::wstring& filename) {
     if (shader_type == VERTEX_SHADER) {
         hr = GDevice::GetInstance()->native_device->CreateVertexShader(compiled_byte_code->GetBufferPointer(),
             compiled_byte_code->GetBufferSize(), 0, &native_vshader);
-        native_vshader->AddRef();
+        //native_vshader->AddRef();
         native_shader = native_vshader;
     }
     else if (shader_type == GEOMETRY_SHADER) {
         hr = GDevice::GetInstance()->native_device->CreateGeometryShader(compiled_byte_code->GetBufferPointer(),
             compiled_byte_code->GetBufferSize(), 0, &native_gshader);
-        native_gshader->AddRef();
+        //native_gshader->AddRef();
         native_shader = native_gshader;
     }
     else if (shader_type == PIXEL_SHADER) {
         hr = GDevice::GetInstance()->native_device->CreatePixelShader(compiled_byte_code->GetBufferPointer(),
             compiled_byte_code->GetBufferSize(), 0, &native_pshader);
-        native_pshader->AddRef();
+        //native_pshader->AddRef();
         native_shader = native_pshader;
     }
     if (FAILED(hr))
@@ -120,8 +121,27 @@ void RenderContext::SetInputLayout(const std::string* idents,
     native_context->IASetInputLayout(native_input_layout.Get());
 }
 
-thread_local RClass* ClassShader, * ClassVertexShader, * ClassGeometryShader, * ClassPixelShader;
+void GBuffer::Initialize(UINT usage, UINT flag, size_t size, const void *init_data) {
+    D3D11_BUFFER_DESC bd;
+    RtlZeroMemory(&bd, sizeof bd);
+    bd.BindFlags = flag;
+    bd.Usage = (D3D11_USAGE)usage;
+    bd.ByteWidth = (UINT)size;
+    D3D11_SUBRESOURCE_DATA data;
+    if (init_data) {
+        RtlZeroMemory(&data, sizeof data);
+        data.pSysMem = init_data;
+    }
+    HRESULT hr = GDevice::GetInstance()->native_device->CreateBuffer(&bd, 
+        init_data ? &data : nullptr, &native_buffer);
+    if (FAILED(hr))
+        THROW_ERROR_CODE(std::runtime_error, "Failed to create D3DBuffer, Error code:", hr);
+    _size = (int)size;
+}
+
+thread_local RClass* ClassShader, *ClassVertexShader, *ClassGeometryShader, *ClassPixelShader;
 thread_local RClass* ClassRenderContext;
+thread_local RClass* ClassGBuffer, *ClassVertexBuffer, *ClassIndexBuffer, *ClassConstantBuffer;
 
 static mrb_data_type ClassShaderDataType = mrb_data_type{ "Shader", [](mrb_state* mrb, void* ptr) {
     static_cast<Shader*>(ptr)->SubRefer();
@@ -214,6 +234,112 @@ static mrb_value ClassShader_from_binary(mrb_state* mrb, mrb_value self) {
     return self;
 }
 
+static mrb_data_type ClassVertexBufferDataType = mrb_data_type{ "VertexBuffer", [](mrb_state* mrb, void* ptr) {
+    static_cast<GBuffer*>(ptr)->SubRefer();
+} };
+static mrb_data_type ClassIndexBufferDataType = mrb_data_type{ "IndexBuffer", [](mrb_state* mrb, void* ptr) {
+    static_cast<GBuffer*>(ptr)->SubRefer();
+} };
+static mrb_data_type ClassConstantBufferDataType = mrb_data_type{ "ConstantBuffer", [](mrb_state* mrb, void* ptr) {
+    static_cast<GBuffer*>(ptr)->SubRefer();
+} };
+/*[DOCUMENT]
+method: HEG::VertexBuffer::new(num_of_vertex, sizeof_each_vertex, init_data(optional)) -> vb : VertexBuffer
+note: Create a vertex buffer using init_data(if given)
+*/
+static mrb_value ClassVertexBuffer_new(mrb_state* mrb, mrb_value klass) {
+    mrb_int num_of_vertex, sizeof_each_vertex;
+    mrb_value data;
+    void* pdata;
+    mrb_int argc = mrb_get_argc(mrb);
+    if (argc == 3) {
+        mrb_get_args(mrb, "iiS", &num_of_vertex, &sizeof_each_vertex, &data);
+        pdata = RSTRING_PTR(data);
+    }
+    else if (argc == 2) {
+        mrb_get_args(mrb, "ii", &num_of_vertex, &sizeof_each_vertex);
+        pdata = nullptr;
+    }
+    else {
+        mrb_raise(mrb, mrb->eStandardError_class, "VertexBuffer::new: Wrong number of arguments(expecting 2 or 3)");
+        return mrb_value();
+    }
+    try {
+        GBuffer* bf = new VertexBuffer(sizeof_each_vertex, num_of_vertex, pdata);
+        bf->AddRefer();
+        return mrb_obj_value(mrb_data_object_alloc(mrb, ClassVertexBuffer, bf, &ClassVertexBufferDataType));
+    }
+    catch (std::exception & e) {
+        mrb_raise(mrb, mrb->eStandardError_class, (std::string("VertexBuffer::new: Failed to create Vertex Buffer: ") + e.what()).c_str());
+        return mrb_value();
+    }
+}
+
+/*[DOCUMENT]
+method: HEG::IndexBuffer::new(num_of_index, init_data(optional)) -> ib : IndexBuffer
+note: Create an index buffer using init_data(if given)
+*/
+static mrb_value ClassIndexBuffer_new(mrb_state* mrb, mrb_value klass) {
+    mrb_int num_of_index;
+    mrb_value data;
+    void* pdata;
+    mrb_int argc = mrb_get_argc(mrb);
+    if (argc == 2) {
+        mrb_get_args(mrb, "iS", &num_of_index, &data);
+        pdata = RSTRING_PTR(data);
+    }
+    else if (argc == 1) {
+        mrb_get_args(mrb, "i", &num_of_index);
+        pdata = nullptr;
+    }
+    else {
+        mrb_raise(mrb, mrb->eStandardError_class, "IndexBuffer::new: Wrong number of arguments(expecting 2 or 3)");
+        return mrb_value();
+    }
+    try {
+        GBuffer* bf = new IndexBuffer(num_of_index, (int32_t*)pdata);
+        bf->AddRefer();
+        return mrb_obj_value(mrb_data_object_alloc(mrb, ClassIndexBuffer, bf, &ClassIndexBufferDataType));
+    }
+    catch (std::exception & e) {
+        mrb_raise(mrb, mrb->eStandardError_class, (std::string("IndexBuffer::new: Failed to create Index Buffer: ") + e.what()).c_str());
+        return mrb_value();
+    }
+}
+
+
+/*[DOCUMENT]
+method: HEG::ConstantBuffer::new(size_in_bytes, init_data(optional)) -> cb : Constant
+note: Create a constant buffer using init_data(if given)
+*/
+static mrb_value ClassConstantBuffer_new(mrb_state* mrb, mrb_value klass) {
+    mrb_int size_in_bytes;
+    mrb_value data;
+    void* pdata;
+    mrb_int argc = mrb_get_argc(mrb);
+    if (argc == 2) {
+        mrb_get_args(mrb, "iS", &size_in_bytes, &data);
+        pdata = RSTRING_PTR(data);
+    }
+    else if (argc == 1) {
+        mrb_get_args(mrb, "i", &size_in_bytes);
+        pdata = nullptr;
+    }
+    else {
+        mrb_raise(mrb, mrb->eStandardError_class, "ConstantBuffer::new: Wrong number of arguments(expecting 2 or 3)");
+        return mrb_value();
+    }
+    try {
+        GBuffer* bf = new ConstantBuffer(size_in_bytes, (int32_t*)pdata);
+        bf->AddRefer();
+        return mrb_obj_value(mrb_data_object_alloc(mrb, ClassConstantBuffer, bf, &ClassConstantBufferDataType));
+    }
+    catch (std::exception & e) {
+        mrb_raise(mrb, mrb->eStandardError_class, (std::string("ConstantBuffer::new: Failed to create Constant Buffer: ") + e.what()).c_str());
+        return mrb_value();
+    }
+}
+
 
 static mrb_data_type ClassRenderContextDataType = mrb_data_type{ "RenderContext", [](mrb_state* mrb, void* ptr) {
     static_cast<RenderContext*>(ptr)->SubRefer();
@@ -239,8 +365,8 @@ static mrb_value ClassRenderContext_layout(mrb_state* mrb, mrb_value self) {
     
     mrb_value* pnames = RARRAY_PTR(names);
     mrb_value* pfmts = RARRAY_PTR(fmts);
-    int len1 = RARRAY_LEN(names);
-    int len2 = RARRAY_LEN(fmts);
+    mrb_int len1 = RARRAY_LEN(names);
+    mrb_int len2 = RARRAY_LEN(fmts);
     if (len1 != len2)
         mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#layout: Array lengths do not match");
     std::vector<std::string> ns;
@@ -252,7 +378,7 @@ static mrb_value ClassRenderContext_layout(mrb_state* mrb, mrb_value self) {
     auto context = GetNativeObject<RenderContext>(self);
     auto device = GDevice::GetInstance();
     try {
-        context->SetInputLayout(ns.data(), fs.data(), len1);
+        context->SetInputLayout(ns.data(), fs.data(), (int)len1);
     }
     catch (std::runtime_error re) {
         mrb_raise(mrb, mrb->eStandardError_class, re.what());
@@ -275,6 +401,116 @@ mrb_value ClassRenderContext_shader(mrb_state* mrb, mrb_value self) {
     return self;
 }
 
+/*[DOCUMENT]
+method: HEG::RenderContext#vbuffer(vb : VertexBuffer) -> self
+note: Set Vertex Buffer
+*/
+mrb_value ClassRenderContext_vbuffer(mrb_state* mrb, mrb_value self) {
+    mrb_value vb_obj;
+    mrb_get_args(mrb, "o", &vb_obj);
+    if (!mrb_obj_is_kind_of(mrb, vb_obj, ClassVertexBuffer)) {
+        mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#vbuffer: argument is expected to be a Vertex Buffer");
+        return self;
+    }
+    GetNativeObject<RenderContext>(self)->SetVertexBuffer(GetNativeObject<VertexBuffer>(vb_obj));
+    return self;
+}
+
+/*[DOCUMENT]
+method: HEG::RenderContext#ibuffer(vb : IndexBuffer) -> self
+note: Set Index Buffer
+*/
+mrb_value ClassRenderContext_ibuffer(mrb_state* mrb, mrb_value self) {
+    mrb_value ib_obj;
+    mrb_get_args(mrb, "o", &ib_obj);
+    if (!mrb_obj_is_kind_of(mrb, ib_obj, ClassIndexBuffer)) {
+        mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#ibuffer: argument is expected to be a Index Buffer");
+        return self;
+    }
+    GetNativeObject<RenderContext>(self)->SetIndexBuffer(GetNativeObject<IndexBuffer>(ib_obj));
+    return self;
+}
+
+/*[DOCUMENT]
+method: HEG::RenderContext#viewport(topx : Integer, topy : Integer, width : Integer, height : Integer) -> self
+note: Set the viewport
+*/
+mrb_value ClassRenderContext_viewport(mrb_state* mrb, mrb_value self) {
+    mrb_int argc = mrb_get_argc(mrb);
+    mrb_int topx, topy, w, h;
+    mrb_get_args(mrb, "iiii", &topx, &topy, &w, &h);
+    GetNativeObject<RenderContext>(self)->SetViewport((UINT)topx, (UINT)topy, (UINT)w, (UINT)h);
+    return self;
+}
+
+/*[DOCUMENT]
+method: HEG::RenderContext#render -> self
+note: Execute render command on GDevice. It will acquire GDevice lock
+*/
+mrb_value ClassRenderContext_render(mrb_state* mrb, mrb_value self) {
+    GetNativeObject<RenderContext>(self)->Render();
+    return self;
+}
+
+/*[DOCUMENT]
+method: HEG::RenderContext#target(canvas : Canvas) -> self
+note: Set the rendering target
+*/
+mrb_value ClassRenderContext_target(mrb_state* mrb, mrb_value self) {
+    mrb_value cv_obj;
+    mrb_get_args(mrb, "o", &cv_obj);
+    if (!mrb_obj_is_kind_of(mrb, cv_obj, ClassCanvas)) {
+        mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#target: argument is expected to be a Canvas");
+        return self;
+    }
+    GetNativeObject<RenderContext>(self)->SetRenderTarget(GetNativeObject<Canvas>(cv_obj));
+    return self;
+}
+
+/*[DOCUMENT]
+method: HEG::RenderContext#clear | HEG::RenderContext#clear(r, g, b, a) -> self
+note: Clear render target using given color
+*/
+mrb_value ClassRenderContext_clear(mrb_state* mrb, mrb_value self) {
+    mrb_int argc = mrb_get_argc(mrb);
+    if (argc == 0) GetNativeObject<RenderContext>(self)->ClearTarget();
+    else if (argc == 4) {
+        mrb_value r, g, b, a;
+        mrb_get_args(mrb, "ffff", &r, &g, &b, &a);
+        GetNativeObject<RenderContext>(self)->ClearTarget((float)mrb_float(r),
+            (float)mrb_float(g),
+            (float)mrb_float(b),
+            (float)mrb_float(a));
+    }
+    else {
+        mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#clear requires 0 or 4 floats number arguments to work");
+    }
+    return self;
+}
+
+
+/*[DOCUMENT]
+method: HEG::RenderContext#draw(topology, start_vertex_pos, count) -> self
+note: Make a draw call to draw count vertexes from start_vertex_pos in vertex buffer
+*/
+mrb_value ClassRenderContext_draw(mrb_state* mrb, mrb_value self) {
+    mrb_int topology, start_pos, count;
+    mrb_get_args(mrb, "iii", &topology, &start_pos, &count);
+    GetNativeObject<RenderContext>(self)->Draw((D3D11_PRIMITIVE_TOPOLOGY)topology, (UINT)start_pos, (UINT)count);
+    return self;
+}
+
+/*[DOCUMENT]
+method: HEG::RenderContext#draw_index(topology, start_index_pos, count) -> self
+note: Make a draw call to draw count vertexes, vertexes' indexes are specified by index buffer
+*/
+mrb_value ClassRenderContext_draw_index(mrb_state* mrb, mrb_value self) {
+    mrb_int topology, start_pos, count;
+    mrb_get_args(mrb, "iii", &topology, &start_pos, &count);
+    GetNativeObject<RenderContext>(self)->DrawIndex((D3D11_PRIMITIVE_TOPOLOGY)topology, (UINT)start_pos, (UINT)count);
+    return self;
+}
+
 bool InjectRenderContextExtension() {
     mrb_state* mrb = currentRubyVM->GetRuby();
     RClass* Object = mrb->object_class;
@@ -293,7 +529,104 @@ bool InjectRenderContextExtension() {
     ClassRenderContext = mrb_define_class_under(mrb, HEG, "RenderContext", Object);
     mrb_define_class_method(mrb, ClassRenderContext, "new", ClassRenderContext_new, MRB_ARGS_NONE());
     mrb_define_method(mrb, ClassRenderContext, "layout", ClassRenderContext_layout, MRB_ARGS_REQ(2));
+    /*[DOCUMENT]
+    constant: FORMAT_FLOAT4
+    note: Format of 4 float numbers.
+    */
+    mrb_define_const(mrb, HEG, "FOMRAT_FLOAT4", mrb_fixnum_value(DXGI_FORMAT_R32G32B32A32_FLOAT));
+    /*[DOCUMENT]
+    constant: FORMAT_SINT4
+    note: Format of 4 singed integer numbers.
+    */
+    mrb_define_const(mrb, HEG, "FOMRAT_SINT4", mrb_fixnum_value(DXGI_FORMAT_R32G32B32A32_SINT));
+    /*[DOCUMENT]
+    constant: FORMAT_UINT4
+    note: Format of 4 unsigned integer numbers.
+    */
+    mrb_define_const(mrb, HEG, "FOMRAT_UINT4", mrb_fixnum_value(DXGI_FORMAT_R32G32B32A32_UINT));
+    /*[DOCUMENT]
+    constant: FORMAT_FLOAT3
+    note: Format of 3 float numbers.
+    */
+    mrb_define_const(mrb, HEG, "FORMAT_FLOAT3", mrb_fixnum_value(DXGI_FORMAT_R32G32B32_FLOAT));
+    /*[DOCUMENT]
+    constant: FORMAT_SINT3
+    note: Format of 3 signed integer numbers.
+    */
+    mrb_define_const(mrb, HEG, "FORMAT_SINT3", mrb_fixnum_value(DXGI_FORMAT_R32G32B32_SINT));
+    /*[DOCUMENT]
+    constant: FORMAT_UINT3
+    note: Format of 3 unsigned integer numbers.
+    */
+    mrb_define_const(mrb, HEG, "FORMAT_UINT3", mrb_fixnum_value(DXGI_FORMAT_R32G32B32_UINT));
+    /*[DOCUMENT]
+    constant: FORMAT_FLOAT2
+    note: Format of 2 float numbers.
+    */
+    mrb_define_const(mrb, HEG, "FORMAT_FLOAT2", mrb_fixnum_value(DXGI_FORMAT_R32G32_FLOAT));
+    /*[DOCUMENT]
+    constant: FORMAT_SINT2
+    note: Format of 2 signed integer numbers.
+    */
+    mrb_define_const(mrb, HEG, "FORMAT_SINT2", mrb_fixnum_value(DXGI_FORMAT_R32G32_SINT));
+    /*[DOCUMENT]
+    constant: FORMAT_SINT2
+    note: Format of 2 unsigned integer numbers.
+    */
+    mrb_define_const(mrb, HEG, "FORMAT_SINT2", mrb_fixnum_value(DXGI_FORMAT_R32G32_UINT));
     mrb_define_method(mrb, ClassRenderContext, "shader", ClassRenderContext_shader, MRB_ARGS_REQ(1));
+    mrb_define_method(mrb, ClassRenderContext, "vbuffer", ClassRenderContext_vbuffer, MRB_ARGS_REQ(1));
+    mrb_define_method(mrb, ClassRenderContext, "ibuffer", ClassRenderContext_ibuffer, MRB_ARGS_REQ(1));
+    /*[DOCUMENT]
+    constant: TOPOLOGY_TRIANGLES
+    note: As its name.
+    */
+    mrb_define_const(mrb, HEG, "TOPOLOGY_TRIANGLES", mrb_fixnum_value(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST));
+    /*[DOCUMENT]
+    constant: TOPOLOGY_TRIANGLES_ADJ
+    note: As its name.
+    */
+    mrb_define_const(mrb, HEG, "TOPOLOGY_TRIANGLES_ADJ", mrb_fixnum_value(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST_ADJ));
+    /*[DOCUMENT]
+    constant: TOPOLOGY_TRIANGLES_STRIP
+    note: As its name.
+    */
+    mrb_define_const(mrb, HEG, "TOPOLOGY_TRIANGLES_STRIP", mrb_fixnum_value(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP));
+    /*[DOCUMENT]
+    constant: TOPOLOGY_POINTS
+    note: As its name.
+    */
+    mrb_define_const(mrb, HEG, "TOPOLOGY_POINTS", mrb_fixnum_value(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST));
+    /*[DOCUMENT]
+    constant: TOPOLOGY_LINES
+    note: As its name.
+    */
+    mrb_define_const(mrb, HEG, "TOPOLOGY_LINES", mrb_fixnum_value(D3D11_PRIMITIVE_TOPOLOGY_LINELIST));
+    /*[DOCUMENT]
+    constant: TOPOLOGY_LINES_ADJ
+    note: As its name.
+    */
+    mrb_define_const(mrb, HEG, "TOPOLOGY_LINES_ADJ", mrb_fixnum_value(D3D11_PRIMITIVE_TOPOLOGY_LINELIST_ADJ));
+    /*[DOCUMENT]
+    constant: TOPOLOGY_LINES_STRIP
+    note: As its name.
+    */
+    mrb_define_const(mrb, HEG, "TOPOLOGY_LINES_STRIP", mrb_fixnum_value(D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP));
+    mrb_define_method(mrb, ClassRenderContext, "viewport", ClassRenderContext_viewport, MRB_ARGS_REQ(4));
+    mrb_define_method(mrb, ClassRenderContext, "target", ClassRenderContext_target, MRB_ARGS_REQ(1));
+    mrb_define_method(mrb, ClassRenderContext, "clear", ClassRenderContext_clear, MRB_ARGS_ANY());
+    mrb_define_method(mrb, ClassRenderContext, "draw", ClassRenderContext_draw, MRB_ARGS_REQ(3));
+    mrb_define_method(mrb, ClassRenderContext, "draw_index", ClassRenderContext_draw_index, MRB_ARGS_REQ(3));
+    mrb_define_method(mrb, ClassRenderContext, "render", ClassRenderContext_render, MRB_ARGS_REQ(1));
+
+    ClassGBuffer = mrb_define_class_under(mrb, HEG, "GBuffer", Object);
+    ClassVertexBuffer = mrb_define_class_under(mrb, HEG, "VertexBuffer", ClassGBuffer);
+    ClassIndexBuffer = mrb_define_class_under(mrb, HEG, "IndexBuffer", ClassGBuffer);
+    ClassConstantBuffer = mrb_define_class_under(mrb, HEG, "ConstantBuffer", ClassGBuffer);
+    mrb_define_class_method(mrb, ClassVertexBuffer, "new", ClassVertexBuffer_new, MRB_ARGS_ARG(2, 1));
+    mrb_define_class_method(mrb, ClassIndexBuffer, "new", ClassIndexBuffer_new, MRB_ARGS_ARG(1, 1));
+    mrb_define_class_method(mrb, ClassConstantBuffer, "new", ClassConstantBuffer_new, MRB_ARGS_ARG(1, 1));
+
     return true;
 }
 

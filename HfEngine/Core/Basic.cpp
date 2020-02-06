@@ -1,4 +1,5 @@
-#include <Core.h>
+#include <Core/Basic.h>
+#include <Core/RubyVM.h>
 
 HFENGINE_NAMESPACE_BEGIN
 
@@ -178,6 +179,57 @@ mrb_value Kernel_mainloop(mrb_state* mrb, mrb_value self) {
     return self;
 }
 
+/*[DOCUMENT]
+method: Kenrel::pack_floats(data : Array) -> packed_data : String
+note: pack floats in array to buffer data.
+*/
+mrb_value Kernel_pack_floats(mrb_state* mrb, mrb_value self) {
+    mrb_value ary;
+    mrb_get_args(mrb, "A", &ary);
+    mrb_int len = RARRAY_LEN(ary);
+    mrb_value* data = RARRAY_PTR(ary);
+    mrb_value res = mrb_str_buf_new(mrb, len * 4);
+    float* dest = (float*)RSTRING_PTR(res);
+    for (int i = 0; i < len; i++) {
+        dest[i] = (float)mrb_float(data[i]);
+    }
+    return res;
+}
+
+/*[DOCUMENT]
+method: Kenrel::pack_ints(data : Array) -> packed_data : String
+note: Pack ints(32-bit integers) in array to buffer data.
+*/
+mrb_value Kernel_pack_ints(mrb_state* mrb, mrb_value self) {
+    mrb_value ary;
+    mrb_get_args(mrb, "A", &ary);
+    mrb_int len = RARRAY_LEN(ary);
+    mrb_value* data = RARRAY_PTR(ary);
+    mrb_value res = mrb_str_buf_new(mrb, len * 4);
+    int32_t* dest = (int32_t*)RSTRING_PTR(res);
+    for (int i = 0; i < len; i++) {
+        dest[i] = (int32_t)mrb_fixnum(data[i]);
+    }
+    return res;
+}
+
+/*[DOCUMENT]
+method: Kernel::pack_longs(data : Array) -> packed_data : String
+note: Pack longs(32-bit integers) in array to buffer data.
+*/
+mrb_value Kernel_pack_longs(mrb_state* mrb, mrb_value self) {
+    mrb_value ary;
+    mrb_get_args(mrb, "A", &ary);
+    mrb_int len = RARRAY_LEN(ary);
+    mrb_value* data = RARRAY_PTR(ary);
+    mrb_value res = mrb_str_buf_new(mrb, len * 8);
+    int64_t* dest = (int64_t*)RSTRING_PTR(res);
+    for (int i = 0; i < len; i++) {
+        dest[i] = mrb_fixnum(data[i]);
+    }
+    return res;
+}
+
 static RClass* ClassFPSTimer;
 static mrb_data_type ClassFPSTimerDataType = mrb_data_type{ "GDevice", [](mrb_state* mrb, void* ptr) {
     delete ptr;
@@ -229,6 +281,10 @@ bool InjectBasicExtension() {
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "puts", Kernel_puts, MRB_ARGS_ANY());
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "print", Kernel_print, MRB_ARGS_ANY());
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "p", Kernel_p, MRB_ARGS_ANY());
+    mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "pack_floats", Kernel_pack_floats, MRB_ARGS_REQ(1));
+    mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "pack_ints", Kernel_pack_ints, MRB_ARGS_REQ(1));
+    mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "pack_longs", Kernel_pack_longs, MRB_ARGS_REQ(1));
+
 
     mrb_state* mrb = currentRubyVM->GetRuby();
     RClass* ClassObject = mrb->object_class;

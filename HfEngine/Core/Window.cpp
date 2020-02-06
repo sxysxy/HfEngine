@@ -1,4 +1,6 @@
-#include <Core.h>
+#include <Core/Window.h>
+#include <Core/RubyVM.h>
+#include <Core/GDevice.h>
 
 HFENGINE_NAMESPACE_BEGIN
 
@@ -133,12 +135,24 @@ void Window::OnResized() {
     if (!native_swap_chain)
         return;
 
+    GDevice::GetInstance()->Lock();
+
     HRESULT hr = native_swap_chain->ResizeBuffers(1, _width, _height,
         DXGI_FORMAT_R8G8B8A8_UNORM, 0);
     if (FAILED(hr)) {
         THROW_ERROR_CODE(std::runtime_error, "Fail to resize swapchain buffers, Error code:", hr);
     }
 
+    ComPtr<ID3D11Texture2D> native_backbuffer;
+    native_swap_chain->GetBuffer(0,
+        __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(native_backbuffer.GetAddressOf()));
+
+    if (!native_backbuffer) {
+        THROW_ERROR_CODE(std::runtime_error, "Fail to get swapchain buffers, Error code:", hr);
+    }
+    back_canvas->CreateFromNativeTexture2D(native_backbuffer.Get());
+
+    GDevice::GetInstance()->UnLock();
 }
 
 void Window::OnClosed() {
@@ -176,9 +190,17 @@ void Window::Create(const std::wstring& _title, int w, int h) {
 }
 
 //special for ruby extension
+static mrb_data_type ClassCanvasSpecialDataType = mrb_data_type{ "Canvas", [](mrb_state* mrb, void* ptr) {
+} };
 class Window2 : public Window {
 public:
     mrb_value window_obj;
+    mrb_value canvas_obj;
+
+    Window2() : Window() {
+        canvas_obj = mrb_obj_value(mrb_data_object_alloc(currentRubyVM->GetRuby(),
+            ClassCanvas, back_canvas.Get(), &ClassCanvasSpecialDataType));
+    }
 
     void OnResized() {
         Window::OnResized();
@@ -221,7 +243,6 @@ static mrb_value ClassWindow_new(mrb_state* mrb, mrb_value klass) {
     std::wstring wtitle;
     U8ToU16(atitle, wtitle);
     auto window = new Window2();
-    window->AddRefer();
     window->Initialize(wtitle, (int)w, (int)h);
     window->AddRefer();
     mrb_value self = mrb_obj_value(mrb_data_object_alloc(mrb, ClassWindow, window, &ClassWindowDataType));
@@ -355,6 +376,14 @@ mrb_value ClassWindow_height(mrb_state* state, mrb_value self) {
     return mrb_fixnum_value(GetNativeObject<Window>(self)->height);
 }
 
+/*[DOCUMENT]
+method: HEG::Window#canvas -> canvas : Canvas
+note: Get the canvas of window.
+*/
+mrb_value ClassWindow_canvas(mrb_state* state, mrb_value self) {
+    return GetNativeObject<Window2>(self)->canvas_obj;
+}
+
 bool InjectWindowExtension() {
     const RubyVM* vm = currentRubyVM;
     RClass* HEG = mrb_define_module(vm->GetRuby(), "HEG");
@@ -372,6 +401,7 @@ bool InjectWindowExtension() {
     mrb_define_method(vm->GetRuby(), ClassWindow, "entitle", ClassWindow_entitle, MRB_ARGS_REQ(1));
     mrb_define_method(vm->GetRuby(), ClassWindow, "width", ClassWindow_width, MRB_ARGS_NONE());
     mrb_define_method(vm->GetRuby(), ClassWindow, "height", ClassWindow_height, MRB_ARGS_NONE());
+    mrb_define_method(vm->GetRuby(), ClassWindow, "canvas", ClassWindow_canvas, MRB_ARGS_NONE());
     return true;
 }
 

@@ -51,6 +51,12 @@
     <ClInclude Include="..\Include\Core\Input.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\Include\Core\Bitmap.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Core\Canvas.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Window.cpp">
@@ -72,6 +78,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="RenderContext.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Canvas.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Bitmap.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

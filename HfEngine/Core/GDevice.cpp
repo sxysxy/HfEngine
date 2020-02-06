@@ -1,4 +1,7 @@
-#include <Core.h>
+#include <Core/GDevice.h>
+#include <Core/Basic.h>
+#include <Core/RubyVM.h>
+#include <ThirdParties.h>
 
 HFENGINE_NAMESPACE_BEGIN
 
