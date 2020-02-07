@@ -40,6 +40,8 @@ mrb_value Kernel_show_console(mrb_state *mrb, mrb_value self) {
     auto hwnd = get_console_window();
     if (!hwnd) {
         AllocConsole();
+        freopen("conout$", "w", stdout);
+        freopen("conout$", "w", stderr);
         //mrb_load_string(mrb, "STDIN.reopen('CON'); STDOUT.reopen('CON'); STDERR.reopen('CON');");
     }
     else ShowWindowAsync(hwnd, SW_SHOWNORMAL);
@@ -189,6 +191,7 @@ mrb_value Kernel_pack_floats(mrb_state* mrb, mrb_value self) {
     mrb_int len = RARRAY_LEN(ary);
     mrb_value* data = RARRAY_PTR(ary);
     mrb_value res = mrb_str_buf_new(mrb, len * 4);
+    mrb_str_resize(mrb, res, len * 4);
     float* dest = (float*)RSTRING_PTR(res);
     for (int i = 0; i < len; i++) {
         dest[i] = (float)mrb_float(data[i]);
@@ -206,6 +209,7 @@ mrb_value Kernel_pack_ints(mrb_state* mrb, mrb_value self) {
     mrb_int len = RARRAY_LEN(ary);
     mrb_value* data = RARRAY_PTR(ary);
     mrb_value res = mrb_str_buf_new(mrb, len * 4);
+    mrb_str_resize(mrb, res, len * 4);
     int32_t* dest = (int32_t*)RSTRING_PTR(res);
     for (int i = 0; i < len; i++) {
         dest[i] = (int32_t)mrb_fixnum(data[i]);
@@ -223,11 +227,32 @@ mrb_value Kernel_pack_longs(mrb_state* mrb, mrb_value self) {
     mrb_int len = RARRAY_LEN(ary);
     mrb_value* data = RARRAY_PTR(ary);
     mrb_value res = mrb_str_buf_new(mrb, len * 8);
+    mrb_str_resize(mrb, res, len * 8);
     int64_t* dest = (int64_t*)RSTRING_PTR(res);
     for (int i = 0; i < len; i++) {
         dest[i] = mrb_fixnum(data[i]);
     }
     return res;
+}
+
+/*[DOCUMENT]
+method: Kernel::object2ptr(obj : Object) -> addr : Fixnum
+note: Get the pointer value to the object
+*/
+mrb_value Kernel_object2ptr(mrb_state* mrb, mrb_value kernel) {
+    mrb_value obj;
+    mrb_get_args(mrb, "o", &obj);
+    return mrb_fixnum_value((mrb_int)obj.value.p);
+}
+
+/*[DOCUMENT]
+method: Kernel::ptr2object(ptr : Fixnum) -> obj : Object
+note: Get the object from pointer
+*/
+mrb_value Kernel_ptr2object(mrb_state* mrb, mrb_value kerel) {
+    mrb_int addr;
+    mrb_get_args(mrb, "i", &addr);
+    return mrb_obj_value((void*)addr);
 }
 
 static RClass* ClassFPSTimer;
@@ -284,7 +309,9 @@ bool InjectBasicExtension() {
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "pack_floats", Kernel_pack_floats, MRB_ARGS_REQ(1));
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "pack_ints", Kernel_pack_ints, MRB_ARGS_REQ(1));
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "pack_longs", Kernel_pack_longs, MRB_ARGS_REQ(1));
-
+    
+    mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "object2ptr", Kernel_object2ptr, MRB_ARGS_REQ(1));
+    mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "ptr2object", Kernel_ptr2object, MRB_ARGS_REQ(1));
 
     mrb_state* mrb = currentRubyVM->GetRuby();
     RClass* ClassObject = mrb->object_class;

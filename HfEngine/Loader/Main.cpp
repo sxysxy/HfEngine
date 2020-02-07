@@ -6,26 +6,14 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmd, i
     using namespace Utility;
     HfEngineInitialize();
     auto ruby = ReferPtr<HEG::RubyVM>::New();
-    
+
     HEG::InjectBasicExtension();
     HEG::InjectEasyFFIExtension();
     HEG::InjectWindowExtension();
     HEG::InjectGDeviceExtension();
     HEG::InjectCanvasExtension();
     HEG::InjectRenderContextExtension();
-    FILE* fp = nullptr;
-    try {
-        fopen_s(&fp, "test.rb", "r");
-        mrb_load_file(ruby->GetRuby(), fp);
-       
-    } catch(std::exception &err) {
-        mrb_raise(ruby->GetRuby(), ruby->GetRuby()->eStandardError_class, err.what());
-    }
-    if (fp)
-        fclose(fp);
-    if (ruby->DealException()) {
-        system("pause");
-    }
-
+    
+    ruby->Load("test.rb");
     return 0;
 }

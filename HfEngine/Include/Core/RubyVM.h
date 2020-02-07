@@ -6,6 +6,7 @@ HFENGINE_NAMESPACE_BEGIN
 
 class RubyVM : public Utility::ReferredObject {
     struct mrb_state* MRBState;
+    struct mrbc_context* MRBLoadContext;
     std::thread* currentThread;
     int lastError;
     std::unordered_map<std::string, RClass*> moduleTable;
@@ -23,11 +24,15 @@ public:
     ~RubyVM() {
         Release();
     }
+    
+    void StreamException(mrb_value excep, std::ostream& os);
 
     //Deal Exception
     //if there is an exception, return true
     //else return false
     bool DealException(); 
+    
+    void Load(const std::string& filename);
 
     operator struct mrb_state*() const { return MRBState; }
 };

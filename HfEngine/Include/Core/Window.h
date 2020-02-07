@@ -32,7 +32,8 @@ public:
     const HWND& native_handle = _native_handle;
     const int& width = _width, & height = _height;
     UINT style;
-    bool async_move;
+    bool async_move = true;
+    bool destroyed = false;
 
 
     Window() {
@@ -40,7 +41,6 @@ public:
         _width = _height = 0;
         style = wstyle;
         __ncl_button_down = false;
-        async_move = false;
         back_canvas = new Canvas();
         back_canvas->AddRefer();
     }
@@ -88,6 +88,7 @@ public:
     void Uninitialize() {
         title.~basic_string();
         if (_native_handle) {
+            destroyed = true;
             DestroyWindow(_native_handle);
             _native_handle = 0;
         }

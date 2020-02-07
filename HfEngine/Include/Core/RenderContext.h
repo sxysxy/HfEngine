@@ -27,8 +27,8 @@ public:
     ComPtr<ID3D10Blob> compiled_byte_code;
 
     void Initialize(SHADER_TYPE type) { shader_type = type; }
-    void CreateFromFile(const std::wstring& filename);
-    void CreateFromString(const std::string& code);
+    void CreateFromFile(const std::wstring& filename, const std::string &entry = "main");
+    void CreateFromString(const std::string& code, const std::string &entry = "main");
     void CreateFromBinary(const void*, size_t size);
 
     virtual void Release() {
@@ -223,7 +223,7 @@ public:
     Utility::ReferPtr<Rasterizer> rasterizer;
 
     Utility::ReferPtr<Canvas> render_target;
-    
+
     void SetInputLayout(const std::string* idents, const DXGI_FORMAT* formats, int count);
     inline void SetInputLayout(const std::initializer_list<std::string>& idents,
         const std::initializer_list<DXGI_FORMAT>& formats) {
@@ -247,6 +247,40 @@ public:
             native_context->PSSetShader(shader ? shader->native_pshader : nullptr, 0, 0);
         }
     }
+    inline void SetShaderResource(SHADER_TYPE stage, int slot, Canvas* resource) {
+        if (stage == VERTEX_SHADER) {
+            native_context->VSGetShaderResources(slot, 1, resource->native_shader_resource_view.GetAddressOf());
+        }
+        else if (stage == GEOMETRY_SHADER) {
+            native_context->GSGetShaderResources(slot, 1, resource->native_shader_resource_view.GetAddressOf());
+        }
+        else if (stage == PIXEL_SHADER) {
+            native_context->PSGetShaderResources(slot, 1, resource->native_shader_resource_view.GetAddressOf());
+        }
+    }
+    inline void SetConstantBuffer(SHADER_TYPE stage, int slot, ConstantBuffer* cb) {
+        if (stage == VERTEX_SHADER) {
+            native_context->VSSetConstantBuffers(slot, 1, cb->native_buffer.GetAddressOf());
+        }
+        else if (stage == GEOMETRY_SHADER) {
+            native_context->GSSetConstantBuffers(slot, 1, cb->native_buffer.GetAddressOf());
+        }
+        else if (stage == PIXEL_SHADER) {
+            native_context->PSSetConstantBuffers(slot, 1, cb->native_buffer.GetAddressOf());
+        }
+    }
+    /*    inline void SetSampler(SHADER_TYPE stage, int slot, ConstantBuffer* cb) {
+        if (stage == VERTEX_SHADER) {
+            native_context->VSSetSamplers
+        }
+        else if (stage == GEOMETRY_SHADER) {
+
+        }
+        else if (stage == PIXEL_SHADER) {
+        }
+    }*/
+
+
 
     inline void SetVertexBuffer(VertexBuffer* vb) {
         UINT stride = (UINT)vb->size_per_vertex;

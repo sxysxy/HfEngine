@@ -15,6 +15,9 @@ HFENGINE_NAMESPACE_BEGIN
 bool Window::_native_inited = false;
 
 LRESULT CALLBACK Window::_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    Window* w = (Window*)GetWindowLongV(hWnd, GWLP_USERDATA);
+    if (w && w->destroyed) 
+        return 0;
     switch (uMsg)
     {
     case WM_PAINT:
@@ -27,14 +30,12 @@ LRESULT CALLBACK Window::_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
     case WM_CREATE:
     {
         CREATESTRUCT* pc = (CREATESTRUCT*)lParam;
-        Window* w = (Window*)pc->lpCreateParams;
         SetWindowLongV(hWnd, GWLP_USERDATA, (LONG_PTR)pc->lpCreateParams);
         return 0;
     }
     case WM_DESTROY:
     case WM_CLOSE:
     {
-        Window* w = (Window*)GetWindowLongV(hWnd, GWLP_USERDATA);
         w->OnClosed();
         return 0;
     }
@@ -44,7 +45,6 @@ LRESULT CALLBACK Window::_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
         //if((wParam & SIZE_RESTORED) || (wParam & SIZE_MAXIMIZED) || (wParam & SIZE_MAXSHOW)) {
         
         {
-         Window* w = (Window*)GetWindowLongV(hWnd, GWLP_USERDATA);
             w->OnResized();
         }
         return 0;
@@ -56,7 +56,6 @@ LRESULT CALLBACK Window::_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
     case WM_MOUSEMOVE:
     case WM_NCRBUTTONDOWN:
     {
-        Window* w = (Window*)GetWindowLongV(hWnd, GWLP_USERDATA);
         if (w->async_move)
             return _WndProcAsyncMove(hWnd, uMsg, wParam, lParam);
         else return DefWindowProc(hWnd, uMsg, wParam, lParam);

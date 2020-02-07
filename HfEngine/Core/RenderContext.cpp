@@ -4,9 +4,10 @@
 
 HFENGINE_NAMESPACE_BEGIN
 
-void Shader::CreateFromString(const std::string& code) {
+void Shader::CreateFromString(const std::string& code, const std::string& entry) {
     ComPtr<ID3D10Blob> sbuffer, errmsg;
-    HRESULT hr = D3DX11CompileFromMemory(code.c_str(), code.length(), 0, 0, 0, "main", SHADER_COMPILE_TOKEN[shader_type]
+    HRESULT hr = D3DX11CompileFromMemory(code.c_str(), code.length(), 0, 0, 0, 
+        entry.c_str(), SHADER_COMPILE_TOKEN[shader_type]
         , 0, 0, 0, &sbuffer, &errmsg, 0);
     if (FAILED(hr)) {
         if (errmsg) {
@@ -42,10 +43,10 @@ void Shader::CreateFromString(const std::string& code) {
         THROW_ERROR_CODE(std::runtime_error, "Fail to Create VertexShader, Error code:", hr);
 }
 
-void Shader::CreateFromFile(const std::wstring& filename) {
+void Shader::CreateFromFile(const std::wstring& filename, const std::string& entry) {
     ComPtr<ID3D10Blob> sbuffer, errmsg;
 
-    HRESULT hr = D3DX11CompileFromFileW(filename.c_str(), nullptr, nullptr, "main",
+    HRESULT hr = D3DX11CompileFromFileW(filename.c_str(), nullptr, nullptr, entry.c_str(),
         SHADER_COMPILE_TOKEN[shader_type], 0, 0, 0,
         &sbuffer, &errmsg, nullptr); //cause a _com_error,,but why?, it returns S_OK... 
 
@@ -87,7 +88,16 @@ void Shader::CreateFromBinary(const void* ptr, size_t length) {
     try {
         D3D10CreateBlob(length, &compiled_byte_code);
         memcpy(compiled_byte_code->GetBufferPointer(), ptr, length);
-        GDevice::GetInstance()->native_device->CreateGeometryShader(ptr, length, 0, &native_gshader);
+        auto device = GDevice::GetInstance()->native_device.Get();
+        if(shader_type == VERTEX_SHADER) {
+            device->CreateVertexShader(ptr, length, 0, &native_vshader);
+        }
+        else if (shader_type == GEOMETRY_SHADER) {
+            device->CreateGeometryShader(ptr, length, 0, &native_gshader);
+        }
+        else if (shader_type == PIXEL_SHADER) {
+            device->CreatePixelShader(ptr, length, 0, &native_pshader);
+        }
     }
     catch (std::exception) {
         native_shader = nullptr;
@@ -185,14 +195,22 @@ static mrb_value ClassPixelShader_new(mrb_state* mrb, mrb_value klass) {
 }
 
 /*[DOCUMENT]
-method: HEG::Shader#from_string(code : String) -> self
+method: HEG::Shader#from_string(code : String, entry = "main" : String) -> self
 note: Create Shader from string of code.
 */
 static mrb_value ClassShader_from_string(mrb_state* mrb, mrb_value self) {
     mrb_value code;
-    mrb_get_args(mrb, "S", &code);
+    const char* entry = "main";
+    if(mrb_get_argc(mrb) == 1) {
+        mrb_get_args(mrb, "S", &code);
+    }
+    else {
+        mrb_value entry_obj;
+        mrb_get_args(mrb, "SS", &code, &entry_obj);
+        entry = RSTRING_PTR(entry_obj);
+    }
     try {
-        GetNativeObject<Shader>(self)->CreateFromString(RSTRING_PTR(code));
+        GetNativeObject<Shader>(self)->CreateFromString(RSTRING_PTR(code), entry);
     }
     catch (std::exception& e) {
         mrb_raise(mrb, mrb->eStandardError_class, e.what());
@@ -201,16 +219,24 @@ static mrb_value ClassShader_from_string(mrb_state* mrb, mrb_value self) {
 }
 
 /*[DOCUMENT]
-method: HEG::Shader#from_file(filename : String) -> self
+method: HEG::Shader#from_file(filename : String, entry = "main" : String) -> self
 note: Create Shader from file named filename
 */
 static mrb_value ClassShader_from_file(mrb_state* mrb, mrb_value self) {
     mrb_value filename;
-    mrb_get_args(mrb, "S", &filename);
+    const char* entry = "main";
+    if (mrb_get_argc(mrb) == 1) {
+        mrb_get_args(mrb, "S", &filename);
+    }
+    else {
+        mrb_value entry_obj;
+        mrb_get_args(mrb, "SS", &filename, &entry_obj);
+        entry = RSTRING_PTR(entry_obj);
+    }
     std::wstring filenamew;
     U8ToU16(RSTRING_PTR(filename), filenamew);
     try {
-        GetNativeObject<Shader>(self)->CreateFromFile(filenamew);
+        GetNativeObject<Shader>(self)->CreateFromFile(filenamew, entry);
     }
     catch (std::exception & e) {
         mrb_raise(mrb, mrb->eStandardError_class, e.what());
@@ -232,6 +258,19 @@ static mrb_value ClassShader_from_binary(mrb_state* mrb, mrb_value self) {
         mrb_raise(mrb, mrb->eStandardError_class, e.what());
     }
     return self;
+}
+
+/*[DOCUMENT]
+method: HEG::Shader#byte_code -> byte_code : String
+note: Get compiled byte code
+*/
+static mrb_value ClassShader_byte_code(mrb_state* mrb, mrb_value self) {
+    auto s = GetNativeObject<Shader>(self);
+    size_t size = s->compiled_byte_code->GetBufferSize();
+    mrb_value b = mrb_str_new_capa(mrb, size);
+    mrb_str_resize(mrb, b, size);
+    memcpy(RSTRING_PTR(b), s->compiled_byte_code->GetBufferPointer(), size);
+    return b;
 }
 
 static mrb_data_type ClassVertexBufferDataType = mrb_data_type{ "VertexBuffer", [](mrb_state* mrb, void* ptr) {
@@ -488,6 +527,39 @@ mrb_value ClassRenderContext_clear(mrb_state* mrb, mrb_value self) {
     return self;
 }
 
+/*[DOCUMENT]
+method: HEG::RenderContext#resource(stage : SHADER_TYPE, slot : Fixnum, canvas : Canvas) -> self 
+note: Bind shader resource to slot
+*/
+mrb_value ClassRenderContext_resource(mrb_state* mrb, mrb_value self) {
+    mrb_int stage, slot;
+    mrb_value canvas;
+    mrb_get_args(mrb, "iio", &stage, &slot, &canvas);
+    if (!mrb_obj_is_kind_of(mrb, canvas, ClassCanvas)) {
+        mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#resource(stage, slot, canvas): argument 3 is expected to be a Canvas");
+        return self;
+    }
+    GetNativeObject<RenderContext>(self)->SetShaderResource((SHADER_TYPE)stage, (int)slot,
+        GetNativeObject<Canvas>(canvas));
+    return self;
+}
+
+/*[DOCUMENT]
+method: HEG::RenderContext#cbuffer(stage : SHADER_TYPE, slot : Fixnum, cb : ConstantBuffer) -> self
+note: Bind constant buffer to slot
+*/
+mrb_value ClassRenderContext_cbuffer(mrb_state* mrb, mrb_value self) {
+    mrb_int stage, slot;
+    mrb_value cb;
+    mrb_get_args(mrb, "iio", &stage, &slot, &cb);
+    if (!mrb_obj_is_kind_of(mrb, cb, ClassConstantBuffer)) {
+        mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#cbuffer(stage, slot, cb): argument 3 is expected to be a ConstantBuffer");
+        return self;
+    }
+    GetNativeObject<RenderContext>(self)->SetConstantBuffer((SHADER_TYPE)stage, (int)slot,
+        GetNativeObject<ConstantBuffer>(cb));
+    return self;
+}
 
 /*[DOCUMENT]
 method: HEG::RenderContext#draw(topology, start_vertex_pos, count) -> self
@@ -516,15 +588,31 @@ bool InjectRenderContextExtension() {
     RClass* Object = mrb->object_class;
     RClass* HEG = mrb_define_module(mrb, "HEG");
     ClassShader = mrb_define_class_under(mrb, HEG, "Shader", Object);
+    mrb_define_method(mrb, ClassShader, "byte_code", ClassShader_byte_code, MRB_ARGS_NONE());
     ClassVertexShader = mrb_define_class_under(mrb, HEG, "VertexShader", ClassShader);
     ClassGeometryShader = mrb_define_class_under(mrb, HEG, "GeometryShader", ClassShader);
     ClassPixelShader = mrb_define_class_under(mrb, HEG, "PixelShader", ClassShader);
     mrb_define_class_method(mrb, ClassVertexShader, "new", ClassVertexShader_new, MRB_ARGS_NONE());
     mrb_define_class_method(mrb, ClassGeometryShader, "new", ClassGeometryShader_new, MRB_ARGS_NONE());
     mrb_define_class_method(mrb, ClassPixelShader, "new", ClassPixelShader_new, MRB_ARGS_NONE());
-    mrb_define_method(mrb, ClassShader, "from_string", ClassShader_from_string, MRB_ARGS_REQ(1));
-    mrb_define_method(mrb, ClassShader, "from_file", ClassShader_from_file, MRB_ARGS_REQ(1));
+    mrb_define_method(mrb, ClassShader, "from_string", ClassShader_from_string, MRB_ARGS_ARG(1, 1));
+    mrb_define_method(mrb, ClassShader, "from_file", ClassShader_from_file, MRB_ARGS_ARG(1, 1));
     mrb_define_method(mrb, ClassShader, "from_binary", ClassShader_from_binary, MRB_ARGS_REQ(1));
+    /*[DOCUMENT]
+    constant: Shader::VERTEX
+    note: Vertex Shader Flag
+    */
+    mrb_define_const(mrb, ClassShader, "VERTEX", mrb_fixnum_value(VERTEX_SHADER));
+    /*[DOCUMENT]
+    constant: Shader::GEOMETRY
+    note: Geometry Shader Flag
+    */
+    mrb_define_const(mrb, ClassShader, "GEOMETRY", mrb_fixnum_value(GEOMETRY_SHADER));
+    /*[DOCUMENT]
+    constant: Shader::PIXEL
+    note: Pixel Shader Flag
+    */
+    mrb_define_const(mrb, ClassShader, "PIXEL", mrb_fixnum_value(PIXEL_SHADER));
 
     ClassRenderContext = mrb_define_class_under(mrb, HEG, "RenderContext", Object);
     mrb_define_class_method(mrb, ClassRenderContext, "new", ClassRenderContext_new, MRB_ARGS_NONE());
@@ -533,17 +621,17 @@ bool InjectRenderContextExtension() {
     constant: FORMAT_FLOAT4
     note: Format of 4 float numbers.
     */
-    mrb_define_const(mrb, HEG, "FOMRAT_FLOAT4", mrb_fixnum_value(DXGI_FORMAT_R32G32B32A32_FLOAT));
+    mrb_define_const(mrb, HEG, "FORMAT_FLOAT4", mrb_fixnum_value(DXGI_FORMAT_R32G32B32A32_FLOAT));
     /*[DOCUMENT]
     constant: FORMAT_SINT4
     note: Format of 4 singed integer numbers.
     */
-    mrb_define_const(mrb, HEG, "FOMRAT_SINT4", mrb_fixnum_value(DXGI_FORMAT_R32G32B32A32_SINT));
+    mrb_define_const(mrb, HEG, "FORMAT_SINT4", mrb_fixnum_value(DXGI_FORMAT_R32G32B32A32_SINT));
     /*[DOCUMENT]
     constant: FORMAT_UINT4
     note: Format of 4 unsigned integer numbers.
     */
-    mrb_define_const(mrb, HEG, "FOMRAT_UINT4", mrb_fixnum_value(DXGI_FORMAT_R32G32B32A32_UINT));
+    mrb_define_const(mrb, HEG, "FORMAT_UINT4", mrb_fixnum_value(DXGI_FORMAT_R32G32B32A32_UINT));
     /*[DOCUMENT]
     constant: FORMAT_FLOAT3
     note: Format of 3 float numbers.
@@ -615,6 +703,7 @@ bool InjectRenderContextExtension() {
     mrb_define_method(mrb, ClassRenderContext, "viewport", ClassRenderContext_viewport, MRB_ARGS_REQ(4));
     mrb_define_method(mrb, ClassRenderContext, "target", ClassRenderContext_target, MRB_ARGS_REQ(1));
     mrb_define_method(mrb, ClassRenderContext, "clear", ClassRenderContext_clear, MRB_ARGS_ANY());
+    mrb_define_method(mrb, ClassRenderContext, "resource", ClassRenderContext_resource, MRB_ARGS_REQ(3));
     mrb_define_method(mrb, ClassRenderContext, "draw", ClassRenderContext_draw, MRB_ARGS_REQ(3));
     mrb_define_method(mrb, ClassRenderContext, "draw_index", ClassRenderContext_draw_index, MRB_ARGS_REQ(3));
     mrb_define_method(mrb, ClassRenderContext, "render", ClassRenderContext_render, MRB_ARGS_REQ(1));
