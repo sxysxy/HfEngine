@@ -164,6 +164,7 @@
     <ClInclude Include="..\Include\Core\Input.h" />
     <ClInclude Include="..\Include\Core\RenderContext.h" />
     <ClInclude Include="..\Include\Core\RubyVM.h" />
+    <ClInclude Include="..\Include\Core\Transform.h" />
     <ClInclude Include="..\Include\Core\Window.h" />
     <ClInclude Include="..\Include\FPSTimer.h" />
     <ClInclude Include="..\Include\ReferPtr.h" />
@@ -176,8 +177,10 @@
     <ClCompile Include="EasyFFI.cpp" />
     <ClCompile Include="Entry.cpp" />
     <ClCompile Include="GDevice.cpp" />
+    <ClCompile Include="Input.cpp" />
     <ClCompile Include="RenderContext.cpp" />
     <ClCompile Include="RubyVM.cpp" />
+    <ClCompile Include="Transform.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

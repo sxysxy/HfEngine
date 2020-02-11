@@ -91,6 +91,15 @@ mrb_value GDevice_create(mrb_state* mrb, mrb_value self) {
     return ObjectInstanceOfGDevice;
 }
 
+/*[DOCUMENT]
+method: HEG::GDevice::release -> nil
+note: Call HEG::GDevice::instance.release
+*/
+mrb_value GDevice_release(mrb_state* mrb, mrb_value self) {
+    GDevice::GetInstance()->Release();
+    return mrb_nil_value();
+}
+
 /*
 method: HEG::Device#monitor_info -> {:width => width, :height => height, :refresh_rate => refresh_rate} : Hash
 note: Get some information of the monitor.
@@ -133,11 +142,11 @@ mrb_value GDevice_adapter_info(mrb_state* mrb, mrb_value self) {
 bool InjectGDeviceExtension() {
     const RubyVM* vm = currentRubyVM;
     RClass* HEG = mrb_define_module(vm->GetRuby(), "HEG");
-    RClass* Object = vm->GetRuby()->object_class;
-    ClassGDevice = mrb_define_class_under(vm->GetRuby(), HEG, "GDevice", Object);
+    ClassGDevice = mrb_define_class_under(vm->GetRuby(), HEG, "GDevice", ClassHEGObject);
     ClassNoDeviceError = mrb_define_class_under(vm->GetRuby(), HEG, "NoDeviceError", vm->GetRuby()->eStandardError_class);
     mrb_define_class_method(vm->GetRuby(), ClassGDevice, "instance", GDevice_instance, MRB_ARGS_NONE());
     mrb_define_class_method(vm->GetRuby(), ClassGDevice, "create", GDevice_create, MRB_ARGS_NONE());
+    mrb_define_class_method(vm->GetRuby(), ClassGDevice, "release", GDevice_release, MRB_ARGS_NONE());
     mrb_define_method(vm->GetRuby(), ClassGDevice, "monitor_info", GDevice_monitor_info, MRB_ARGS_NONE());
     mrb_define_method(vm->GetRuby(), ClassGDevice, "adapter_info", GDevice_adapter_info, MRB_ARGS_NONE());
     return true;

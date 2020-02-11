@@ -21,11 +21,11 @@ public:
     void Initialize(int w, int h, const T* init_data = nullptr) {
         Initialize(w, h, (void*)init_data);
     }
-    void CreateFromNativeTexture2D(ID3D11Texture2D* tex) {
+    void CreateFromNativeTexture2D(ComPtr<ID3D11Texture2D> tex) {
         UnInitialize();
-        native_texture2d = tex;
+        native_texture2d = std::move(tex);
         D3D11_TEXTURE2D_DESC desc;
-        tex->GetDesc(&desc);
+        native_texture2d->GetDesc(&desc);
         _width = desc.Width;
         _height = desc.Height;
         CreateViews();

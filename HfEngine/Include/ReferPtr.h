@@ -19,12 +19,14 @@ public:
 	}
 	
 	int AddRefer(){
+        if (!this) return 0;
 		return ++__ref_count;
 	}
 	
 	int SubRefer(){
+        if (!this) return 0;
         int r = 0;
-        if ((r = --__ref_count) <= 0) {
+        if ((r = --__ref_count) == 0) {
             Release();
             delete this;
         }
@@ -32,6 +34,7 @@ public:
 	}
 	
 	int GetReferCount() const{
+        if (!this) return 0;
 		return __ref_count;
 	}
 	
@@ -57,6 +60,7 @@ public:
     ReferPtr(ReferPtr && _optr) :ReferPtr(){
         _optr.Get()->AddRefer();
         _ptr = _optr.Get(); 
+        _optr.Release();
     }
 	~ReferPtr() {
 		Release();

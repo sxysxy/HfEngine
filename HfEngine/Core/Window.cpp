@@ -14,6 +14,8 @@ HFENGINE_NAMESPACE_BEGIN
 
 bool Window::_native_inited = false;
 
+std::unique_ptr<DirectX::Mouse> Window::mouse;
+
 LRESULT CALLBACK Window::_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     Window* w = (Window*)GetWindowLongV(hWnd, GWLP_USERDATA);
     if (w && w->destroyed) 
@@ -33,6 +35,46 @@ LRESULT CALLBACK Window::_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
         SetWindowLongV(hWnd, GWLP_USERDATA, (LONG_PTR)pc->lpCreateParams);
         return 0;
     }
+    case WM_SETFOCUS:
+    {
+        w->SetFocused(true);
+        auto& mouse = DirectX::Mouse::Get();
+        mouse.SetWindow(w->native_handle);
+        return 0;
+    }
+    case WM_KILLFOCUS:
+    {
+        w->SetFocused(false);
+        return 0;
+    }
+    case WM_INPUT:
+    case WM_LBUTTONDOWN:
+    case WM_LBUTTONUP:
+    case WM_MBUTTONDOWN:
+    case WM_MBUTTONUP:
+    case WM_RBUTTONDOWN:
+    case WM_RBUTTONUP:
+    case WM_XBUTTONUP:
+    case WM_XBUTTONDOWN:
+    case WM_MOUSEWHEEL:
+    case WM_MOUSEHOVER:
+    case WM_MOUSEMOVE:
+    case WM_NCLBUTTONUP:
+    case WM_NCMOUSEMOVE:
+    case WM_NCRBUTTONDOWN:
+    case WM_SYSCOMMAND:
+    {
+        if (!w->IsFocused())
+            return 0;
+        auto& mouse = Window::mouse->Get();
+        mouse.ProcessMessage(uMsg, wParam, lParam);
+        {
+            if (w->async_move)
+                return _WndProcAsyncMove(hWnd, uMsg, wParam, lParam);
+            else return 0;
+        }
+    }
+    
     case WM_DESTROY:
     case WM_CLOSE:
     {
@@ -48,17 +90,6 @@ LRESULT CALLBACK Window::_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
             w->OnResized();
         }
         return 0;
-    }
-    case WM_SYSCOMMAND:
-    case WM_LBUTTONUP:
-    case WM_NCLBUTTONUP:
-    case WM_NCMOUSEMOVE:
-    case WM_MOUSEMOVE:
-    case WM_NCRBUTTONDOWN:
-    {
-        if (w->async_move)
-            return _WndProcAsyncMove(hWnd, uMsg, wParam, lParam);
-        else return DefWindowProc(hWnd, uMsg, wParam, lParam);
     }
     default:
         return DefWindowProc(hWnd, uMsg, wParam, lParam);
@@ -135,7 +166,7 @@ void Window::OnResized() {
         return;
 
     GDevice::GetInstance()->Lock();
-
+    
     HRESULT hr = native_swap_chain->ResizeBuffers(1, _width, _height,
         DXGI_FORMAT_R8G8B8A8_UNORM, 0);
     if (FAILED(hr)) {
@@ -149,7 +180,7 @@ void Window::OnResized() {
     if (!native_backbuffer) {
         THROW_ERROR_CODE(std::runtime_error, "Fail to get swapchain buffers, Error code:", hr);
     }
-    back_canvas->CreateFromNativeTexture2D(native_backbuffer.Get());
+    back_canvas->CreateFromNativeTexture2D(std::move(native_backbuffer));
 
     GDevice::GetInstance()->UnLock();
 }

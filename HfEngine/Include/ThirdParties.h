@@ -34,6 +34,14 @@ using ComPtr = Microsoft::WRL::ComPtr<T>;
 #pragma comment(lib, "d3d10.lib")
 #pragma comment(lib, "dxguid.lib")
 
+//DirectXTK
+#include <DirectXTK/Mouse.h>
+#ifdef _DEBUG
+#pragma comment(lib, "DirectXTKd.lib")
+#else
+#pragma comment(lib, "DirectXTK.lib")
+#endif
+
 //ruby
 #pragma warning(push)
 #pragma warning(disable: 4200)
@@ -85,11 +93,7 @@ static void U16ToU8(const wchar_t* ws, std::string& out, UINT cp = CP_UTF8) {
 
 template<class T>
 inline T* GetNativeObject(mrb_value value) {
-    return static_cast<T*>(DATA_PTR(value));
-}
-template<class T>
-inline static T* GetNULLPTRableNativeObject(mrb_value value) {
-    return mrb_nil_p(value) ? nullptr : GetNativeObject<T>(value);
+    return value.value.p == 0 ? nullptr : static_cast<T*>(DATA_PTR(value));
 }
 
 

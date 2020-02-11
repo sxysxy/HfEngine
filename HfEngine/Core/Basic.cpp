@@ -1,5 +1,6 @@
 #include <Core/Basic.h>
 #include <Core/RubyVM.h>
+#include <Core/Window.h>
 
 HFENGINE_NAMESPACE_BEGIN
 
@@ -173,11 +174,22 @@ mrb_value Kernel_mainloop(mrb_state* mrb, mrb_value self) {
     mrb_value arg = mrb_ary_new(mrb);
     while(true) {
         if (PeekMessageW(&msg, 0, 0, 0, PM_REMOVE | PM_NOYIELD)) {
+            if (msg.message == WM_EXITLOOP)
+                break;
             TranslateMessage(&msg);
             DispatchMessageW(&msg);
         }
         mrb_yield(mrb, callback, arg);
     }
+    return self;
+}
+
+/*[DOCUMENT]
+method: Kernel::break_loop -> self
+note: Break mainloop
+*/
+mrb_value Kernel_break_loop(mrb_state* mrb, mrb_value self) {
+    PostMessage(0, WM_EXITLOOP, 0, 0);
     return self;
 }
 
@@ -292,6 +304,19 @@ static mrb_value ClassFPSTimer_wait(mrb_state* mrb, mrb_value self) {
     return self;
 }
 
+thread_local RClass* ClassHEGObject;
+/*[DOCUMENT]
+method: HEG::HEGObject#release -> nil
+note: Relase the resource(Substract one reference count)
+*/
+static mrb_value ClassHEGObject_release(mrb_state* mrb, mrb_value self) {
+    if (self.tt == MRB_TT_DATA) {
+        GetNativeObject<Utility::ReferredObject>(self)->SubRefer();
+        DATA_PTR(self) = nullptr;
+    }
+    return mrb_nil_value();
+}
+
 
 bool InjectBasicExtension() {
     RubyVM* vm = currentRubyVM;
@@ -300,7 +325,8 @@ bool InjectBasicExtension() {
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "hide_console", Kernel_hide_console, MRB_ARGS_NONE());
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "filebox", Kernel_filebox, MRB_ARGS_REQ(1));
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "system", Kernel_system, MRB_ARGS_REQ(1));
-    mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "mainloop", Kernel_mainloop, MRB_ARGS_REQ(0));
+    mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "mainloop", Kernel_mainloop, MRB_ARGS_NONE());
+    mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "break_loop", Kernel_break_loop, MRB_ARGS_NONE());
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "exit_process", Kernel_exit_process, MRB_ARGS_REQ(1));
 
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "puts", Kernel_puts, MRB_ARGS_ANY());
@@ -320,6 +346,9 @@ bool InjectBasicExtension() {
     mrb_define_class_method(mrb, ClassFPSTimer, "new", ClassFPSTimer_new, MRB_ARGS_REQ(1));
     mrb_define_method(mrb, ClassFPSTimer, "restart", ClassFPSTimer_restart, MRB_ARGS_REQ(1));
     mrb_define_method(mrb, ClassFPSTimer, "wait", ClassFPSTimer_wait, MRB_ARGS_NONE());
+
+    ClassHEGObject = mrb_define_class_under(mrb, HEG, "HEGObject", mrb->object_class);
+    mrb_define_method(mrb, ClassHEGObject, "release", ClassHEGObject_release, MRB_ARGS_NONE());
 
     return true;
 }

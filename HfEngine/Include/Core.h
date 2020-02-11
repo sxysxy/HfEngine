@@ -14,3 +14,4 @@
 #include <Core/Input.h>
 #include <Core/Canvas.h>
 #include <Core/Bitmap.h>
+#include <Core/Transform.h>

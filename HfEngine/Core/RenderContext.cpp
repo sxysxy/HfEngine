@@ -1,6 +1,13 @@
 #include <Core/GDevice.h>
 #include <Core/RubyVM.h>
 #include <Core/RenderContext.h>
+#include <Core/Basic.h>
+#include <d3dcompiler.h>
+#ifdef _DEBUG
+#define SHADER_COMPILE_FLAG (D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION)
+#else
+#define SHADER_COMPILE_FLAG 0
+#endif
 
 HFENGINE_NAMESPACE_BEGIN
 
@@ -8,7 +15,7 @@ void Shader::CreateFromString(const std::string& code, const std::string& entry)
     ComPtr<ID3D10Blob> sbuffer, errmsg;
     HRESULT hr = D3DX11CompileFromMemory(code.c_str(), code.length(), 0, 0, 0, 
         entry.c_str(), SHADER_COMPILE_TOKEN[shader_type]
-        , 0, 0, 0, &sbuffer, &errmsg, 0);
+        , SHADER_COMPILE_FLAG, 0, 0, &sbuffer, &errmsg, 0);
     if (FAILED(hr)) {
         if (errmsg) {
             std::string msg;
@@ -24,20 +31,20 @@ void Shader::CreateFromString(const std::string& code, const std::string& entry)
     if (shader_type == VERTEX_SHADER) {
         hr = GDevice::GetInstance()->native_device->CreateVertexShader(compiled_byte_code->GetBufferPointer(),
             compiled_byte_code->GetBufferSize(), 0, &native_vshader);
-        native_vshader->AddRef();
         native_shader = native_vshader;
+        native_vshader->Release();
     }
     else if (shader_type == GEOMETRY_SHADER) {
         hr = GDevice::GetInstance()->native_device->CreateGeometryShader(compiled_byte_code->GetBufferPointer(),
             compiled_byte_code->GetBufferSize(), 0, &native_gshader);
-        native_gshader->AddRef();
         native_shader = native_gshader;
+        native_gshader->Release();
     }
     else if (shader_type == PIXEL_SHADER) {
         hr = GDevice::GetInstance()->native_device->CreatePixelShader(compiled_byte_code->GetBufferPointer(),
             compiled_byte_code->GetBufferSize(), 0, &native_pshader);
-        native_pshader->AddRef();
         native_shader = native_pshader;
+        native_pshader->Release();
     }
     if (FAILED(hr))
         THROW_ERROR_CODE(std::runtime_error, "Fail to Create VertexShader, Error code:", hr);
@@ -47,7 +54,7 @@ void Shader::CreateFromFile(const std::wstring& filename, const std::string& ent
     ComPtr<ID3D10Blob> sbuffer, errmsg;
 
     HRESULT hr = D3DX11CompileFromFileW(filename.c_str(), nullptr, nullptr, entry.c_str(),
-        SHADER_COMPILE_TOKEN[shader_type], 0, 0, 0,
+        SHADER_COMPILE_TOKEN[shader_type], SHADER_COMPILE_FLAG, 0, 0,
         &sbuffer, &errmsg, nullptr); //cause a _com_error,,but why?, it returns S_OK... 
 
     if (FAILED(hr)) {
@@ -65,20 +72,20 @@ void Shader::CreateFromFile(const std::wstring& filename, const std::string& ent
     if (shader_type == VERTEX_SHADER) {
         hr = GDevice::GetInstance()->native_device->CreateVertexShader(compiled_byte_code->GetBufferPointer(),
             compiled_byte_code->GetBufferSize(), 0, &native_vshader);
-        //native_vshader->AddRef();
         native_shader = native_vshader;
+        native_vshader->Release();
     }
     else if (shader_type == GEOMETRY_SHADER) {
         hr = GDevice::GetInstance()->native_device->CreateGeometryShader(compiled_byte_code->GetBufferPointer(),
             compiled_byte_code->GetBufferSize(), 0, &native_gshader);
-        //native_gshader->AddRef();
         native_shader = native_gshader;
+        native_gshader->Release();
     }
     else if (shader_type == PIXEL_SHADER) {
         hr = GDevice::GetInstance()->native_device->CreatePixelShader(compiled_byte_code->GetBufferPointer(),
             compiled_byte_code->GetBufferSize(), 0, &native_pshader);
-        //native_pshader->AddRef();
         native_shader = native_pshader;
+        native_pshader->Release();
     }
     if (FAILED(hr))
         THROW_ERROR_CODE(std::runtime_error, "Fail to Create VertexShader, Error code:", hr);
@@ -91,12 +98,18 @@ void Shader::CreateFromBinary(const void* ptr, size_t length) {
         auto device = GDevice::GetInstance()->native_device.Get();
         if(shader_type == VERTEX_SHADER) {
             device->CreateVertexShader(ptr, length, 0, &native_vshader);
+            native_shader = native_vshader;
+            native_vshader->Release(); //Substract one reference count
         }
         else if (shader_type == GEOMETRY_SHADER) {
             device->CreateGeometryShader(ptr, length, 0, &native_gshader);
+            native_shader = native_gshader;
+            native_gshader->Release();
         }
         else if (shader_type == PIXEL_SHADER) {
             device->CreatePixelShader(ptr, length, 0, &native_pshader);
+            native_shader = native_pshader;
+            native_pshader->Release();
         }
     }
     catch (std::exception) {
@@ -152,6 +165,7 @@ void GBuffer::Initialize(UINT usage, UINT flag, size_t size, const void *init_da
 thread_local RClass* ClassShader, *ClassVertexShader, *ClassGeometryShader, *ClassPixelShader;
 thread_local RClass* ClassRenderContext;
 thread_local RClass* ClassGBuffer, *ClassVertexBuffer, *ClassIndexBuffer, *ClassConstantBuffer;
+thread_local RClass* ClassSampler;
 
 static mrb_data_type ClassShaderDataType = mrb_data_type{ "Shader", [](mrb_state* mrb, void* ptr) {
     static_cast<Shader*>(ptr)->SubRefer();
@@ -379,6 +393,77 @@ static mrb_value ClassConstantBuffer_new(mrb_state* mrb, mrb_value klass) {
     }
 }
 
+template<class Native>
+static mrb_value use_default(mrb_state *mrb, mrb_value self) {
+    auto obj = GetNativeObject<Native>(self);
+    obj->UseDefault();
+    return self;
+}
+template<class Native>
+static mrb_value create_state(mrb_state *mrb, mrb_value self) {
+    auto obj = GetNativeObject<Native>(self);
+    try {
+        obj->CreateState();
+    }
+    catch (const std::runtime_error & err) {
+        mrb_raise(mrb, mrb->eStandardError_class, err.what());
+    }
+    return self;
+}
+
+template<class NativeClass, class NativeDesc>
+static mrb_value dump_description(mrb_state *mrb, mrb_value self) {
+    auto native = GetNativeObject<NativeClass>(self);
+    NativeDesc d;
+    native->DumpDescription(&d);
+    char* pd = reinterpret_cast<char*>(&d);
+    mrb_value str_buf = mrb_str_new_capa(mrb, sizeof(d));
+    mrb_str_resize(mrb, str_buf, sizeof(d));
+    char* p = RSTRING_PTR(str_buf);
+    for (int i = 0; i < sizeof(d); i++) {
+        p[i] = pd[i];
+    }
+    return str_buf;
+}
+
+template<class NativeClass, class NativeDesc>
+static mrb_value load_description(mrb_state *mrb, mrb_value self) {
+    mrb_value data;
+    mrb_get_args(mrb, "S", &data);
+    auto native = GetNativeObject<NativeClass>(self);
+    NativeDesc desc;
+    memcpy(&desc, RSTRING_PTR(data), sizeof(NativeDesc));
+    native->LoadDescription(&desc);
+    return self;
+}
+
+static mrb_data_type ClassSamplerDataType = mrb_data_type{ "Sampler", [](mrb_state* mrb, void* ptr) {
+    static_cast<Sampler*>(ptr)->SubRefer();
+} };
+
+/*[DOCUMENT]
+method: HEG::Sampler::new -> sampler : Sampler
+note: Create a new instance of sampler, but does not create state.
+*/
+static mrb_value ClassSampler_new(mrb_state* mrb, mrb_value self) {
+    auto pnative = new Sampler();
+    pnative->AddRefer();
+    pnative->Initialize();
+    pnative->UseDefault();
+    return mrb_obj_value(mrb_data_object_alloc(mrb, ClassSampler, pnative, &ClassSamplerDataType));
+}
+
+/*
+template<class NativeClass, RClass **RubyClass, mrb_data_type *RubyDataType>
+static mrb_value UseDefault_new(mrb_state* mrb, mrb_value self) {
+    mrb_value obj;
+    auto pnative = new NativeClass();
+    pnative->AddRef();
+    pnative->Initialize();
+    pnative->UseDefault();
+    return mrb_obj_value(mrb_data_object_alloc(mrb, *RubyClass, pnative, RubyDataType));
+}
+*/
 
 static mrb_data_type ClassRenderContextDataType = mrb_data_type{ "RenderContext", [](mrb_state* mrb, void* ptr) {
     static_cast<RenderContext*>(ptr)->SubRefer();
@@ -429,7 +514,7 @@ static mrb_value ClassRenderContext_layout(mrb_state* mrb, mrb_value self) {
 method: HEG::RenderContext#shader(shader : Shader) -> self
 note: Set shader(Auto-detect shader's type)
 */
-mrb_value ClassRenderContext_shader(mrb_state* mrb, mrb_value self) {
+static mrb_value ClassRenderContext_shader(mrb_state* mrb, mrb_value self) {
     mrb_value shader_obj;
     mrb_get_args(mrb, "o", &shader_obj);
     if (!mrb_obj_is_kind_of(mrb, shader_obj, ClassShader)) {
@@ -444,7 +529,7 @@ mrb_value ClassRenderContext_shader(mrb_state* mrb, mrb_value self) {
 method: HEG::RenderContext#vbuffer(vb : VertexBuffer) -> self
 note: Set Vertex Buffer
 */
-mrb_value ClassRenderContext_vbuffer(mrb_state* mrb, mrb_value self) {
+static mrb_value ClassRenderContext_vbuffer(mrb_state* mrb, mrb_value self) {
     mrb_value vb_obj;
     mrb_get_args(mrb, "o", &vb_obj);
     if (!mrb_obj_is_kind_of(mrb, vb_obj, ClassVertexBuffer)) {
@@ -459,7 +544,7 @@ mrb_value ClassRenderContext_vbuffer(mrb_state* mrb, mrb_value self) {
 method: HEG::RenderContext#ibuffer(vb : IndexBuffer) -> self
 note: Set Index Buffer
 */
-mrb_value ClassRenderContext_ibuffer(mrb_state* mrb, mrb_value self) {
+static mrb_value ClassRenderContext_ibuffer(mrb_state* mrb, mrb_value self) {
     mrb_value ib_obj;
     mrb_get_args(mrb, "o", &ib_obj);
     if (!mrb_obj_is_kind_of(mrb, ib_obj, ClassIndexBuffer)) {
@@ -474,7 +559,7 @@ mrb_value ClassRenderContext_ibuffer(mrb_state* mrb, mrb_value self) {
 method: HEG::RenderContext#viewport(topx : Integer, topy : Integer, width : Integer, height : Integer) -> self
 note: Set the viewport
 */
-mrb_value ClassRenderContext_viewport(mrb_state* mrb, mrb_value self) {
+static mrb_value ClassRenderContext_viewport(mrb_state* mrb, mrb_value self) {
     mrb_int argc = mrb_get_argc(mrb);
     mrb_int topx, topy, w, h;
     mrb_get_args(mrb, "iiii", &topx, &topy, &w, &h);
@@ -486,7 +571,7 @@ mrb_value ClassRenderContext_viewport(mrb_state* mrb, mrb_value self) {
 method: HEG::RenderContext#render -> self
 note: Execute render command on GDevice. It will acquire GDevice lock
 */
-mrb_value ClassRenderContext_render(mrb_state* mrb, mrb_value self) {
+static mrb_value ClassRenderContext_render(mrb_state* mrb, mrb_value self) {
     GetNativeObject<RenderContext>(self)->Render();
     return self;
 }
@@ -495,7 +580,7 @@ mrb_value ClassRenderContext_render(mrb_state* mrb, mrb_value self) {
 method: HEG::RenderContext#target(canvas : Canvas) -> self
 note: Set the rendering target
 */
-mrb_value ClassRenderContext_target(mrb_state* mrb, mrb_value self) {
+static mrb_value ClassRenderContext_target(mrb_state* mrb, mrb_value self) {
     mrb_value cv_obj;
     mrb_get_args(mrb, "o", &cv_obj);
     if (!mrb_obj_is_kind_of(mrb, cv_obj, ClassCanvas)) {
@@ -510,7 +595,7 @@ mrb_value ClassRenderContext_target(mrb_state* mrb, mrb_value self) {
 method: HEG::RenderContext#clear | HEG::RenderContext#clear(r, g, b, a) -> self
 note: Clear render target using given color
 */
-mrb_value ClassRenderContext_clear(mrb_state* mrb, mrb_value self) {
+static mrb_value ClassRenderContext_clear(mrb_state* mrb, mrb_value self) {
     mrb_int argc = mrb_get_argc(mrb);
     if (argc == 0) GetNativeObject<RenderContext>(self)->ClearTarget();
     else if (argc == 4) {
@@ -528,10 +613,27 @@ mrb_value ClassRenderContext_clear(mrb_state* mrb, mrb_value self) {
 }
 
 /*[DOCUMENT]
+method: HEG::RenderContext#flush(buffer : GBuffer, data : String) -> self
+note: Update data in buffer using given parameter data
+*/
+static mrb_value ClassRenderContext_flush(mrb_state* mrb, mrb_value self) {
+    mrb_value buf, data;
+    mrb_get_args(mrb, "oS", &buf, &data);
+    if (!mrb_obj_is_kind_of(mrb, buf, ClassGBuffer)) {
+        mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#flush: param 1 should be a GBuffer");
+        return self;
+    }
+    GetNativeObject<RenderContext>(self)->Flush(
+        GetNativeObject<GBuffer>(buf),
+        RSTRING_PTR(data));
+    return self;
+}
+
+/*[DOCUMENT]
 method: HEG::RenderContext#resource(stage : SHADER_TYPE, slot : Fixnum, canvas : Canvas) -> self 
 note: Bind shader resource to slot
 */
-mrb_value ClassRenderContext_resource(mrb_state* mrb, mrb_value self) {
+static mrb_value ClassRenderContext_resource(mrb_state* mrb, mrb_value self) {
     mrb_int stage, slot;
     mrb_value canvas;
     mrb_get_args(mrb, "iio", &stage, &slot, &canvas);
@@ -545,10 +647,27 @@ mrb_value ClassRenderContext_resource(mrb_state* mrb, mrb_value self) {
 }
 
 /*[DOCUMENT]
+method: HEG::RenderContext#sampler(stage : SHADER_TYPE, slot : Fixnum, s : Sampler) -> self
+note: Bind constant buffer to slot
+*/
+static mrb_value ClassRenderContext_sampler(mrb_state* mrb, mrb_value self) {
+    mrb_int stage, slot;
+    mrb_value s;
+    mrb_get_args(mrb, "iio", &stage, &slot, &s);
+    if (!mrb_obj_is_kind_of(mrb, s, ClassSampler)) {
+        mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#sampler(stage, slot, cb): argument 3 is expected to be a ConstantBuffer");
+        return self;
+    }
+    GetNativeObject<RenderContext>(self)->SetSampler((SHADER_TYPE)stage, (int)slot,
+        GetNativeObject<Sampler>(s));
+    return self;
+}
+
+/*[DOCUMENT]
 method: HEG::RenderContext#cbuffer(stage : SHADER_TYPE, slot : Fixnum, cb : ConstantBuffer) -> self
 note: Bind constant buffer to slot
 */
-mrb_value ClassRenderContext_cbuffer(mrb_state* mrb, mrb_value self) {
+static mrb_value ClassRenderContext_cbuffer(mrb_state* mrb, mrb_value self) {
     mrb_int stage, slot;
     mrb_value cb;
     mrb_get_args(mrb, "iio", &stage, &slot, &cb);
@@ -565,7 +684,7 @@ mrb_value ClassRenderContext_cbuffer(mrb_state* mrb, mrb_value self) {
 method: HEG::RenderContext#draw(topology, start_vertex_pos, count) -> self
 note: Make a draw call to draw count vertexes from start_vertex_pos in vertex buffer
 */
-mrb_value ClassRenderContext_draw(mrb_state* mrb, mrb_value self) {
+static mrb_value ClassRenderContext_draw(mrb_state* mrb, mrb_value self) {
     mrb_int topology, start_pos, count;
     mrb_get_args(mrb, "iii", &topology, &start_pos, &count);
     GetNativeObject<RenderContext>(self)->Draw((D3D11_PRIMITIVE_TOPOLOGY)topology, (UINT)start_pos, (UINT)count);
@@ -576,7 +695,7 @@ mrb_value ClassRenderContext_draw(mrb_state* mrb, mrb_value self) {
 method: HEG::RenderContext#draw_index(topology, start_index_pos, count) -> self
 note: Make a draw call to draw count vertexes, vertexes' indexes are specified by index buffer
 */
-mrb_value ClassRenderContext_draw_index(mrb_state* mrb, mrb_value self) {
+static mrb_value ClassRenderContext_draw_index(mrb_state* mrb, mrb_value self) {
     mrb_int topology, start_pos, count;
     mrb_get_args(mrb, "iii", &topology, &start_pos, &count);
     GetNativeObject<RenderContext>(self)->DrawIndex((D3D11_PRIMITIVE_TOPOLOGY)topology, (UINT)start_pos, (UINT)count);
@@ -585,9 +704,8 @@ mrb_value ClassRenderContext_draw_index(mrb_state* mrb, mrb_value self) {
 
 bool InjectRenderContextExtension() {
     mrb_state* mrb = currentRubyVM->GetRuby();
-    RClass* Object = mrb->object_class;
     RClass* HEG = mrb_define_module(mrb, "HEG");
-    ClassShader = mrb_define_class_under(mrb, HEG, "Shader", Object);
+    ClassShader = mrb_define_class_under(mrb, HEG, "Shader", ClassHEGObject);
     mrb_define_method(mrb, ClassShader, "byte_code", ClassShader_byte_code, MRB_ARGS_NONE());
     ClassVertexShader = mrb_define_class_under(mrb, HEG, "VertexShader", ClassShader);
     ClassGeometryShader = mrb_define_class_under(mrb, HEG, "GeometryShader", ClassShader);
@@ -614,7 +732,7 @@ bool InjectRenderContextExtension() {
     */
     mrb_define_const(mrb, ClassShader, "PIXEL", mrb_fixnum_value(PIXEL_SHADER));
 
-    ClassRenderContext = mrb_define_class_under(mrb, HEG, "RenderContext", Object);
+    ClassRenderContext = mrb_define_class_under(mrb, HEG, "RenderContext", ClassHEGObject);
     mrb_define_class_method(mrb, ClassRenderContext, "new", ClassRenderContext_new, MRB_ARGS_NONE());
     mrb_define_method(mrb, ClassRenderContext, "layout", ClassRenderContext_layout, MRB_ARGS_REQ(2));
     /*[DOCUMENT]
@@ -661,7 +779,22 @@ bool InjectRenderContextExtension() {
     constant: FORMAT_SINT2
     note: Format of 2 unsigned integer numbers.
     */
-    mrb_define_const(mrb, HEG, "FORMAT_SINT2", mrb_fixnum_value(DXGI_FORMAT_R32G32_UINT));
+    mrb_define_const(mrb, HEG, "FORMAT_UINT2", mrb_fixnum_value(DXGI_FORMAT_R32G32_UINT));
+    /*[DOCUMENT]
+    constant: FORMAT_FLOAT
+    note: Format of 1 float number.
+    */
+    mrb_define_const(mrb, HEG, "FORMAT_FLOAT", mrb_fixnum_value(DXGI_FORMAT_R32_FLOAT));
+    /*[DOCUMENT]
+    constant: FORMAT_SINT
+    note: Format of 1 32-bit signed integer number.
+    */
+    mrb_define_const(mrb, HEG, "FORMAT_SINT", mrb_fixnum_value(DXGI_FORMAT_R32_SINT));
+    /*[DOCUMENT]
+    constant: FORMAT_UINT
+    note: Format of 1 32-bit unsigned integer number.
+    */
+    mrb_define_const(mrb, HEG, "FORMAT_UINT", mrb_fixnum_value(DXGI_FORMAT_R32_UINT));
     mrb_define_method(mrb, ClassRenderContext, "shader", ClassRenderContext_shader, MRB_ARGS_REQ(1));
     mrb_define_method(mrb, ClassRenderContext, "vbuffer", ClassRenderContext_vbuffer, MRB_ARGS_REQ(1));
     mrb_define_method(mrb, ClassRenderContext, "ibuffer", ClassRenderContext_ibuffer, MRB_ARGS_REQ(1));
@@ -703,18 +836,29 @@ bool InjectRenderContextExtension() {
     mrb_define_method(mrb, ClassRenderContext, "viewport", ClassRenderContext_viewport, MRB_ARGS_REQ(4));
     mrb_define_method(mrb, ClassRenderContext, "target", ClassRenderContext_target, MRB_ARGS_REQ(1));
     mrb_define_method(mrb, ClassRenderContext, "clear", ClassRenderContext_clear, MRB_ARGS_ANY());
+    mrb_define_method(mrb, ClassRenderContext, "flush", ClassRenderContext_flush, MRB_ARGS_REQ(2));
     mrb_define_method(mrb, ClassRenderContext, "resource", ClassRenderContext_resource, MRB_ARGS_REQ(3));
+    mrb_define_method(mrb, ClassRenderContext, "sampler", ClassRenderContext_sampler, MRB_ARGS_REQ(3));
+    mrb_define_method(mrb, ClassRenderContext, "cbuffer", ClassRenderContext_cbuffer, MRB_ARGS_REQ(3));
     mrb_define_method(mrb, ClassRenderContext, "draw", ClassRenderContext_draw, MRB_ARGS_REQ(3));
     mrb_define_method(mrb, ClassRenderContext, "draw_index", ClassRenderContext_draw_index, MRB_ARGS_REQ(3));
     mrb_define_method(mrb, ClassRenderContext, "render", ClassRenderContext_render, MRB_ARGS_REQ(1));
 
-    ClassGBuffer = mrb_define_class_under(mrb, HEG, "GBuffer", Object);
+    ClassGBuffer = mrb_define_class_under(mrb, HEG, "GBuffer", ClassHEGObject);
     ClassVertexBuffer = mrb_define_class_under(mrb, HEG, "VertexBuffer", ClassGBuffer);
     ClassIndexBuffer = mrb_define_class_under(mrb, HEG, "IndexBuffer", ClassGBuffer);
     ClassConstantBuffer = mrb_define_class_under(mrb, HEG, "ConstantBuffer", ClassGBuffer);
     mrb_define_class_method(mrb, ClassVertexBuffer, "new", ClassVertexBuffer_new, MRB_ARGS_ARG(2, 1));
     mrb_define_class_method(mrb, ClassIndexBuffer, "new", ClassIndexBuffer_new, MRB_ARGS_ARG(1, 1));
     mrb_define_class_method(mrb, ClassConstantBuffer, "new", ClassConstantBuffer_new, MRB_ARGS_ARG(1, 1));
+
+    ClassSampler = mrb_define_class_under(mrb, HEG, "Sampler", ClassHEGObject); 
+    mrb_define_class_method(mrb, ClassSampler, "new", ClassSampler_new, MRB_ARGS_NONE());
+    mrb_define_method(mrb, ClassSampler, "use_default", use_default<Sampler>, MRB_ARGS_NONE());
+    mrb_define_method(mrb, ClassSampler, "__load__", load_description<Sampler, D3D11_SAMPLER_DESC>, MRB_ARGS_REQ(1));
+    mrb_define_method(mrb, ClassSampler, "__dump__", dump_description < Sampler, D3D11_SAMPLER_DESC>, MRB_ARGS_NONE());
+    mrb_define_method(mrb, ClassSampler, "use_default", use_default<Sampler>, MRB_ARGS_NONE());
+    mrb_define_method(mrb, ClassSampler, "create_state", create_state<Sampler>, MRB_ARGS_NONE());
 
     return true;
 }

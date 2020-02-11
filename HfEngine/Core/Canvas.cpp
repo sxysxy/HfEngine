@@ -1,6 +1,7 @@
 #include <Core/RubyVM.h>
 #include <Core/Canvas.h>
 #include <Core/GDevice.h>
+#include <Core/Basic.h>
 
 HFENGINE_NAMESPACE_BEGIN
 
@@ -176,7 +177,7 @@ bool InjectCanvasExtension() {
     mrb_state* mrb = currentRubyVM->GetRuby();
     RClass* ClassObject = mrb->object_class;
     RClass* HEG = mrb_define_module(mrb, "HEG");
-    ClassCanvas = mrb_define_class_under(mrb, HEG, "Canvas", ClassObject);
+    ClassCanvas = mrb_define_class_under(mrb, HEG, "Canvas", ClassHEGObject);
     mrb_define_class_method(mrb, ClassCanvas, "new", ClassCanvas_new, MRB_ARGS_ANY());
     mrb_define_method(mrb, ClassCanvas, "width", ClassCanvas_width, MRB_ARGS_NONE());
     mrb_define_method(mrb, ClassCanvas, "height", ClassCanvas_height, MRB_ARGS_NONE());

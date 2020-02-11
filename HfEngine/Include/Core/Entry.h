@@ -1,4 +1,4 @@
 #pragma once
 void HfEngineInitialize();
 
-void HfEngineRubyEntry();
+int HfEngineRubyEntry();

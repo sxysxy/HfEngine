@@ -33,6 +33,7 @@ public:
 
     virtual void Release() {
         native_shader.ReleaseAndGetAddressOf();
+        compiled_byte_code.ReleaseAndGetAddressOf();
     }
 };
 
@@ -123,6 +124,63 @@ public:
     }
 };
 
+//Sampler
+class Sampler : public Utility::ReferredObject, public WithDescriptionStruct<D3D11_SAMPLER_DESC> {
+public:
+    ComPtr<ID3D11SamplerState> native_sampler;
+
+    Sampler() { Initialize(); }
+    void Initialize() {}
+    void UnInitialize() {
+        native_sampler.ReleaseAndGetAddressOf();
+    }
+    void SetUVWAddress(D3D11_TEXTURE_ADDRESS_MODE u, D3D11_TEXTURE_ADDRESS_MODE v, D3D11_TEXTURE_ADDRESS_MODE w,
+        const float *border_color) {
+        /*
+        {	D3D11_TEXTURE_ADDRESS_WRAP = 1,
+        D3D11_TEXTURE_ADDRESS_MIRROR = 2,
+        D3D11_TEXTURE_ADDRESS_CLAMP = 3,
+        D3D11_TEXTURE_ADDRESS_BORDER = 4,
+        D3D11_TEXTURE_ADDRESS_MIRROR_ONCE = 5
+        }
+        */
+        desc.AddressU = u;
+        desc.AddressV = v;
+        desc.AddressW = w;
+        memcpy(desc.BorderColor, border_color, sizeof desc.BorderColor); //float x 4
+    }
+    void SetMip(float mip_min, float mip_max, float mip_bias) {
+        desc.MinLOD = mip_min;
+        desc.MaxLOD = mip_max;
+        desc.MipLODBias = mip_bias;
+    }
+    void SetFilter(D3D11_FILTER filter, D3D11_COMPARISON_FUNC func) {
+        desc.Filter = filter;
+        desc.ComparisonFunc = func;
+    }
+    void SetMaxAnisotropy(UINT v) {
+        desc.MaxAnisotropy = v;
+    }
+    void UseDefault() {
+        desc.Filter = (D3D11_FILTER)(D3D11_FILTER_MIN_MAG_MIP_LINEAR);
+        desc.AddressU = desc.AddressV = desc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+        desc.MipLODBias = 0.0f;
+        desc.MaxAnisotropy = 8;
+        desc.ComparisonFunc = D3D11_COMPARISON_LESS;
+        RtlZeroMemory(desc.BorderColor, sizeof(desc.BorderColor));
+        desc.MinLOD = 0.0f;
+        desc.MaxLOD = D3D11_FLOAT32_MAX;
+    }
+    void CreateState() {
+        auto hr = GDevice::GetInstance()->native_device->CreateSamplerState(&desc, &native_sampler);
+        if (FAILED(hr)) 
+            THROW_ERROR_CODE(std::runtime_error, "Fail to create sampler state", hr);
+    }
+
+    virtual void Release() { UnInitialize(); }
+};
+
+
 class Rasterizer : public Utility::ReferredObject, public WithDescriptionStruct<D3D11_RASTERIZER_DESC> {
 public:
     ComPtr<ID3D11RasterizerState> native_rasterizer;
@@ -166,11 +224,11 @@ public:
         if (FAILED(hr)) 
             THROW_ERROR_CODE(std::runtime_error, "Fail to create rasterizer state", hr);
     }
-    void UnInitialize() {
-        native_rasterizer.ReleaseAndGetAddressOf();
+    ~Rasterizer() {
+        Release();
     }
     virtual void Release() {
-        UnInitialize();
+        native_rasterizer.ReleaseAndGetAddressOf();
     }
 };
 static const float DEFAULT_BLEND_FACTOR[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -207,8 +265,49 @@ public:
             THROW_ERROR_CODE(std::runtime_error, "Fail to create blend state", hr);
     }
 
-    void UnInitialize() {
+    ~Blender() {
+        Release();
+    }
+    virtual void Release() {
         native_blender.ReleaseAndGetAddressOf();
+    }
+};
+
+class DepthStencilState : public Utility::ReferredObject, public WithDescriptionStruct<D3D11_DEPTH_STENCIL_DESC> {
+public:
+    ComPtr<ID3D11DepthStencilState> native_ds_state;
+    void Initialize() {}
+
+    void UseDefault() {
+        memset(&desc, 0, sizeof desc);
+        SetDepthEnable(true);
+        SetDepthWriteMask(D3D11_DEPTH_WRITE_MASK_ALL);
+        SetDepthFunc(D3D11_COMPARISON_LESS_EQUAL);
+    }
+    void SetDepthEnable(bool b) {
+        desc.DepthEnable = b;
+    }
+    void SetDepthWriteMask(D3D11_DEPTH_WRITE_MASK m) {
+        desc.DepthWriteMask = m;
+    }
+    void SetDepthFunc(D3D11_COMPARISON_FUNC f) {
+        desc.DepthFunc = f;
+    }
+    void SetStencilEnable(bool b) {
+        desc.StencilEnable = b;
+    }
+    void SetStencilRWMask(UINT8 RMask, UINT8 WMask) {
+        desc.StencilReadMask = RMask;
+        desc.StencilWriteMask = WMask;
+    }
+
+    void CreateState() {
+        auto hr = GDevice::GetInstance()->native_device->CreateDepthStencilState(&desc, &native_ds_state);
+        if (FAILED(hr))
+            THROW_ERROR_CODE(std::runtime_error, "Fail to create depth stencil state", hr);
+    }
+    void UnInitialize() {
+        native_ds_state.ReleaseAndGetAddressOf();
     }
     virtual void Release() {
         UnInitialize();
@@ -249,13 +348,13 @@ public:
     }
     inline void SetShaderResource(SHADER_TYPE stage, int slot, Canvas* resource) {
         if (stage == VERTEX_SHADER) {
-            native_context->VSGetShaderResources(slot, 1, resource->native_shader_resource_view.GetAddressOf());
+            native_context->VSSetShaderResources(slot, 1, resource->native_shader_resource_view.GetAddressOf());
         }
         else if (stage == GEOMETRY_SHADER) {
-            native_context->GSGetShaderResources(slot, 1, resource->native_shader_resource_view.GetAddressOf());
+            native_context->GSSetShaderResources(slot, 1, resource->native_shader_resource_view.GetAddressOf());
         }
         else if (stage == PIXEL_SHADER) {
-            native_context->PSGetShaderResources(slot, 1, resource->native_shader_resource_view.GetAddressOf());
+            native_context->PSSetShaderResources(slot, 1, resource->native_shader_resource_view.GetAddressOf());
         }
     }
     inline void SetConstantBuffer(SHADER_TYPE stage, int slot, ConstantBuffer* cb) {
@@ -280,25 +379,33 @@ public:
         }
     }*/
 
-
+    inline void Flush(GBuffer *buffer, void* ptr) {
+        if (buffer) {
+            native_context->UpdateSubresource(buffer->native_buffer.Get(), 0, 0, ptr, 0, 0);
+        }
+    }
 
     inline void SetVertexBuffer(VertexBuffer* vb) {
         UINT stride = (UINT)vb->size_per_vertex;
         UINT offset = 0;
-        native_context->IASetVertexBuffers(0, 1, vb->native_buffer.GetAddressOf(), &stride, &offset);
+        ID3D11Buffer** null = { nullptr };
+        native_context->IASetVertexBuffers(0, 1, vb ? vb->native_buffer.GetAddressOf() : null, &stride, &offset);
     }
     inline void SetIndexBuffer(IndexBuffer* ib) {
-        native_context->IASetIndexBuffer(ib->native_buffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+        native_context->IASetIndexBuffer(ib ? ib->native_buffer.Get() : nullptr,
+            DXGI_FORMAT_R32_UINT, 0);
     }
     inline void SetShaderConstantBuffer(SHADER_TYPE shader, int slot, ConstantBuffer* cb) {
+        ID3D11Buffer** null = { nullptr };
+        auto pcb = cb ? cb->native_buffer.GetAddressOf() : null;
         if (shader == VERTEX_SHADER) {
-            native_context->VSSetConstantBuffers(slot, 1, cb->native_buffer.GetAddressOf());
+            native_context->VSSetConstantBuffers(slot, 1,  pcb);
         }
         else if (shader == GEOMETRY_SHADER) {
-            native_context->GSSetConstantBuffers(slot, 1, cb->native_buffer.GetAddressOf());
+            native_context->GSSetConstantBuffers(slot, 1, pcb);
         }
         else if (shader == PIXEL_SHADER) {
-            native_context->PSSetConstantBuffers(slot, 1, cb->native_buffer.GetAddressOf());
+            native_context->PSSetConstantBuffers(slot, 1, pcb);
         }
     }
 
@@ -316,7 +423,7 @@ public:
     }
 
     inline void SetViewport(UINT topx, UINT topy, UINT width, UINT height) {
-        
+
         D3D11_VIEWPORT vp;
         vp.MinDepth = 0.0f;
         vp.MaxDepth = 1.0f;
@@ -324,17 +431,30 @@ public:
         vp.TopLeftY = (FLOAT)topy;
         vp.Width = (FLOAT)width;
         vp.Height = (FLOAT)height;
-        
+
         native_context->RSSetViewports(1, &vp);
     }
 
     inline void SetRasterizer(Rasterizer* rs) {
-        if(rs)
+        if (rs)
             native_context->RSSetState(rs->native_rasterizer.Get());
     }
     inline void SetBlender(Blender* blender) {
-        if(blender)
+        if (blender)
             native_context->OMSetBlendState(blender->native_blender.Get(), DEFAULT_BLEND_FACTOR, 0xffffffff);
+    }
+    inline void SetSampler(SHADER_TYPE shader, int slot, Sampler* sampler) {
+        ID3D11SamplerState** null = { nullptr };
+        auto ps = sampler ? sampler->native_sampler.GetAddressOf() : null;
+        if (shader == VERTEX_SHADER) {
+            native_context->VSSetSamplers(slot, 1, ps);
+        }
+        else if (shader == GEOMETRY_SHADER) {
+            native_context->GSSetSamplers(slot, 1, ps);
+        }
+        else if (shader == PIXEL_SHADER) {
+            native_context->PSSetSamplers(slot, 1, ps);
+        }
     }
 
     void Initialize() {
@@ -347,6 +467,11 @@ public:
         blender.UseDefault();
         blender.CreateState();
         SetBlender(&blender);
+
+        DepthStencilState dss;
+        dss.UseDefault();
+        dss.CreateState();
+        native_context->OMSetDepthStencilState(dss.native_ds_state.Get(), 0);
     }
 
     inline void SetRenderTarget(Canvas* target) {
@@ -378,6 +503,16 @@ public:
         Initialize();
     }
     virtual void Release() {
+        vshader.Release();
+        gshader.Release();
+        pshader.Release();
+        rasterizer.Release();
+        render_target.Release();
+        void* nil = nullptr;
+        native_context->OMSetRenderTargets(1, 
+            reinterpret_cast<ID3D11RenderTargetView**>(&nil), 
+            reinterpret_cast<ID3D11DepthStencilView*>(nil));
+        native_context->ClearState();
         native_context.ReleaseAndGetAddressOf();
     }
 };
@@ -385,6 +520,7 @@ public:
 extern thread_local RClass* ClassShader, * ClassVertexShader, * ClassGeometryShader, * ClassPixelShader;
 extern thread_local RClass* ClassRenderContext;
 extern thread_local RClass* ClassGBuffer, *ClassVertexBuffer, *ClassIndexBuffer, *ClassConstantBuffer;
+extern thread_local RClass* ClassSampler;
 
 bool InjectRenderContextExtension();
 

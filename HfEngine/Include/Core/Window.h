@@ -2,6 +2,7 @@
 #include <ThirdParties.h>
 #include <Core/GDevice.h>
 #include <Core/Canvas.h>
+#include <Core/Input.h>
 
 HFENGINE_NAMESPACE_BEGIN
 
@@ -13,6 +14,7 @@ protected:
     std::wstring title;
     HWND _native_handle;
     int _width, _height;
+    bool focused = true;
 
     static const UINT wstyle = WS_OVERLAPPEDWINDOW & ~(WS_MAXIMIZEBOX | WS_THICKFRAME);
     static bool _native_inited;
@@ -35,6 +37,9 @@ public:
     bool async_move = true;
     bool destroyed = false;
 
+    static std::unique_ptr<DirectX::Mouse> mouse;
+    DirectX::Mouse::ButtonStateTracker mouse_tracker;
+    
 
     Window() {
         _native_handle = 0;
@@ -92,6 +97,8 @@ public:
             DestroyWindow(_native_handle);
             _native_handle = 0;
         }
+        back_canvas.Release();
+        native_swap_chain.ReleaseAndGetAddressOf();
     }
     virtual void Release() {
         Uninitialize();
@@ -159,6 +166,12 @@ public:
     }
     inline void SetAsyncMove(bool b) {
         async_move = b;
+    }
+    inline void SetFocused(bool b) {
+        focused = b;
+    }
+    inline bool IsFocused() {
+        return focused;
     }
 
     inline void SwapBuffers(int sync_level = 0) {

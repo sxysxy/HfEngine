@@ -27,11 +27,14 @@ void RubyVM::Load(const std::string& filename) {
         mrb_raise(MRBState, MRBState->eStandardError_class, err.what());
     }
     */
-    fopen_s(&fp, filename.c_str(), "r");
     int ai = mrb_gc_arena_save(MRBState);
     mrbc_filename(MRBState, MRBLoadContext, filename.c_str());
     try {
+        fopen_s(&fp, filename.c_str(), "r");
         mrb_load_file_cxt(MRBState, fp, MRBLoadContext);
+        //char buf[MAX_PATH * 2];
+        //sprintf(buf, "load(\"%s\")", filename.c_str());
+        //mrb_load_string_cxt(MRBState, buf, MRBLoadContext);
     }
     catch (std::runtime_error& re) {
         mrb_raise(MRBState, MRBState->eStandardError_class, re.what());
@@ -67,7 +70,7 @@ void RubyVM::StreamException(mrb_value excep, std::ostream& os) {
         if (mrb_nil_p(packed)) break;
         if (mrb_array_p(packed)) {
 
-            int n = RARRAY_LEN(packed) - 1;
+            int n = (int)RARRAY_LEN(packed) - 1;
             if (n == 0) return;
 
             os << "trace (most recent call last):\n";
