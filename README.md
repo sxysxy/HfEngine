@@ -19,7 +19,7 @@
 
 # 栗子
 
-<img src="./Document/Figure/SimpleDemo.gif">
+<img src="./Document/Figure/SimpleDemo.gif"> (GIF图渣画质，程序运行的是很高清很流畅的)
 
 <a href="./HfEngine/Workspace/examples/SimpleTextureMap/SimpleTextureMap.rb">代码</a>
 
