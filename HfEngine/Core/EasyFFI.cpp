@@ -47,7 +47,7 @@ mrb_value FFI_dlopen(mrb_state* mrb, mrb_value self) {
 
 /*[DOCUMENT]
 method: HEG::FFI::DLL#addrof(extern_symbol : String) -> address : Fixnum
-note: Get address of given function in the dll, if not exist, returns 0
+note: Get address of given function in the dll, if not exist, raise Exception
 */
 mrb_value ClassDLL_addrof(mrb_state* mrb, mrb_value self) {
     mrb_value sym;
@@ -55,6 +55,10 @@ mrb_value ClassDLL_addrof(mrb_state* mrb, mrb_value self) {
     const char* psym = RSTRING_PTR(sym);
     HMODULE hDll = (HMODULE)DATA_PTR(self);
     void* addr = GetProcAddress(hDll, psym);
+    if (addr == 0) {
+        mrb_raise(mrb, mrb->eStandardError_class, (std::string("Could not get address of ") + RSTRING_PTR(sym)).c_str());
+        return mrb_fixnum_value(0);
+    }
     return mrb_fixnum_value((mrb_int)addr);
 }
 
@@ -71,8 +75,9 @@ method: HEG::FFI::DLL#close -> self
 note: Release the dll
 */
 static mrb_value ClassDLL_close(mrb_state* mrb, mrb_value self) {
-    HANDLE h = (HANDLE)DATA_PTR(self);
-    CloseHandle(h);
+    HMODULE hDll = (HMODULE)DATA_PTR(self);
+    FreeLibrary(hDll);
+    DATA_PTR(self) = 0;
     return self;
 }
 

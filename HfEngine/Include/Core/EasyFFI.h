@@ -14,9 +14,9 @@ extern thread_local RClass* ClassFunction;
 
 typedef enum {
     FFI_TYPE_INT32,
-    FFI_TYPE_INT64,
     FFI_TYPE_FLOAT,
     FFI_TYPE_DOUBLE,
+    FFI_TYPE_INT64,
     FFI_TYPE_STRING,
     FFI_TYPE_VOIDP,
     FFI_TYPE_UNKNOW
@@ -40,83 +40,180 @@ public:
 
     }CallValue;
     const void* addr;
-    
+    void* vpaddr;
+    bool generated = false;
 private:
     struct {
         int cnt_non_float;
         int cnt_float;
     }cnt;
-    typedef CallValue(*CallerType)();
-
-    void Push(int argi, CallValue &v) {
-        FFI_CTYPE type = args_type[argi];
-#ifdef FFI_ABI_WIN64
+    struct ArgPos {
+        int argi;
+        int offset;
+    };
+    std::vector<ArgPos> arg_pos;
+#pragma warning(push)
+#pragma warning(disable: 4229)
+    typedef int64_t(* __fastcall CallerTypeInt64)();
+    typedef int32_t(*__fastcall CallerTypeInt32)();
+    typedef float(* __fastcall CallerTypeFloat)();
+    typedef double(*__fastcall CallerTypeDouble)();
+#pragma warning(pop)
        
-        bool pass_by_stack = false; 
+#ifdef FFI_ABI_WIN64
+    //Load argument or address of argument to rax
+    inline void Load(int argi, CallValue& v, FFI_CTYPE type) {
+        //mov rax, arg           <-> For non float number
+        //mov rax, addr_of_arg   <-> For float number
+        call_wrapper.push_back(0x48);
+        call_wrapper.push_back(0xb8);
+        const char* pdata = nullptr;
+        void* p = nullptr;
         if (type == FFI_TYPE_DOUBLE || type == FFI_TYPE_FLOAT) {
-
+            p = &v.as_double;
+            pdata = reinterpret_cast<const char*>(&p);
         }
-        else { //regard as int64
-            switch (cnt.cnt_non_float++)
-            {
-            case 0: //mov qword rcx
-                call_wrapper.push_back(0x48);
-                call_wrapper.push_back(0xb9);
-                break;
-            case 1: //mov qword rdx
-                call_wrapper.push_back(0x48);
-                call_wrapper.push_back(0xba);
-                break;
-            case 2: //mov qword r8
-                call_wrapper.push_back(0x49);
-                call_wrapper.push_back(0xb8);
-                break;
-            case 3: //mov qword r9
-                call_wrapper.push_back(0x49);
-                call_wrapper.push_back(0xb9);
-                break;
-            default: //mov qword rax
-                call_wrapper.push_back(0x48);
-                call_wrapper.push_back(0xb8);
-                pass_by_stack = true;
-                break;
-            }
-            const char* pdata = reinterpret_cast<const char*>(&v.as_int64);
-            for (int i = 0; i < 8; i++)
-                call_wrapper.push_back(pdata[i]);
-            if (pass_by_stack)
-                call_wrapper.push_back(0x50); //push rax
+        else {
+            pdata = reinterpret_cast<const char*>(&v.as_int64);
         }
-        
-#endif
+        arg_pos.push_back(ArgPos{ argi, (int)call_wrapper.size() });
+        for (int i = 0; i < 8; i++)
+            call_wrapper.push_back(pdata[i]);
     }
+
+    void UseRegister(int argi, int classi, CallValue& v, FFI_CTYPE type) {
+        Load(argi, v, type);
+        if (classi == 0) {
+            if (type == FFI_TYPE_DOUBLE) { //movsd xmm0, [rax]
+                call_wrapper.push_back(0xf2);
+                call_wrapper.push_back(0x0f);
+                call_wrapper.push_back(0x10);
+                call_wrapper.push_back(0x00);
+            }
+            else if (type == FFI_TYPE_FLOAT) { //movss xmm0, [rax]
+                call_wrapper.push_back(0xf3);
+                call_wrapper.push_back(0x0f);
+                call_wrapper.push_back(0x10);
+                call_wrapper.push_back(0x00);
+            }else {  //mov rcx, rax
+                call_wrapper.push_back(0x48);
+                call_wrapper.push_back(0x89);
+                call_wrapper.push_back(0xc1);
+            }
+        }
+        else if (classi == 1) {
+            if (type == FFI_TYPE_DOUBLE) {  //movsd, xmm1, [rax]
+                call_wrapper.push_back(0xf2);
+                call_wrapper.push_back(0x0f);
+                call_wrapper.push_back(0x10);
+                call_wrapper.push_back(0x08);
+            }
+            else if(type == FFI_TYPE_FLOAT) { //movss, xmm1, [rax]
+                call_wrapper.push_back(0xf3);
+                call_wrapper.push_back(0x0f);
+                call_wrapper.push_back(0x10);
+                call_wrapper.push_back(0x08);
+            }
+            else {   //mov rdx, rax
+                call_wrapper.push_back(0x48);
+                call_wrapper.push_back(0x89);
+                call_wrapper.push_back(0xc2);
+            }
+        }
+        else if (classi == 2) {
+            if (type == FFI_TYPE_DOUBLE) {   //movsd xmm2, [rax]
+                call_wrapper.push_back(0xf2);
+                call_wrapper.push_back(0x0f);
+                call_wrapper.push_back(0x10);
+                call_wrapper.push_back(0x10);
+            }
+            else if (type == FFI_TYPE_FLOAT) { //movss xmm2, [rax]
+                call_wrapper.push_back(0xf3);
+                call_wrapper.push_back(0x0f);
+                call_wrapper.push_back(0x10);
+                call_wrapper.push_back(0x10);
+            }
+            else {   //mov r8, rax
+                call_wrapper.push_back(0x49);
+                call_wrapper.push_back(0x89);
+                call_wrapper.push_back(0xc0);
+            }
+        }
+        else if (classi == 3) {
+            if (type == FFI_TYPE_DOUBLE) {  //movsd xmm3, [rax]
+                call_wrapper.push_back(0xf2);
+                call_wrapper.push_back(0x0f);
+                call_wrapper.push_back(0x10);
+                call_wrapper.push_back(0x18);
+            }
+            else if (type == FFI_TYPE_FLOAT) {  //movss xmm3, [rax]
+                call_wrapper.push_back(0xf3);
+                call_wrapper.push_back(0x0f);
+                call_wrapper.push_back(0x10);
+                call_wrapper.push_back(0x18);
+            }
+            else {   //mov r9, rax
+                call_wrapper.push_back(0x49);
+                call_wrapper.push_back(0x89);
+                call_wrapper.push_back(0xc1);
+            }
+        }
+    }
+
+    void Push(int argi, CallValue& v, FFI_CTYPE type) {
+        Load(argi, v, type);
+        //push rax
+        call_wrapper.push_back(0x50); //push rax
+    }
+#endif
 
     void GenCode(int argc, CallValue* argv) {
         call_wrapper.clear();
+        arg_pos.clear();
 #ifdef FFI_ABI_WIN64
-        
-        //sub rsp, 0x20
+
+        //sub rsp, sub_bytes
         call_wrapper.push_back(0x48);
         call_wrapper.push_back(0x83);
         call_wrapper.push_back(0xec);
-        call_wrapper.push_back(0x20);
-        
+        call_wrapper.push_back(0x28);
+
 #endif
         memset(&cnt, 0, sizeof(cnt));
+
+        std::vector<int>float_args, non_float_args;
         for (int i = 0; i < argc; i++) {
-            Push(i, argv[i]);
-            /*
-#ifdef FFI_ABI_WIN64
-            if (i == 3 || (i < 3 && i == argc - 1)) {
-                unsigned char magic[] = { 0x4c, 0x89, 0x4c, 0x24, 0x20, 0x4c, 0x89, 0x44, 0x24, 0x18, 0x48, 0x89
-                    , 0x54, 0x24, 0x10, 0x48, 0x89, 0x4c, 0x24, 0x08 };
-                for (int j = 0; j < ARRAYSIZE(magic); j++) {
-                    call_wrapper.push_back(magic[j]);
+            if (args_type[i] == FFI_TYPE_FLOAT || args_type[i] == FFI_TYPE_DOUBLE) {
+                float_args.push_back(i);
+            }
+            else {
+                non_float_args.push_back(i);
+            }
+        }
+        int cnt_pushed = 0;
+        for (int i = 0; i < argc; i++) {
+            if (args_type[i] == FFI_TYPE_FLOAT || args_type[i] == FFI_TYPE_DOUBLE) {
+                if (++cnt.cnt_float <= 4) {
+                    UseRegister(i, cnt.cnt_float - 1, argv[i], args_type[i]);
+                }
+                else {
+                    Push(i, argv[float_args[float_args.size() - ((size_t)cnt.cnt_float - 4)]], args_type[i]);
+                    cnt_pushed++;
+                }   
+            }
+            else {
+                if (++cnt.cnt_non_float <= 4) {
+                    UseRegister(i, cnt.cnt_non_float - 1, argv[i], args_type[i]);
+                }
+                else {
+                    Push(i, argv[non_float_args[non_float_args.size() - ((size_t)cnt.cnt_non_float - 4)]], args_type[i]);
+                    cnt_pushed++;
                 }
             }
-#endif
-            */
         }
+
+        int sub_bytes = 0x28 + cnt_pushed * 8;
+
         //mov rax, [addr]
         call_wrapper.push_back(0x48);
         call_wrapper.push_back(0xb8);
@@ -128,16 +225,47 @@ private:
         call_wrapper.push_back(0xd0);
 #ifdef FFI_ABI_WIN64
         
-        //add rsp, 0x20
+        //add rsp, sub_bytes
         call_wrapper.push_back(0x48);
         call_wrapper.push_back(0x83);
         call_wrapper.push_back(0xc4);
-        call_wrapper.push_back(0x20);
+        call_wrapper.push_back(sub_bytes);
         
         //ret
         call_wrapper.push_back(0xc3);
 #endif
+
+        vpaddr = VirtualAlloc(nullptr, call_wrapper.size(), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+        if(vpaddr != nullptr) {
+            memcpy(vpaddr, call_wrapper.data(), call_wrapper.size());
+            generated = true;
+        }
     }
+
+    //如果已经生成果代码模板，只需要填参数即可。
+    void CopyArgs(int argc, CallValue* argv) {
+#ifdef FFI_ABI_WIN64
+        for (int i = 0; i < arg_pos.size(); i++) {
+            int argi = arg_pos[i].argi;
+            int offset = arg_pos[i].offset;
+            
+            const char* pdata = nullptr;
+            void* p = nullptr;
+            FFI_CTYPE type = args_type[argi];
+            CallValue& v = argv[argi];
+
+            if (type == FFI_TYPE_DOUBLE || type == FFI_TYPE_FLOAT) {
+                p = &v.as_double;
+                pdata = reinterpret_cast<const char*>(&p);
+            }
+            else {
+                pdata = reinterpret_cast<const char*>(&v.as_int64);
+            }
+            memcpy((char*)vpaddr + offset, pdata, 8);
+        }
+#endif
+    }
+
 public:
 
     FFIFunction(const void* addr_of_func, FFI_CTYPE ret_type, const std::vector<FFI_CTYPE>& arg_type) {
@@ -145,18 +273,36 @@ public:
         args_type = arg_type;
         addr = addr_of_func;
         call_wrapper.reserve(128);
+        generated = false;
     }
     CallValue Call(int argc, CallValue* argv) {
-        GenCode(argc, argv);
-        void* vpcall_wrapper = call_wrapper.data();
-        DWORD old_protect = 0, unused = 0;
-        VirtualProtect(vpcall_wrapper, call_wrapper.size(), PAGE_EXECUTE_READ, &old_protect);
-        CallerType ct = (CallerType)vpcall_wrapper;
-        CallValue ret = ct();
-        VirtualProtect(vpcall_wrapper, call_wrapper.size(), old_protect, &unused);
+        if (!generated)
+            GenCode(argc, argv);
+        else
+            CopyArgs(argc, argv);
+        CallValue ret = { 0 };
+        if (return_type >= FFI_TYPE_INT64) {
+            CallerTypeInt64 ct = (CallerTypeInt64)vpaddr;
+            ret.as_int64 = ct();
+        }
+        else if (return_type == FFI_TYPE_INT32) {
+            CallerTypeInt32 ct = (CallerTypeInt32)vpaddr;
+            ret.as_int32 = ct();
+        }
+        else if (return_type == FFI_TYPE_FLOAT) {
+            CallerTypeFloat ct = (CallerTypeFloat)vpaddr;
+            ret.as_float = ct();
+        }
+        else if (return_type == FFI_TYPE_DOUBLE) {
+            CallerTypeDouble ct = (CallerTypeDouble)vpaddr;
+            ret.as_double = ct();
+        }
         return ret;
     }
-    
+
+    ~FFIFunction() {
+        VirtualFree(vpaddr, call_wrapper.size(), MEM_DECOMMIT);
+    }
 };
 
 bool InjectEasyFFIExtension();

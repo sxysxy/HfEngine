@@ -41,8 +41,6 @@ mrb_value Kernel_show_console(mrb_state *mrb, mrb_value self) {
     auto hwnd = get_console_window();
     if (!hwnd) {
         AllocConsole();
-        freopen("conout$", "w", stdout);
-        freopen("conout$", "w", stderr);
         //mrb_load_string(mrb, "STDIN.reopen('CON'); STDOUT.reopen('CON'); STDERR.reopen('CON');");
     }
     else ShowWindowAsync(hwnd, SW_SHOWNORMAL);
@@ -317,6 +315,28 @@ static mrb_value ClassHEGObject_release(mrb_state* mrb, mrb_value self) {
     return mrb_nil_value();
 }
 
+/*[DOCUMENT]
+method: Kernel::str_ptr(str : String) -> ptr : Fixnum
+note: returns RSTRING_PTR(str)
+*/
+static mrb_value Kernel_str_ptr(mrb_state* mrb, mrb_value self) {
+    mrb_value s;
+    mrb_get_args(mrb, "S", &s);
+    return mrb_fixnum_value((mrb_int)(RSTRING_PTR(s)));
+}
+
+/*[DOCUMENT]
+method: Kernel::u8_to_local(str : String) -> s : String
+note: Convert utf-8 String str to local multibyte encoded string.
+*/
+static mrb_value Kernel_u8_to_local(mrb_state* mrb, mrb_value self) {
+    mrb_value s;
+    mrb_get_args(mrb, "S", &s);
+    char *p = mrb_locale_from_utf8(RSTRING_PTR(s), (int)RSTRING_LEN(s));
+    mrb_value rs = mrb_str_new_cstr(mrb, p);
+    mrb_locale_free(p);
+    return rs;
+}
 
 bool InjectBasicExtension() {
     RubyVM* vm = currentRubyVM;
@@ -338,6 +358,9 @@ bool InjectBasicExtension() {
     
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "object2ptr", Kernel_object2ptr, MRB_ARGS_REQ(1));
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "ptr2object", Kernel_ptr2object, MRB_ARGS_REQ(1));
+
+    mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "str_ptr", Kernel_str_ptr, MRB_ARGS_REQ(1));
+    mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "u8_to_local", Kernel_u8_to_local, MRB_ARGS_REQ(1));
 
     mrb_state* mrb = currentRubyVM->GetRuby();
     RClass* ClassObject = mrb->object_class;
