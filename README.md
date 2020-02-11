@@ -19,7 +19,7 @@
 
 # 栗子
 
-<img src="./Document/Figure/Simple.gif">
+<img src="./Document/Figure/SimpleDemo.gif">
 
 <a href="./HfEngine/Workspace/examples/SimpleTextureMap/SimpleTextureMap.rb">代码</a>
 
