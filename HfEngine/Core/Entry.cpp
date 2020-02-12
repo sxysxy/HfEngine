@@ -4,6 +4,8 @@
 void HfEngineInitialize() {
     CoInitializeEx(nullptr, COINIT_MULTITHREADED); //多线程模式
 
+    HEG::FFIInitXMMReaders();
+
     HEG::Window::mouse = std::make_unique<DirectX::Mouse>();
     auto& mouse = HEG::Window::mouse->Get();
     mouse.SetVisible(true);

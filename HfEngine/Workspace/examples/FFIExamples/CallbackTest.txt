@@ -1,0 +1,6 @@
+Compile CallbackTest.cpp to 64-bit CallbackTest.dll
+using 
+    g++ CallbackTest.cpp -m64 --shared -o CallbackTest.dll 
+or    
+    cl -c CallbackTest.cpp
+    link -DLL CallbackTest.obj /DYNAMICBASE "user32.lib"

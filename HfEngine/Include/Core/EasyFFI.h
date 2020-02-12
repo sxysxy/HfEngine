@@ -10,7 +10,7 @@ HFENGINE_NAMESPACE_BEGIN
 extern thread_local RClass* ModuleFFI;
 extern thread_local RClass* ClassDLL;
 extern thread_local RClass* ClassPointer;
-extern thread_local RClass* ClassFunction;
+extern thread_local RClass* ClassFunction, *ClassCallback;
 
 typedef enum {
     FFI_TYPE_INT32,
@@ -302,6 +302,134 @@ public:
 
     ~FFIFunction() {
         VirtualFree(vpaddr, call_wrapper.size(), MEM_DECOMMIT);
+    }
+};
+#ifdef FFI_ABI_WIN64
+static const uint8_t __ffi_template_callback_code[] = { 0x4c, 0x89, 0x4c, 0x24, 0x20, 0x4c, 
+        0x89, 0x44, 0x24, 0x18, 0x48, 0x89, 0x54, 0x24, 0x10, 0x48, 0x89, 0x4c, 0x24, 0x8, 0x48, 0xb9, 
+        0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 
+        0x48, 0x89, 0xe2, 0x48, 0x83, 0xc2, 0x8, 0x48, 0x83, 0xec, 0x28, 0x48, 0xb8, 
+        0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 
+        0xff, 0xd0, 0x48, 0x83, 0xc4, 0x28, 0xc3 };
+/*
+These binary code equals to following nasm code:
+[bits 64]
+mov [rsp+0x20], r9
+mov [rsp+0x18], r8
+mov [rsp+0x10], rdx
+mov [rsp+0x08], rcx
+mov rcx, 0x1111111111111111   ;Address of CallbackInfo
+mov rdx, rsp
+add rdx, 0x08                 ;argv
+;Call Callback Implementer
+sub rsp, 0x28
+mov rax, 0x2222222222222222   ;Address of Callback Implementer
+call rax
+add rsp, 0x28
+ret
+*/
+#endif
+
+typedef float (*read_xmm0_float)();
+extern read_xmm0_float ReadXMM0Float;
+static const uint8_t __ffi_read_xmm0_float_code[] = { 0xc3 };
+
+typedef float (*read_xmm1_float)();
+extern read_xmm1_float ReadXMM1Float;
+static const uint8_t __ffi_read_xmm1_float_code[] = { 0xf3, 0xf, 0x10, 0xc1, 0xc3 };
+
+typedef float (*read_xmm2_float)();
+extern read_xmm2_float ReadXMM2Float;
+static const uint8_t __ffi_read_xmm2_float_code[] = { 0xf3, 0xf, 0x10, 0xc2, 0xc3 };
+
+typedef float (*read_xmm3_float)();
+extern read_xmm3_float ReadXMM3Float;
+static const uint8_t __ffi_read_xmm3_float_code[] = { 0xf3, 0xf, 0x10, 0xc3, 0xc3 };
+
+typedef double (*read_xmm0_double)();
+extern read_xmm0_double ReadXMM0Double;
+static const uint8_t __ffi_read_xmm0_double_code[] = { 0xc3 };
+
+typedef double (*read_xmm1_double)();
+extern read_xmm1_double ReadXMM1Double;
+static const uint8_t __ffi_read_xmm1_double_code[] = { 0xf2, 0xf, 0x10, 0xc1, 0xc3 };
+
+typedef double (*read_xmm2_double)();
+extern read_xmm2_double ReadXMM2Double;
+static const uint8_t __ffi_read_xmm2_double_code[] = { 0xf2, 0xf, 0x10, 0xc2, 0xc3 };
+
+typedef double (*read_xmm3_double)();
+extern read_xmm3_double ReadXMM3Double;
+static const uint8_t __ffi_read_xmm3_double_code[] = { 0xf2, 0xf, 0x10, 0xc3, 0xc3 };
+
+static void FFIInitXMMReaders() {
+    char* p = (char*)VirtualAlloc(0, 5 * 6 + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+    memcpy(p, __ffi_read_xmm0_float_code, 1);
+    memcpy(p + 1, __ffi_read_xmm1_float_code, 5);
+    memcpy(p + 6, __ffi_read_xmm2_float_code, 5);
+    memcpy(p + 11, __ffi_read_xmm3_float_code, 5);
+    memcpy(p + 16, __ffi_read_xmm0_double_code, 1);
+    memcpy(p + 17, __ffi_read_xmm1_double_code, 5);
+    memcpy(p + 22, __ffi_read_xmm2_double_code, 5);
+    memcpy(p + 27, __ffi_read_xmm3_double_code, 5);
+    ReadXMM0Float = (read_xmm0_float)p;
+    ReadXMM1Float = (read_xmm1_float)(p+1);
+    ReadXMM2Float = (read_xmm2_float)(p+6);
+    ReadXMM3Float = (read_xmm3_float)(p+11);
+    ReadXMM0Double = (read_xmm0_double)(p+16);
+    ReadXMM1Double = (read_xmm1_double)(p+17);
+    ReadXMM2Double = (read_xmm2_double)(p+22);
+    ReadXMM3Double = (read_xmm3_double)(p+27);
+}
+
+struct FFIMRubyCallbackInfo {
+    FFI_CTYPE return_type;
+    int argc;
+    FFI_CTYPE* arg_type;
+    mrb_state* mrb;
+    mrb_value mrb_proc_obj;
+};
+
+class FFICallback {
+    void* vpaddr = nullptr;
+    FFI_CTYPE return_type;
+    std::vector<FFI_CTYPE> args_type;
+    void* pcallback_info;
+public:
+    typedef FFIFunction::CallValue(*CallbackImplementer)(void* callback_info, FFIFunction::CallValue* argv);
+private:
+    CallbackImplementer cb_impl;
+public:
+    FFICallback(FFI_CTYPE return_val_type, const std::vector<FFI_CTYPE>& arg_type, void* callback_info, CallbackImplementer impl) {
+#ifdef FFI_ABI_WIN64
+        vpaddr = VirtualAlloc(0, sizeof(__ffi_template_callback_code), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+        return_type = return_val_type;
+        args_type = arg_type;
+        pcallback_info = callback_info;
+        cb_impl = impl;
+        memcpy(vpaddr, __ffi_template_callback_code, sizeof(__ffi_template_callback_code));
+
+        const char* pdata = reinterpret_cast<const char*>(&pcallback_info);
+
+        memcpy((char*)vpaddr + 22, pdata, 8);
+        pdata = reinterpret_cast<const char*>(&cb_impl);
+        memcpy((char*)vpaddr + 43, pdata, 8);
+#endif
+    }
+    ~FFICallback() {
+#ifdef FFI_ABI_WIN64
+        if (vpaddr)
+            VirtualFree(vpaddr, sizeof(__ffi_template_callback_code), MEM_DECOMMIT);
+#endif
+    }
+    void* CallbackAddress() const{
+        return vpaddr;
+    }
+    FFI_CTYPE* GetArgumentsType() {
+        return args_type.data();
+    }
+    const FFI_CTYPE* GetArgumentsType() const {
+        return args_type.data();
     }
 };
 

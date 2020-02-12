@@ -345,7 +345,7 @@ bool InjectBasicExtension() {
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "hide_console", Kernel_hide_console, MRB_ARGS_NONE());
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "filebox", Kernel_filebox, MRB_ARGS_REQ(1));
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "system", Kernel_system, MRB_ARGS_REQ(1));
-    mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "mainloop", Kernel_mainloop, MRB_ARGS_NONE());
+    mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "mainloop", Kernel_mainloop, MRB_ARGS_BLOCK());
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "break_loop", Kernel_break_loop, MRB_ARGS_NONE());
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "exit_process", Kernel_exit_process, MRB_ARGS_REQ(1));
 

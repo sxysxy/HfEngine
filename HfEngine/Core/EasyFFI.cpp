@@ -7,7 +7,16 @@ HFENGINE_NAMESPACE_BEGIN
 thread_local RClass* ModuleFFI;
 thread_local RClass* ClassDLL;
 thread_local RClass* ClassPointer;
-thread_local RClass* ClassFunction;
+thread_local RClass* ClassFunction, *ClassCallback;
+
+read_xmm0_float ReadXMM0Float;
+read_xmm1_float ReadXMM1Float;
+read_xmm2_float ReadXMM2Float;
+read_xmm3_float ReadXMM3Float;
+read_xmm0_double ReadXMM0Double;
+read_xmm1_double ReadXMM1Double;
+read_xmm2_double ReadXMM2Double;
+read_xmm3_double ReadXMM3Double;
 
 mrb_data_type ClassDLLDataType = mrb_data_type{ "DLL", [](mrb_state* mrb, void* ptr) {
 } };
@@ -243,6 +252,131 @@ static mrb_value ClassFunction_call(mrb_state* mrb, mrb_value self) {
     return mrb_nil_value();
 }
 
+FFIFunction::CallValue MRBCallbackImplementerABIWin64(void* callback_info, FFIFunction::CallValue* argv) {
+    auto* cbi = (FFIMRubyCallbackInfo*)callback_info;
+    const auto argc = cbi->argc;
+    auto mrb = cbi->mrb;
+    std::vector<mrb_value> mrb_argv;
+    FFIFunction::CallValue ret_cv;
+    int cnt_float = 0;
+    for (int i = 0; i < cbi->argc; i++) {
+        if (cbi->arg_type[i] == FFI_TYPE_STRING) {
+            mrb_argv.push_back(mrb_str_new_cstr(mrb, argv[i].as_cstr));
+        }
+        else if (cbi->arg_type[i] == FFI_TYPE_DOUBLE || cbi->arg_type[i] == FFI_TYPE_FLOAT) {
+            if(++cnt_float > 4) { //read from argv
+                mrb_argv.push_back(mrb_float_value(mrb, argv[i].as_double));
+            }
+            else { //read from register
+                switch (cnt_float)
+                {
+                case 1:
+                    if (cbi->arg_type[i] == FFI_TYPE_DOUBLE) {
+                        mrb_argv.push_back(mrb_float_value(mrb, ReadXMM0Double()));
+                    }
+                    else {
+                        mrb_argv.push_back(mrb_float_value(mrb, (mrb_float)ReadXMM0Float()));
+                    }break;
+                case 2:
+                    if (cbi->arg_type[i] == FFI_TYPE_DOUBLE) {
+                        mrb_argv.push_back(mrb_float_value(mrb, ReadXMM1Double()));
+                    }
+                    else {
+                        mrb_argv.push_back(mrb_float_value(mrb, (mrb_float)ReadXMM1Float()));
+                    }break;
+                case 3:
+                    if (cbi->arg_type[i] == FFI_TYPE_DOUBLE) {
+                        mrb_argv.push_back(mrb_float_value(mrb, ReadXMM2Double()));
+                    }
+                    else {
+                        mrb_argv.push_back(mrb_float_value(mrb, (mrb_float)ReadXMM2Float()));
+                    }break;
+                case 4:  
+                    if (cbi->arg_type[i] == FFI_TYPE_DOUBLE) {
+                        mrb_argv.push_back(mrb_float_value(mrb, ReadXMM3Double()));
+                    }
+                    else {
+                        mrb_argv.push_back(mrb_float_value(mrb, (mrb_float)ReadXMM3Float()));
+                    }break;
+                default:
+                    break;
+                }
+            }
+        }
+        else {
+            mrb_argv.push_back(mrb_fixnum_value(argv[i].as_int64));
+        }
+    }
+    mrb_value ret = mrb_funcall_argv(mrb, cbi->mrb_proc_obj, mrb_intern_lit(mrb, "call"), argc, mrb_argv.data());
+    if (cbi->return_type == FFI_TYPE_DOUBLE || FFI_TYPE_FLOAT) {
+        ret_cv.as_double = mrb_float(ret);
+    }
+    else if (cbi->return_type == FFI_TYPE_STRING) {
+        ret_cv.as_cstr = RSTRING_PTR(ret);
+    }
+    else {
+        ret_cv.as_int64 = mrb_fixnum(ret);
+    }
+    return ret_cv;
+}
+
+struct MRBCallback {
+    FFICallback* ffi_cb;
+    FFIMRubyCallbackInfo* cbi;
+};
+
+mrb_data_type ClassCallbackDataType = mrb_data_type{ "Callback",
+        [](mrb_state* mrb, void* ptr) {
+    auto p = (MRBCallback*)ptr;
+    delete p->ffi_cb;
+    delete p->cbi;
+    delete p;
+} };
+
+/*[DOCUMENT]
+method: HEG::FFI::Callback::new(type_of_return, types_of_args : Array, &block) -> cb : Callback
+note: Create a new callback object
+*/
+static mrb_value ClassCallback_new(mrb_state* mrb, mrb_value klass) {
+    mrb_value cb_obj;
+    mrb_int ret_t;
+    mrb_value arg_t;
+    mrb_value cb_block_obj;
+    mrb_get_args(mrb, "iA&!", &ret_t, &arg_t, &cb_block_obj);
+    std::vector<FFI_CTYPE> atv;
+    mrb_int al = RARRAY_LEN(arg_t);
+    mrb_value* pat = RARRAY_PTR(arg_t);
+    for (int i = 0; i < al; i++) {
+        auto tp = (FFI_CTYPE)mrb_fixnum(pat[i]);
+        /*
+        if (tp == FFI_TYPE_FLOAT || tp == FFI_TYPE_DOUBLE) {
+            mrb_raise(mrb, mrb->eStandardError_class, "Sorry, callback argument typed float(double) is not supported yet.");
+            return mrb_nil_value();
+        }*/
+        atv.push_back(tp);
+    }
+    auto cb = new MRBCallback();
+    cb->cbi = new FFIMRubyCallbackInfo;
+    cb->cbi->argc = (int)al;
+    cb->ffi_cb = new FFICallback((FFI_CTYPE)ret_t, std::move(atv), cb->cbi, MRBCallbackImplementerABIWin64);
+    cb->cbi->arg_type = cb->ffi_cb->GetArgumentsType();
+    cb->cbi->mrb = mrb;
+    cb->cbi->mrb_proc_obj = cb_block_obj;
+    cb->cbi->return_type = (FFI_CTYPE)ret_t;
+    cb_obj = mrb_obj_value(mrb_data_object_alloc(mrb, 
+        ClassCallback, cb, &ClassCallbackDataType));
+    return cb_obj;
+}
+
+/*[DOCUMENT]
+mehtod: HEG::FFI::Callback#addr -> addr : Fixnum
+note: Return callback address
+*/
+static mrb_value ClassCallback_addr(mrb_state* mrb, mrb_value self) {
+    auto addr = GetNativeObject<MRBCallback>(self)->ffi_cb->CallbackAddress();
+    return mrb_fixnum_value((mrb_int)addr);
+}
+
 bool InjectEasyFFIExtension() {
     mrb_state* mrb = currentRubyVM->GetRuby();
     RClass* ClassObject = mrb->object_class;
@@ -273,6 +407,12 @@ bool InjectEasyFFIExtension() {
     ClassFunction = mrb_define_class_under(mrb, ModuleFFI, "Function", ClassObject);
     mrb_define_class_method(mrb, ClassFunction, "new", ClassFunction_new, MRB_ARGS_REQ(3));
     mrb_define_method(mrb, ClassFunction, "call", ClassFunction_call, MRB_ARGS_ANY());
+    
+    //Callback
+    ClassCallback = mrb_define_class_under(mrb, ModuleFFI, "Callback", ClassObject);
+    mrb_define_class_method(mrb, ClassCallback, "new", ClassCallback_new, MRB_ARGS_REQ(2) | MRB_ARGS_BLOCK());
+    mrb_define_method(mrb, ClassCallback, "addr", ClassCallback_addr, MRB_ARGS_NONE());
+    
     return true;
 }
 
