@@ -54,7 +54,7 @@ void RubyVM::Release() {
     closed = true;
     mrbc_context_free(MRBState, MRBLoadContext);
     RubyVMManager::UnregisterVM();
-    //mrb_close(MRBState);
+    mrb_close(MRBState);
 }
 
 void RubyVM::StreamException(mrb_value excep, std::ostream& os) {

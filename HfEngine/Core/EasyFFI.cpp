@@ -252,6 +252,16 @@ static mrb_value ClassFunction_call(mrb_state* mrb, mrb_value self) {
     return mrb_nil_value();
 }
 
+struct MRBCallbackImplementerABIWin64PassedData{
+    mrb_value proc_obj;
+    int argc;
+    mrb_value* argv;
+};
+static mrb_value MRBCallbackImplementerABIWin64ProtectedCall(mrb_state* mrb, mrb_value data) {
+    MRBCallbackImplementerABIWin64PassedData* pd = (MRBCallbackImplementerABIWin64PassedData*)data.value.p;
+    return mrb_funcall_argv(mrb, pd->proc_obj, mrb_intern_lit(mrb, "call"), pd->argc, pd->argv);
+}
+
 FFIFunction::CallValue MRBCallbackImplementerABIWin64(void* callback_info, FFIFunction::CallValue* argv) {
     auto* cbi = (FFIMRubyCallbackInfo*)callback_info;
     if (cbi->vm->isClosed())
@@ -309,8 +319,28 @@ FFIFunction::CallValue MRBCallbackImplementerABIWin64(void* callback_info, FFIFu
             mrb_argv.push_back(mrb_fixnum_value(argv[i].as_int64));
         }
     }
+    MRBCallbackImplementerABIWin64PassedData pd;
+    pd.argc = argc;
+    pd.argv = mrb_argv.data();
+    pd.proc_obj = cbi->mrb_proc_obj;
+    mrb_value tmp;
+    tmp.tt = MRB_TT_CPTR;
+    tmp.value.p = &pd;
+    mrb_bool protect_state;
+    mrb_value ret = mrb_protect(mrb, MRBCallbackImplementerABIWin64ProtectedCall, tmp, &protect_state);
+    if (protect_state) {
+        std::stringstream ss;
+        ss << "Exception occured in FFICallback function, the thread has to stop because there's no exception handler for it, exception message:\n";
+        cbi->vm->StreamException(ret, ss);
+        //mrb_raise(mrb, mrb_obj_class(mrb, ret), ss.str().c_str());
+        mrb_value excp_msg = mrb_str_new_cstr(mrb, ss.str().c_str());
+        mrb_funcall(mrb, mrb_obj_value(mrb->kernel_module), "show_console", 0);
+        mrb_funcall(mrb, mrb_obj_value(mrb->kernel_module), "puts", 1, excp_msg);
+        system("pause");
+        ExitThread(0);
+        return FFIFunction::CallValue{ 0 };
+    }
     
-    mrb_value ret = mrb_funcall_argv(mrb, cbi->mrb_proc_obj, mrb_intern_lit(mrb, "call"), argc, mrb_argv.data());
     if (cbi->return_type == FFI_TYPE_DOUBLE || FFI_TYPE_FLOAT) {
         ret_cv.as_double = mrb_float(ret);
     }

@@ -68,7 +68,4 @@ while User32.GetMessageA(msg, 0, 0, 0) != 0
     User32.DispatchMessageA(msg)
 end
 
-User32.close 
-Kernel32.close
-GDI32.close
-
+Kernel32.ExitProcess 0
