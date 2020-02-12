@@ -254,8 +254,10 @@ static mrb_value ClassFunction_call(mrb_state* mrb, mrb_value self) {
 
 FFIFunction::CallValue MRBCallbackImplementerABIWin64(void* callback_info, FFIFunction::CallValue* argv) {
     auto* cbi = (FFIMRubyCallbackInfo*)callback_info;
+    if (cbi->vm->isClosed())
+        return FFIFunction::CallValue{ 0 };
     const auto argc = cbi->argc;
-    auto mrb = cbi->mrb;
+    auto mrb = cbi->vm->GetRuby();
     std::vector<mrb_value> mrb_argv;
     FFIFunction::CallValue ret_cv;
     int cnt_float = 0;
@@ -307,6 +309,7 @@ FFIFunction::CallValue MRBCallbackImplementerABIWin64(void* callback_info, FFIFu
             mrb_argv.push_back(mrb_fixnum_value(argv[i].as_int64));
         }
     }
+    
     mrb_value ret = mrb_funcall_argv(mrb, cbi->mrb_proc_obj, mrb_intern_lit(mrb, "call"), argc, mrb_argv.data());
     if (cbi->return_type == FFI_TYPE_DOUBLE || FFI_TYPE_FLOAT) {
         ret_cv.as_double = mrb_float(ret);
@@ -360,7 +363,7 @@ static mrb_value ClassCallback_new(mrb_state* mrb, mrb_value klass) {
     cb->cbi->argc = (int)al;
     cb->ffi_cb = new FFICallback((FFI_CTYPE)ret_t, std::move(atv), cb->cbi, MRBCallbackImplementerABIWin64);
     cb->cbi->arg_type = cb->ffi_cb->GetArgumentsType();
-    cb->cbi->mrb = mrb;
+    cb->cbi->vm = currentRubyVM;
     cb->cbi->mrb_proc_obj = cb_block_obj;
     cb->cbi->return_type = (FFI_CTYPE)ret_t;
     cb_obj = mrb_obj_value(mrb_data_object_alloc(mrb, 

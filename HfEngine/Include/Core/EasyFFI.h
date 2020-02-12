@@ -1,5 +1,6 @@
 #pragma once
 #include <ThirdParties.h>
+#include <Core/RubyVM.h>
 
 #define FFI_ABI_WIN64 1
 //#define FFI_ABI_WIN32_CDECL 1
@@ -395,7 +396,7 @@ struct FFIMRubyCallbackInfo {
     FFI_CTYPE return_type;
     int argc;
     FFI_CTYPE* arg_type;
-    mrb_state* mrb;
+    HEG::RubyVM* vm;
     mrb_value mrb_proc_obj;
 };
 

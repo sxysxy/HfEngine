@@ -10,6 +10,7 @@ class RubyVM : public Utility::ReferredObject {
     std::thread* currentThread;
     int lastError;
     std::unordered_map<std::string, RClass*> moduleTable;
+    bool closed = false;
 public:
     struct mrb_state* GetRuby() const {
         return MRBState;
@@ -24,6 +25,7 @@ public:
     ~RubyVM() {
         Release();
     }
+    bool isClosed() { return closed; }
     
     void StreamException(mrb_value excep, std::ostream& os);
 
