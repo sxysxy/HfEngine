@@ -52,8 +52,8 @@ void RubyVM::Load(const std::string& filename) {
 
 void RubyVM::Release() {
     mrbc_context_free(MRBState, MRBLoadContext);
-    mrb_close(MRBState);
     RubyVMManager::UnregisterVM();
+    mrb_close(MRBState);
 }
 
 void RubyVM::StreamException(mrb_value excep, std::ostream& os) {

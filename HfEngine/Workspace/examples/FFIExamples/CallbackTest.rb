@@ -11,7 +11,7 @@ dll = FFI::dlopen(DLL_PATH)
 test_closure = "Closure ok"
 cb = FFI::Callback.new(FFI::TYPE_INT32, [FFI::TYPE_INT32, FFI::TYPE_INT32]) do |b, c|
     fbc = b * c
-    msgbox test_closure, "get b=#{b}, c=#{c}, f(b, c) = b * c = 12"
+    msgbox test_closure, "get b=#{b}, c=#{c}, f(b, c) = b * c = #{fbc}"
     return fbc
 end
 test = FFI::Function.new(dll.addrof("test"), FFI::TYPE_INT32, [FFI::TYPE_INT32, FFI::TYPE_VOIDP])

@@ -193,9 +193,10 @@ void Window::Create(const std::wstring& _title, int w, int h) {
     _width = w, _height = h;
     title = _title;
     HINSTANCE instance = GetModuleHandle(0);
-
+    
     if (!_native_inited) {
         WNDCLASS wc;
+        
         RtlZeroMemory(&wc, sizeof(wc));
         wc.hbrBackground = (HBRUSH)(GetStockObject(BLACK_BRUSH));
         wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
