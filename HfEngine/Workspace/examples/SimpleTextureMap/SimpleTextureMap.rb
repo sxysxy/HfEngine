@@ -1,5 +1,5 @@
 #encoding: utf-8
-require 'HFSF.rb'
+require 'HFSF'
 CURRENT_PATH = File.dirname(__FILE__)
 KOISHI_FILENAME = File.join(CURRENT_PATH, "300px-Komeiji Koishi.jpg")
 CIRNO_FILENAME = File.join(CURRENT_PATH, "300px-Cirno.jpg")

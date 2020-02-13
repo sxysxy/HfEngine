@@ -201,8 +201,8 @@ private:
                     UseRegister(i, cnt.cnt_float - 1, argv[p], args_type[p]);
                 }
                 else {
-                    Push(i, argv[float_args[float_args.size() - ((size_t)cnt.cnt_float - 4)]], args_type[i]);
-                    //Push(i, argv[p], args_type[p]);
+                    p = float_args[float_args.size() - ((size_t)cnt.cnt_float - 4)];
+                    Push(i, argv[p], args_type[p]);
                     cnt_pushed++;
                 }
             }
@@ -213,8 +213,8 @@ private:
                     UseRegister(i, cnt.cnt_non_float - 1, argv[p], args_type[p]);
                 }
                 else {
-                    Push(i, argv[non_float_args[non_float_args.size() - ((size_t)cnt.cnt_non_float - 4)]], args_type[i]);
-                    //Push(i, argv[p], args_type[p]);
+                    p = non_float_args[non_float_args.size() - ((size_t)cnt.cnt_non_float - 4)];
+                    Push(i, argv[p], args_type[p]);
                     cnt_pushed++;
                 }
             }

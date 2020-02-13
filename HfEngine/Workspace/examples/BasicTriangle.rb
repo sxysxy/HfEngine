@@ -1,5 +1,5 @@
 #encoding: utf-8
-require 'HFSF.rb'
+require 'HFSF'
 HEG::GDevice.create
 HEG::Window.new("Basic Demo", 800, 600).instance_exec {
     show()

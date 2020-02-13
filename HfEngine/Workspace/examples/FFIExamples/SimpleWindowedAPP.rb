@@ -1,5 +1,5 @@
 #encoding :utf-8
-require 'FFI.rb'
+require 'FFI'
 
 include HEG 
 User32 = FFI::Module.new("user32.dll") {
@@ -45,10 +45,10 @@ wndclass_name = "window"
 wndclass[:style] = 0x20  #CS_OWNDC
 wndclass[:wndproc] = wndproc.addr
 wndclass[:class_ex] = wndclass[:wnd_ex] = 0
-wndclass[:brush] = GDI32.GetStockObject(0)
+wndclass[:brush] = GDI32.GetStockObject(0)        #WHITE_BRUSH
 wndclass[:instance] = app_instance
-wndclass[:cursor] = User32.LoadCursorA(0, 32512)
-wndclass[:icon] = User32.LoadIconA(0, 32517)
+wndclass[:cursor] = User32.LoadCursorA(0, 32512)  #IDC_ARROW
+wndclass[:icon] = User32.LoadIconA(0, 32517)      #ICON_APPLICATION
 wndclass[:menu_name] = 0
 wndclass[:class_name] = str_ptr(wndclass_name)
 if User32.RegisterClassA(wndclass.pack) == 0
