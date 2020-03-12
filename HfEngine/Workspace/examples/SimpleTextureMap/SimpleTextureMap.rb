@@ -155,5 +155,5 @@ HEG::Window.new("Very Simple Texture Mapping Demo", 600, 600).instance_exec {
         tick += 1
         swap_buffers
     }
-    [koishi, cirno, yuyuko, flandre, marisa, sakuya, vb, ib, canvas(), context, sf, HEG::GDevice.instance].each {|x| x.release}
+    [koishi, cirno, yuyuko, flandre, marisa, sakuya, vb, ib, context, sf, HEG::GDevice.instance].each {|x| x.release}
 }

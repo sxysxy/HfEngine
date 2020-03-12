@@ -18,3 +18,4 @@ test = FFI::Function.new(dll.addrof("test"), FFI::TYPE_INT32, [FFI::TYPE_INT32, 
 
 a = 2
 test.call(a, cb.addr)
+msgbox "ok", "ok"

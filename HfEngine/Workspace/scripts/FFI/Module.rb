@@ -11,7 +11,7 @@ module HEG::FFI
         #method: initialize(dllname : String) {block}
         #note: initialize a module using specific dll
         def initialize(dllname, &block) 
-            @dll = FFI::dlopen(dllname)
+            @dll = HEG::FFI::dlopen(dllname)
             @funcs = {}
             puts self.instance_variables
             instance_exec &block if block_given?

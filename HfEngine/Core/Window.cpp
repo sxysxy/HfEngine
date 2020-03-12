@@ -279,6 +279,7 @@ static mrb_value ClassWindow_new(mrb_state* mrb, mrb_value klass) {
     mrb_value self = mrb_obj_value(mrb_data_object_alloc(mrb, ClassWindow, window, &ClassWindowDataType));
     window->window_obj = self;
     mrb_iv_set(mrb, self, mrb_intern_cstr(mrb, "@handlers"), mrb_hash_new(mrb));
+    
     return self;
 }
 

@@ -214,21 +214,24 @@ static mrb_value ClassFunction_call(mrb_state* mrb, mrb_value self) {
         FFI_CTYPE ct = f->args_type[i];
         FFIFunction::CallValue cv;
         if (ct == FFI_TYPE_INT32 || ct == FFI_TYPE_INT64) {
+            if (av[i].tt != MRB_TT_FIXNUM)
+                mrb_raisef(mrb, mrb->eStandardError_class, "FFI::Function#call: argv[%d] should be a Fixnum", i);
             cv.as_int64 = mrb_fixnum(av[i]);
         }
         else if (ct == FFI_TYPE_FLOAT || ct == FFI_TYPE_DOUBLE) {
+            if (av[i].tt != MRB_TT_FLOAT)
+                mrb_raisef(mrb, mrb->eStandardError_class, "FFI::Function#call: argv[%d] should be a Float", i);
             cv.as_double = mrb_float(av[i]);
         }
         else if (ct == FFI_TYPE_STRING) {
+            if (av[i].tt != MRB_TT_STRING)
+                mrb_raisef(mrb, mrb->eStandardError_class, "FFI::Function#call: argv[%d] should be a String", i);
             cv.as_cstr = RSTRING_PTR(av[i]);
         }
         else if (ct == FFI_TYPE_VOIDP) {
-            if (av[i].tt == MRB_TT_FIXNUM) {
-                cv.as_int64 = mrb_fixnum(av[i]);
-            }
-            else {
-                //TODO: Pointer -
-            }
+            if (av[i].tt != MRB_TT_FIXNUM)
+                mrb_raisef(mrb, mrb->eStandardError_class, "FFI::Function#call: argv[%d] should be a Fixnum(FFI::TYPE_VOIDP)", i);
+            cv.as_int64 = mrb_fixnum(av[i]);
         }
         cvs.push_back(cv);
     }
@@ -410,6 +413,27 @@ static mrb_value ClassCallback_addr(mrb_state* mrb, mrb_value self) {
     return mrb_fixnum_value((mrb_int)addr);
 }
 
+/*[DOCUMENT]
+method: HEG::FFI::read_int32(addr) -> value : Fixnum
+note: Read a int32 from specified address(Performance advantage). UNSAFE, May cause crash.
+*/
+static mrb_value FFI_read_int32(mrb_state* mrb, mrb_value self) {
+    mrb_int addr;
+    mrb_get_args(mrb, "i", &addr);
+    return mrb_fixnum_value(*(int*)addr);
+}
+
+
+/*[DOCUMENT]
+method: HEG::FFI::read_int64(addr) -> value : Fixnum
+note: Read a int64 from specified address(Performance advantage), UNSAFE, May cause crash.
+*/
+static mrb_value FFI_read_int64(mrb_state* mrb, mrb_value self) {
+    mrb_int addr;
+    mrb_get_args(mrb, "i", &addr);
+    return mrb_fixnum_value(*(int64_t*)addr);
+}
+
 bool InjectEasyFFIExtension() {
     mrb_state* mrb = currentRubyVM->GetRuby();
     RClass* ClassObject = mrb->object_class;
@@ -422,6 +446,8 @@ bool InjectEasyFFIExtension() {
     mrb_define_const(mrb, ModuleFFI, "TYPE_DOUBLE", mrb_fixnum_value(FFI_TYPE_DOUBLE));
     mrb_define_const(mrb, ModuleFFI, "TYPE_STRING", mrb_fixnum_value(FFI_TYPE_STRING));
     mrb_define_const(mrb, ModuleFFI, "TYPE_VOIDP", mrb_fixnum_value(FFI_TYPE_VOIDP));
+    mrb_define_module_function(mrb, ModuleFFI, "read_int32", FFI_read_int32, MRB_ARGS_REQ(1));
+    mrb_define_module_function(mrb, ModuleFFI, "read_int64", FFI_read_int64, MRB_ARGS_REQ(1));
 
     //DLL
     ClassDLL = mrb_define_class_under(mrb, ModuleFFI, "DLL", ClassObject);

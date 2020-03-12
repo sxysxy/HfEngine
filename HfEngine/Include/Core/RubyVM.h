@@ -11,6 +11,9 @@ class RubyVM : public Utility::ReferredObject {
     int lastError;
     std::unordered_map<std::string, RClass*> moduleTable;
     bool closed = false;
+
+    //std::stringstream syntax_err_stream;
+    //std::streambuf* syntax_err_streambuf;
 public:
     struct mrb_state* GetRuby() const {
         return MRBState;

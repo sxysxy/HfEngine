@@ -10,11 +10,18 @@ note: Make a message box and show(block your thread)
 */
 static mrb_value Kernel_msgbox(mrb_state* mrb, mrb_value self) {
     mrb_value title_obj, msg_obj;
-    mrb_get_args(mrb, "SS", &title_obj, &msg_obj);
+    mrb_int argc = mrb_get_argc(mrb);
     std::wstring titlew, msgw;
-    
-    U8ToU16(RSTR_PTR(mrb_str_ptr(title_obj)), titlew);
-    U8ToU16(RSTR_PTR(mrb_str_ptr(msg_obj)), msgw);
+    if (argc == 2) {
+        mrb_get_args(mrb, "SS", &title_obj, &msg_obj);
+        U8ToU16(RSTR_PTR(mrb_str_ptr(title_obj)), titlew);
+        U8ToU16(RSTR_PTR(mrb_str_ptr(msg_obj)), msgw);
+    }
+    else {
+        mrb_get_args(mrb, "S", &msg_obj);
+        titlew = L"message";
+        U8ToU16(RSTR_PTR(mrb_str_ptr(msg_obj)), msgw);
+    }
     MessageBoxW(0, msgw.c_str(), titlew.c_str(), MB_OK);
     return self;
 }
@@ -55,34 +62,6 @@ mrb_value Kernel_hide_console(mrb_state* mrb, mrb_value self) {
     if (hwnd)
         ShowWindowAsync(hwnd, SW_HIDE);
     return self;
-}
-
-/*[DOCUMENT]
-method: Kernel::filebox(title : String) -> filename : String
-note: Show a file dialog and return the selected filename. If no file was selected, it returns "".
-*/
-mrb_value Kernel_filebox(mrb_state *mrb, mrb_value self) {
-    OPENFILENAMEW op;
-    WCHAR path_buffer[MAX_PATH + 1];
-    ZeroMemory(path_buffer, sizeof(path_buffer));
-    mrb_value title_obj;
-    mrb_get_args(mrb, "S", &title_obj);
-    std::wstring titlew;
-    U8ToU16(RSTR_PTR(mrb_str_ptr(title_obj)), titlew);
-    ZeroMemory(&op, sizeof op);
-    op.lStructSize = sizeof(op);
-    op.lpstrFilter = L"All files(*.*)\0*.*\0Ruby Script Files(*.rb)\0*.*\0\0";
-    op.lpstrInitialDir = L"./";
-    op.lpstrFile = path_buffer;
-    op.lpstrTitle = titlew.c_str();
-    op.nMaxFile = MAX_PATH;
-    op.nFilterIndex = 0;
-    op.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_EXPLORER;
-    GetOpenFileNameW(&op);
-    DWORD d = GetLastError();
-    std::string s;
-    U16ToU8(path_buffer, s);
-    return mrb_str_new(mrb, s.c_str(), s.length());
 }
 
 mrb_value Kernel_puts(mrb_state* mrb, mrb_value self) {
@@ -332,18 +311,39 @@ note: Convert utf-8 String str to local multibyte encoded string.
 static mrb_value Kernel_u8_to_local(mrb_state* mrb, mrb_value self) {
     mrb_value s;
     mrb_get_args(mrb, "S", &s);
-    char *p = mrb_locale_from_utf8(RSTRING_PTR(s), (int)RSTRING_LEN(s));
-    mrb_value rs = mrb_str_new_cstr(mrb, p);
-    mrb_locale_free(p);
+    //char *p = mrb_locale_from_utf8(RSTRING_PTR(s), (int)RSTRING_LEN(s));
+    std::wstring ws;
+    U8ToU16(RSTRING_PTR(s), ws, CP_UTF8);
+    std::string as;
+    U16ToU8(ws.c_str(), as, CP_ACP);
+    mrb_value rs = mrb_str_new_cstr(mrb, as.c_str());
+    
+    return rs;
+}
+/*[DOCUMENT]
+method: Kernel::local_to_u8(str : String) -> s : String
+note: Convert local multibyte encoded string to utf-8 string
+*/
+static mrb_value Kernel_local_to_u8(mrb_state* mrb, mrb_value self) {
+    mrb_value s;
+    mrb_get_args(mrb, "S", &s);
+    //char* p = mrb_locale_from_utf8(RSTRING_PTR(s), (int)RSTRING_LEN(s));
+   // char* p = mrb_utf8_from_locale(RSTRING_PTR(s), (int)RSTRING_LEN(s));
+    std::wstring ws;
+    U8ToU16(RSTRING_PTR(s), ws, CP_ACP);
+    std::string as;
+    U16ToU8(ws.c_str(), as, CP_UTF8);
+    mrb_value rs = mrb_str_new_cstr(mrb, as.c_str());
     return rs;
 }
 
+
 bool InjectBasicExtension() {
     RubyVM* vm = currentRubyVM;
-    mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "msgbox", Kernel_msgbox, MRB_ARGS_REQ(2));    
+    mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "msgbox", Kernel_msgbox, MRB_ARGS_ARG(1, 1));    
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "show_console", Kernel_show_console, MRB_ARGS_NONE());
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "hide_console", Kernel_hide_console, MRB_ARGS_NONE());
-    mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "filebox", Kernel_filebox, MRB_ARGS_REQ(1));
+   // mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "filebox", Kernel_filebox, MRB_ARGS_REQ(1));
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "system", Kernel_system, MRB_ARGS_REQ(1));
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "mainloop", Kernel_mainloop, MRB_ARGS_BLOCK());
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "break_loop", Kernel_break_loop, MRB_ARGS_NONE());
@@ -361,6 +361,7 @@ bool InjectBasicExtension() {
 
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "str_ptr", Kernel_str_ptr, MRB_ARGS_REQ(1));
     mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "u8_to_local", Kernel_u8_to_local, MRB_ARGS_REQ(1));
+    mrb_define_module_function(vm->GetRuby(), vm->GetRuby()->kernel_module, "local_to_u8", Kernel_local_to_u8, MRB_ARGS_REQ(1));
 
     mrb_state* mrb = currentRubyVM->GetRuby();
     RClass* ClassObject = mrb->object_class;

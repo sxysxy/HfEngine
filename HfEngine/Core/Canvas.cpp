@@ -111,7 +111,7 @@ static mrb_data_type ClassCanvasDataType = mrb_data_type{ "Canvas", [](mrb_state
 } };
 
 /*[DOCUMENT]
-method: HEG::Canvas::new(filename : String) | HEG::Canvas::new(w : Fixnum, h : Fixnum, init_data = nil : String) -> canvas : Canvas
+method: HEG::Canvas::new(filename : String) | HEG::Canvas::new(w : Fixnum, h : Fixnum, init_data = nil : String/Fixnum) -> canvas : Canvas
 note: Create Canvas object from image file or from given init_data
 */
 static mrb_value ClassCanvas_new(mrb_state* mrb, mrb_value klass) {
@@ -139,8 +139,15 @@ static mrb_value ClassCanvas_new(mrb_state* mrb, mrb_value klass) {
     }
     else if (argc == 3) {
         mrb_value data_obj;
-        mrb_get_args(mrb, "iiS", &w, &h, &data_obj);
-        pdata = (LPVOID)RSTRING_PTR(data_obj);
+        mrb_get_args(mrb, "iio", &w, &h, &data_obj);
+        if (data_obj.tt == MRB_TT_STRING)
+            pdata = (LPVOID)RSTRING_PTR(data_obj);
+        else if (data_obj.tt == MRB_TT_FIXNUM)
+            pdata = (LPVOID)data_obj.value.i;
+        else {
+            mrb_raise(mrb, mrb->eStandardError_class, "HEG::Canvas::new: init_data can only be a String or a Fixnum(Pointer)");
+            return mrb_nil_value();
+        }
     }
     else {
         mrb_raise(mrb, mrb->eStandardError_class, "HEG::Canvas::new(filename : String) | HEG::Canvas::new(w : Fixnum, h : Fixnum, init_data = nil : String) -> canvas : Canvas requires 1..3 arguments");

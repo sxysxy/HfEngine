@@ -63,12 +63,17 @@ module HEG::FFI
                     return @members_value[name.to_sym]
                 end
                 def []=(name, v)
-                    @members_value[name.to_sym] = v
+                    s = name.to_sym
+                    if !@@members_type[s]
+                        raise ArgumentError, "There is no member named #{name.to_s} in the struct"
+                    end
+                    @members_value[s] = v
                 end
-                #def method_missing(name, *arg, &b)
-                #    return @members_value[name] if @members_value[name]
-                #    super
-                #end
+                def zero_all 
+                    @@members_sym.each {|s|
+                        @members_value[s] = 0
+                    }
+                end
                 def pack
                     p = []
                     d = []
@@ -76,7 +81,6 @@ module HEG::FFI
                         d << @members_value[s]
                         p << @@members_type[s]
                     }
-                    #msgbox "x", "#{d} #{p.join} \n #{d.pack(p.join).bytes.size} \n #{d.pack(p.join).bytes}"
                     @packed = d.pack(p.join) #Avoid GC free it
                     zeors = []
                     s = @packed.size 

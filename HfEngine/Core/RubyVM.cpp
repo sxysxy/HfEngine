@@ -1,5 +1,6 @@
 #include <Core/Basic.h>
 #include <Core/RubyVM.h>
+#include <io.h>
 
 HFENGINE_NAMESPACE_BEGIN
 
@@ -15,8 +16,30 @@ void RubyVM::Initialize() {
     MRBState = mrb_open();
 }
 
+static void DumpInt(int i, char* s)
+{
+    char* p = s;
+    char* t = s;
+    while (i > 0) {
+        *p++ = (i % 10) + '0';
+        i /= 10;
+    }
+    if (p == s) *p++ = '0';
+    *p = 0;
+    p--;  
+    while (t < p) {
+        char c = *t;
+        *t++ = *p;
+        *p-- = c;
+    }
+}
+extern "C" {
+mrb_value
+mrb_require(mrb_state* mrb, mrb_value filename);
+}
 void RubyVM::Load(const std::string& filename) {
     MRBLoadContext = mrbc_context_new(MRBState);
+    MRBLoadContext->capture_errors = true;
     FILE* fp = nullptr;
     /*
     try {
@@ -32,9 +55,7 @@ void RubyVM::Load(const std::string& filename) {
     try {
         fopen_s(&fp, filename.c_str(), "r");
         mrb_load_file_cxt(MRBState, fp, MRBLoadContext);
-        //char buf[MAX_PATH * 2];
-        //sprintf(buf, "load(\"%s\")", filename.c_str());
-        //mrb_load_string_cxt(MRBState, buf, MRBLoadContext);
+        //mrb_require(MRBState, mrb_str_new_cstr(MRBState, filename.c_str()));
     }
     catch (std::runtime_error& re) {
         mrb_raise(MRBState, MRBState->eStandardError_class, re.what());
@@ -46,6 +67,7 @@ void RubyVM::Load(const std::string& filename) {
     if (fp)
         fclose(fp);
     if (DealException()) {
+        
         system("pause");
     }
 }
@@ -65,6 +87,7 @@ void RubyVM::StreamException(mrb_value excep, std::ostream& os) {
         const char* filename;
     };
     do {
+
         
         mrb_value packed = mrb_iv_get(MRBState, excep,
             mrb_intern_lit(MRBState, "backtrace"));
@@ -115,8 +138,19 @@ void RubyVM::StreamException(mrb_value excep, std::ostream& os) {
         }
     } while (0);
     mrb_value err_message = mrb_funcall(GetRuby(), excep, "inspect", 0);
-    os << RSTRING_PTR(err_message);
-
+    char *err = RSTRING_PTR(err_message);
+    os << err;
+    /*
+    if(strstr(err, "SyntaxError")) {
+    
+        //DWORD r;
+        //bool rd = ReadFile(readError, buf, 512, &r, nullptr);
+        //if(rd)
+        //   os << buf;
+        //fscanf(stderr, "%[^\0]", buf);
+        //fread(buf, 1, 512, stderr);
+        //os << buf;
+    }*/
 }
 
 bool RubyVM::DealException() {
