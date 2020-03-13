@@ -156,7 +156,6 @@
   <ItemGroup>
     <ClInclude Include="..\Include\Core.h" />
     <ClInclude Include="..\Include\Core\Basic.h" />
-    <ClInclude Include="..\Include\Core\Bitmap.h" />
     <ClInclude Include="..\Include\Core\Canvas.h" />
     <ClInclude Include="..\Include\Core\EasyFFI.h" />
     <ClInclude Include="..\Include\Core\Entry.h" />
@@ -172,7 +171,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Basic.cpp" />
-    <ClCompile Include="Bitmap.cpp" />
     <ClCompile Include="Canvas.cpp" />
     <ClCompile Include="EasyFFI.cpp" />
     <ClCompile Include="Entry.cpp" />

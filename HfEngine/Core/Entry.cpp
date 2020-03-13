@@ -83,6 +83,22 @@ int __cdecl cmain(wchar_t* path) {
         U16ToU8(buffer, filename, CP_UTF8);
         for (int i = 0; i < filename.length(); i++)
             if (filename[i] == '\\')filename[i] = '/';
+
+        GetSystemDirectoryW(buffer, MAX_PATH);
+        std::string syspath;
+        U16ToU8(buffer, syspath, CP_UTF8);
+        for (int i = 0; i < syspath.length(); i++) {
+            if (syspath[i] == '\\')syspath[i] = '/';
+        }
+        mrb_const_set(mrb, ClassObject, mrb_intern_lit(mrb, "SYSTEM_DIRECTORY"), mrb_str_new_cstr(mrb, syspath.c_str()));
+        for (int i = syspath.length() - 1; ~i; --i) {
+            if (syspath[i] == '/') {
+                syspath[i] = 0;
+                mrb_const_set(mrb, ClassObject, mrb_intern_lit(mrb, "WINDOWS_DIRECTORY"), mrb_str_new_cstr(mrb, syspath.c_str()));
+                break;
+            }
+        }
+
         ruby->Load(filename.c_str());
         return 0;
     }

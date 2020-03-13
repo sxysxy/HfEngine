@@ -254,9 +254,13 @@ public:
         desc.RenderTarget[0].RenderTargetWriteMask = mask;
     }
     void UseDefault() {
-        Enable(false);
-        SetColorBlend(D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD);
-        SetAlphaBlend(D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD);
+        //Enable(false);
+        //SetColorBlend(D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD);
+        //SetAlphaBlend(D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD);
+        //默认使用Alpha混成
+        Enable(true);
+        SetColorBlend(D3D11_BLEND_SRC_ALPHA, D3D11_BLEND_INV_SRC_ALPHA, D3D11_BLEND_OP_ADD);
+        SetAlphaBlend(D3D11_BLEND_SRC_ALPHA, D3D11_BLEND_INV_SRC_ALPHA, D3D11_BLEND_OP_ADD);
         SetMask(D3D11_COLOR_WRITE_ENABLE_ALL);
     }
     void CreateState() {

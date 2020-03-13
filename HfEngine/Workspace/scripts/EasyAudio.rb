@@ -3,12 +3,12 @@ require 'FFI'
 module HEG
     module Audio
 
-        SDL = HEG::FFI::Module.new("SDL2.dll") {
+        SDL = HEG::FFI::Module.new(File.join(EXECUTIVE_DIRECTORY, "SDL2.dll")) {
             func :SDL_Init, int, [int]
             func :SDL_RWFromFile, vptr, [cstr, cstr]
         }
 
-        SDLMixer = HEG::FFI::Module.new("SDL2_mixer.dll") {
+        SDLMixer = HEG::FFI::Module.new(File.join(EXECUTIVE_DIRECTORY, "SDL2_mixer.dll")) {
             func :Mix_Init, int, [int]
             func :Mix_OpenAudio, int, [int, int, int, int]
             func :Mix_AllocateChannels, int, [int]
@@ -43,7 +43,7 @@ module HEG
                 @native_ptr = SDLMixer.Mix_LoadMUS(filename)    
                 (raise LoadError, "Could not load music #{filename}") if 0 == @native_ptr
             end
-            def close 
+            def release
                 SDLMixer.Mix_FreeMusic(@native_ptr)
                 @native_ptr = 0
             end
@@ -56,7 +56,7 @@ module HEG
                 (raise LoadError, "Could not load sound effect #{}") if 0 == @native_ptr
                 @volumn = Audio.default_se_volumn
             end
-            def close 
+            def release
                 SDLMixer.Mix_FreeChunk(@native_ptr) if 0 != @native_ptr
                 @native_ptr = 0
             end

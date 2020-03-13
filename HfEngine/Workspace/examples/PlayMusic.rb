@@ -16,7 +16,7 @@ begin
     puts "Now playing #{filename}", "When you do not want to listen to it, just press any key\n"
     system "pause"
     Audio.stop_bgm
-    music.close 
+    music.release
     exit_process 0
 rescue Exception => e   
     msgbox "Oh", "#{filename} seems not to be a music file,\n or its format is not supported: #{e.message}"

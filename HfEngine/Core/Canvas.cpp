@@ -94,14 +94,14 @@ void Canvas::Initialize(int w, int h, const void* init_data) {
 
     D3D11_SUBRESOURCE_DATA data;
     if (init_data) {
-        memset(&data, 0, sizeof data);
         data.pSysMem = init_data;
         data.SysMemPitch = w * 4;
+        data.SysMemSlicePitch = 0;
     }
     if (FAILED(hr = device->native_device->CreateTexture2D(&td, init_data ? &data : nullptr, &native_texture2d))) {
         THROW_ERROR_CODE(std::runtime_error, "Failed to create D3D Texture2D, Error code:", hr);
     }
-
+    
     CreateViews();
 }
 
@@ -144,13 +144,16 @@ static mrb_value ClassCanvas_new(mrb_state* mrb, mrb_value klass) {
             pdata = (LPVOID)RSTRING_PTR(data_obj);
         else if (data_obj.tt == MRB_TT_FIXNUM)
             pdata = (LPVOID)data_obj.value.i;
+        else if (mrb_nil_p(data_obj)) {
+            pdata = nullptr;
+        }
         else {
             mrb_raise(mrb, mrb->eStandardError_class, "HEG::Canvas::new: init_data can only be a String or a Fixnum(Pointer)");
             return mrb_nil_value();
         }
     }
     else {
-        mrb_raise(mrb, mrb->eStandardError_class, "HEG::Canvas::new(filename : String) | HEG::Canvas::new(w : Fixnum, h : Fixnum, init_data = nil : String) -> canvas : Canvas requires 1..3 arguments");
+        mrb_raise(mrb, mrb->eStandardError_class, "HEG::Canvas::new(filename : String) | HEG::Canvas::new(w : Fixnum, h : Fixnum, init_data = nil : String/Fixnum) -> canvas : Canvas requires 1..3 arguments");
         return mrb_value();
     }
     cv = new Canvas();

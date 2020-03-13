@@ -46,6 +46,9 @@ module HEG::FFI
         def func(name, return_type, arg_type)
             @funcs[name.to_sym] = Function.new(@dll.addrof(name.to_s) ,return_type, arg_type.to_a)
         end
+        def relocate(new_name, old_name)
+            @funcs[new_name.to_sym] = @funcs[old_name.to_sym]
+        end
 
         def method_missing(name, *arg, &block) 
             #puts name
