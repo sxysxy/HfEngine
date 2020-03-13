@@ -1,17 +1,24 @@
+#encoding: utf-8
 require 'EasyTTF'
 require 'HFSF'
 include HEG
 GDevice.create
-Window.new("Simple Font Rendering Demo", 800, 30).instance_exec {
+show_console
+Window.new("Simple Font Rendering Demo", 400, 400).instance_exec {
     show 
     handle(:closed) { break_loop }
     
-    font = TTF::Font.new("msyh.ttc").bold.italic
-    bmp = font.draw_text("abcdefghigklmnnopqrstuvwxyz1234567890一二三四五六七八九十", Bitmap.color(255, 255, 0, 255)); #纯黄 颜色
+    font = TTF::Font.new("msyh.ttc")
+    board = TTF::Blackboard.new(400, 400)
+    board.write("abcdefghijklmnnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", font, Bitmap.color(255, 255, 255, 255))
+    board.write("\n0123456789\n", font, Bitmap.color(0, 0, 255, 255))
+    board.write("零一二三四五六七八九十九八七六五四三二一零\n", font, Bitmap.color(255, 255, 0, 255))
+    board.write("你\n  我\n   它\n", font, Bitmap.color(255, 0, 0, 255))
+    board.write("  手持两把锟斤拷，口中疾呼烫烫烫。\n  脚踏千朵屯屯屯，笑看万物锘锘锘。", font, Bitmap.color(255, 255, 255, 255))
+    tex = board.to_canvas
     font.release
-    tex = bmp.to_canvas
-    bmp.release
-    context = RenderContext.new.viewport(0, 0, width(), height()).target(canvas())
+    board.release
+    context = RenderContext.new.viewport(0, 0, width(), height()).target(self.canvas())
     sf = HFSF.loadsf_code {
         Program("Draw") {
             Code(%{

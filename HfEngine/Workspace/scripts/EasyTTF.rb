@@ -38,13 +38,16 @@ module HEG
                 if !File.exist? filename
                     filename = File.join(SYSTEM_FONTS_PATH, filename)
                     if !File.exist? filename
-                        raise RuntimeError, "Could not find font file #{filename} in executive directory or C:/windows/fonts"
+                        raise RuntimeError, "Could not find font file #{filename} in executive directory or #{SYSTEM_FONTS_PATH}"
                     end
                 end
                 @file = filename 
                 @size = font_size
                 reopen
                 @style = 0
+
+                @tmp_buf = "\0" * 8
+                @buf_ptr = str_ptr(@tmp_buf)
             end
 
             def reopen
@@ -64,15 +67,6 @@ module HEG
 
             def draw_text(text, color) 
                 sur = SDL_TTF.TTF_RenderUTF8_Blended(@native_ptr, text, color)
-=begin
-                w = FFI.read_int32(sur+16)
-                h = FFI.read_int32(sur+20)
-                data = FFI.read_int64(sur+32)
-                
-                tex = HEG::Canvas.new(w, h, data)
-                SDL.SDL_FreeSurface(sur)
-                return tex
-=end
                 return HEG::Bitmap.new(sur)
             end
 
@@ -127,6 +121,11 @@ module HEG
                 reopen
                 reset_style
             end
+
+            def calc_text_size(text)
+                SDL_TTF.TTF_SizeUTF8(@native_ptr, text, @buf_ptr, @buf_ptr+4)
+                return @tmp_buf.unpack("ii")
+            end
         end
 
         ALIGN_LEFT      = 0x01
@@ -140,7 +139,7 @@ module HEG
             attr_reader :width, :height
             attr_reader :bitmap
             
-            def initialize(w, h, space_between_lines = 4, text_font = nil)
+            def initialize(w, h, space_between_lines = 4)
                 @width = w
                 @height = h 
                 align(ALIGN_LEFT | ALIGN_VCENTER)
@@ -152,42 +151,60 @@ module HEG
                 @lastx = 0
                 @lasty = 0
                 @line_heights = []
-                
-                @tmp_buf = "\0" * 8
-                @buf_ptr = str_ptr(@tmp_buf)
             end
 
             def release 
                 @bitmap.release
             end
 
-            def line_height(lineno, font)
+            def line_height(font)
                 return @line_space + font.size
             end
 
-            def text_size(ch, font)
-                SDL_TTF.TTF_SizeUTF8(font.native_ptr, ch, @buf_ptr, @buf_ptr+4)
-                return @tmp_buf.unpack("ii")
-            end
-
-            def write(text, specified_font)
-                @posx = x ? x : @lastx
-                @posy = y ? y : @lasty
+            def write(text, specified_font, color)
+                @posx = @lastx
+                @posy = @lasty
                 f = specified_font  
-                t = text.to_s.clone 
-=begin
+                t = text.to_s.clone
                 while !t.empty?
                     c = t.slice!(0, 1)
-                    if c == '\n'
+                    if c == "\n"
                         @posx = 0
-                        @posy += line_height
+                        @posy += line_height(f)
+                    elsif c == "\r"
+                        next
                     else 
-                        
+                        cw = f.calc_text_size(c)[0]
+                        if @posx + cw >= @width
+                            @posx = 0
+                            @posy += line_height(f)
+                        end
+                        tmp = f.draw_text(c, color)
+                        draw_x = @posx 
+                        draw_y = @posy 
+=begin
+                        if (@alignment & ALIGN_RIGHT) != 0
+                            draw_x = @width - @posx   
+                        elsif (@alignment & ALIGN_CENTER) != 0
+                            draw_x = width - 
+                        end 
+=end
+                        if (@alignment & ALIGN_VCENTER) != 0
+                            draw_y = @posy + @line_space.div(2)
+                        elsif (@alignment & ALIGN_BOTTOM) != 0 
+                            draw_y = @posy + @line_space  
+                        end
+                        @bitmap.blt(draw_x, draw_y, tmp)
+                        tmp.release
+                        @posx += cw
                     end
                 end
                 @lastx = @posx 
                 @lasty = @posy
-=end
+            end
+
+            def to_canvas
+                @bitmap.to_canvas
             end
 
             def align(a) 

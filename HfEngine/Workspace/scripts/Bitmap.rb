@@ -39,8 +39,10 @@ module HEG
             func :SDL_ConvertSurface, vptr, [vptr, vptr, int]
             func :SDL_FreeFormat, int, [vptr]
             func :SDL_CreateRGBSurfaceWithFormat, vptr, [int, int, int, int, int]
-            func :SDL_UpperBlit, int, [vptr, vptr, vptr, vptr]
-            relocate :SDL_BlitSurface, :SDL_UpperBlit
+            #func :SDL_UpperBlit, int, [vptr, vptr, vptr, vptr]
+            #relocate :SDL_BlitSurface, :SDL_UpperBlit
+            func :SDL_UpperBlitScaled, int, [vptr, vptr, vptr, vptr]
+            relocate :SDL_BlitSurface, :SDL_UpperBlitScaled
         }
 
         SDL_Image = HEG::FFI::Module.new(File.join(EXECUTIVE_DIRECTORY, "SDL2_image.dll")) {

@@ -231,6 +231,7 @@ public:
     Window2() : Window() {
         canvas_obj = mrb_obj_value(mrb_data_object_alloc(currentRubyVM->GetRuby(),
             ClassCanvas, back_canvas.Get(), &ClassCanvasSpecialDataType));
+        mrb_gc_register(currentRubyVM->GetRuby(), canvas_obj);
     }
 
     void OnResized() {
@@ -252,6 +253,9 @@ public:
         catch (...) {
 
         }
+    }
+    virtual void Release() override {
+        //mrb_gc_mark_value()
     }
 };
 
