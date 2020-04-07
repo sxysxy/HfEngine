@@ -420,6 +420,62 @@ mrb_value ClassWindow_canvas(mrb_state* state, mrb_value self) {
     return GetNativeObject<Window2>(self)->canvas_obj;
 }
 
+/*[DOCUMENT]
+method: HEG::Window#title -> t : String
+note: Get title string
+*/
+mrb_value ClassWindow_title(mrb_state* state, mrb_value self) {
+    auto t = GetNativeObject<Window2>(self)->GetTitle();
+    std::string tt;
+    U16ToU8(t.c_str(), tt);
+    return mrb_str_new_cstr(state, tt.c_str());
+}
+
+/*[DOCUMENT]
+method: HEG::Window#title=(t) 
+note: Set the title of the window
+*/
+mrb_value ClassWindow_set_title(mrb_state* state, mrb_value self) {
+    mrb_value s;
+    mrb_get_args(state, "S", &s);
+    const char* t = RSTRING_PTR(s);
+    std::wstring tt;
+    U8ToU16(t, tt);
+    GetNativeObject<Window2>(self)->SetTitle(tt);
+    return s;
+}
+
+/*[DOCUMENT]
+method: HEG::Window#is_key_pressed(keycode : Integer, timing = 0 : Integer)
+note: Query if the specified key is pressed (timing = 0 for current keyboard input frame, otherwise for last frame)
+*/
+mrb_value ClassWindow_is_key_pressed(mrb_state* mrb, mrb_value self) {
+    mrb_int keycode, timing = 0;
+    mrb_int argc = mrb_get_argc(mrb);
+    if (argc == 1) {
+        mrb_get_args(mrb, "i", &keycode);
+        return GetNativeObject<Window2>(self)->GetKeyPressed((int)keycode, (int)timing) ? mrb_true_value() : mrb_false_value();
+    }
+    else if (argc == 2) {
+        mrb_get_args(mrb, "ii", &keycode, &timing);
+        return GetNativeObject<Window2>(self)->GetKeyPressed((int)keycode, (int)timing) ? mrb_true_value() : mrb_false_value();
+    }
+    else {
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "HEG::Window#is_key_pressed(keycode, timing = 0) requires 1 or 2 arguments");
+        return mrb_nil_value();
+    }
+}
+
+/*[DOCUMENT]
+method: HEG::Window#update_key -> self
+note: Update keyboard input frame
+*/
+mrb_value ClassWindow_update_key(mrb_state* mrb, mrb_value self) {
+    GetNativeObject<Window2>(self)->UpdateKey();
+    return self;
+}
+
+
 bool InjectWindowExtension() {
     const RubyVM* vm = currentRubyVM;
     RClass* HEG = mrb_define_module(vm->GetRuby(), "HEG");
@@ -438,6 +494,11 @@ bool InjectWindowExtension() {
     mrb_define_method(vm->GetRuby(), ClassWindow, "width", ClassWindow_width, MRB_ARGS_NONE());
     mrb_define_method(vm->GetRuby(), ClassWindow, "height", ClassWindow_height, MRB_ARGS_NONE());
     mrb_define_method(vm->GetRuby(), ClassWindow, "canvas", ClassWindow_canvas, MRB_ARGS_NONE());
+    mrb_define_method(vm->GetRuby(), ClassWindow, "title", ClassWindow_title, MRB_ARGS_NONE());
+    mrb_define_method(vm->GetRuby(), ClassWindow, "title=", ClassWindow_set_title, MRB_ARGS_NONE());
+    mrb_define_method(vm->GetRuby(), ClassWindow, "update_key", ClassWindow_update_key, MRB_ARGS_NONE());
+    mrb_define_method(vm->GetRuby(), ClassWindow, "is_key_pressed", ClassWindow_is_key_pressed, MRB_ARGS_ARG(1, 1));
+
     return true;
 }
 

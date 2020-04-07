@@ -66,7 +66,7 @@ static mrb_value ClassTransform_rotate(mrb_state* mrb, mrb_value self) {
     mrb_value axis, angle;
     mrb_get_args(mrb, "Af", &axis, &angle);
     if (RARRAY_LEN(axis) < 3) {
-        mrb_raise(mrb, mrb->eStandardError_class, "Transform#rotate(axis, angle) : axis should contains three float numbers");
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "Transform#rotate(axis, angle) : axis should contains three float numbers");
         return self;
     }
     mrb_value* pa = RARRAY_PTR(axis);
@@ -84,7 +84,7 @@ static mrb_value ClassTransform_view(mrb_state* mrb, mrb_value self) {
     mrb_value ep, tp, ud;
     mrb_get_args(mrb, "AAA", &ep, &tp, &ud);
     if (RARRAY_LEN(ep) < 3 || RARRAY_LEN(tp) < 3 || RARRAY_LEN(ud) < 3) {
-        mrb_raise(mrb, mrb->eStandardError_class, "Transform#view : All parameters should contains 3 float numbers");
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "Transform#view : All parameters should contains 3 float numbers");
         return self;
     }
     const mrb_value* pep = RARRAY_PTR(ep);

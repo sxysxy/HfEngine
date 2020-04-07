@@ -41,14 +41,14 @@ mrb_value FFI_dlopen(mrb_state* mrb, mrb_value self) {
         syspath.push_back(L'\\');
         filename = syspath + filename;
         if (GetFileAttributesW(filename.c_str()) == INVALID_FILE_ATTRIBUTES) {
-            mrb_raise(mrb, mrb->eStandardError_class,
+            mrb_raise(mrb, E_RUNTIME_ERROR,
                 (std::string("Could not find ") + std::string(RSTRING_PTR(filename_obj)) + std::string(" in working or system directory.")).c_str());
             return mrb_fixnum_value(0);
         }
     }
     HANDLE h = LoadLibraryW(filename.c_str());
     if (!h) {
-        mrb_raise(mrb, mrb->eStandardError_class,
+        mrb_raise(mrb, E_RUNTIME_ERROR,
             (std::string("Could not load file ") + std::string(RSTRING_PTR(filename_obj)) + std::string(", maybe it is not a shared library.")).c_str());
     }
     return mrb_obj_value(mrb_data_object_alloc(mrb, ClassDLL, h, &ClassDLLDataType));
@@ -65,7 +65,7 @@ mrb_value ClassDLL_addrof(mrb_state* mrb, mrb_value self) {
     HMODULE hDll = (HMODULE)DATA_PTR(self);
     void* addr = GetProcAddress(hDll, psym);
     if (addr == 0) {
-        mrb_raise(mrb, mrb->eStandardError_class, (std::string("Could not get address of ") + RSTRING_PTR(sym)).c_str());
+        mrb_raise(mrb, E_RUNTIME_ERROR, (std::string("Could not get address of ") + RSTRING_PTR(sym)).c_str());
         return mrb_fixnum_value(0);
     }
     return mrb_fixnum_value((mrb_int)addr);
@@ -135,7 +135,7 @@ static mrb_value ClassPointer_write(mrb_state* mrb, mrb_value self) {
     mrb_value* argv;
     mrb_get_args(mrb, "*!", &argv, &argc);
     if ((argc != 2) || (argc != 4)) {
-        mrb_raise(mrb, mrb->eStandardError_class,
+        mrb_raise(mrb, E_ARGUMENT_ERROR,
             (std::string("HEG::FFI::Pointer#write: Wrong number of arguments(") + std::to_string(argc) + std::string(" for (2 or 4)")).c_str());
         return self;
     }
@@ -205,7 +205,7 @@ static mrb_value ClassFunction_call(mrb_state* mrb, mrb_value self) {
     mrb_value* av;
     mrb_get_args(mrb, "*!", &av, &ac);
     if (ac != f->args_type.size()) {
-        mrb_raise(mrb, mrb->eStandardError_class, "FFI::Function#call: wrong number of arguments");
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "FFI::Function#call: wrong number of arguments");
         return mrb_nil_value();
     }
     std::vector<FFIFunction::CallValue> cvs;
@@ -215,22 +215,22 @@ static mrb_value ClassFunction_call(mrb_state* mrb, mrb_value self) {
         FFIFunction::CallValue cv;
         if (ct == FFI_TYPE_INT32 || ct == FFI_TYPE_INT64) {
             if (av[i].tt != MRB_TT_FIXNUM)
-                mrb_raisef(mrb, mrb->eStandardError_class, "FFI::Function#call: argv[%d] should be a Fixnum", i);
+                mrb_raisef(mrb, E_ARGUMENT_ERROR, "FFI::Function#call: argv[%d] should be a Fixnum", i);
             cv.as_int64 = mrb_fixnum(av[i]);
         }
         else if (ct == FFI_TYPE_FLOAT || ct == FFI_TYPE_DOUBLE) {
             if (av[i].tt != MRB_TT_FLOAT)
-                mrb_raisef(mrb, mrb->eStandardError_class, "FFI::Function#call: argv[%d] should be a Float", i);
+                mrb_raisef(mrb, E_ARGUMENT_ERROR, "FFI::Function#call: argv[%d] should be a Float", i);
             cv.as_double = mrb_float(av[i]);
         }
         else if (ct == FFI_TYPE_STRING) {
             if (av[i].tt != MRB_TT_STRING)
-                mrb_raisef(mrb, mrb->eStandardError_class, "FFI::Function#call: argv[%d] should be a String", i);
+                mrb_raisef(mrb, E_ARGUMENT_ERROR, "FFI::Function#call: argv[%d] should be a String", i);
             cv.as_cstr = RSTRING_PTR(av[i]);
         }
         else if (ct == FFI_TYPE_VOIDP) {
             if (av[i].tt != MRB_TT_FIXNUM)
-                mrb_raisef(mrb, mrb->eStandardError_class, "FFI::Function#call: argv[%d] should be a Fixnum(FFI::TYPE_VOIDP)", i);
+                mrb_raisef(mrb, E_ARGUMENT_ERROR, "FFI::Function#call: argv[%d] should be a Fixnum(FFI::TYPE_VOIDP)", i);
             cv.as_int64 = mrb_fixnum(av[i]);
         }
         cvs.push_back(cv);

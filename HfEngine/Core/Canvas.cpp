@@ -131,7 +131,7 @@ static mrb_value ClassCanvas_new(mrb_state* mrb, mrb_value klass) {
             return mrb_obj_value(mrb_data_object_alloc(mrb, ClassCanvas, cv, &ClassCanvasDataType));
         }
         catch (std::exception & e) {
-            mrb_raise(mrb, mrb->eStandardError_class, (std::string("Canvas::new: failed to create canvas: ") + e.what()).c_str());
+            mrb_raise(mrb, E_RUNTIME_ERROR, (std::string("Canvas::new: failed to create canvas: ") + e.what()).c_str());
         }
     }
     else if (argc == 2) {
@@ -148,12 +148,12 @@ static mrb_value ClassCanvas_new(mrb_state* mrb, mrb_value klass) {
             pdata = nullptr;
         }
         else {
-            mrb_raise(mrb, mrb->eStandardError_class, "HEG::Canvas::new: init_data can only be a String or a Fixnum(Pointer)");
+            mrb_raise(mrb, E_ARGUMENT_ERROR, "HEG::Canvas::new: init_data can only be a String or a Fixnum(Pointer)");
             return mrb_nil_value();
         }
     }
     else {
-        mrb_raise(mrb, mrb->eStandardError_class, "HEG::Canvas::new(filename : String) | HEG::Canvas::new(w : Fixnum, h : Fixnum, init_data = nil : String/Fixnum) -> canvas : Canvas requires 1..3 arguments");
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "HEG::Canvas::new(filename : String) | HEG::Canvas::new(w : Fixnum, h : Fixnum, init_data = nil : String/Fixnum) -> canvas : Canvas requires 1..3 arguments");
         return mrb_value();
     }
     cv = new Canvas();
@@ -163,7 +163,7 @@ static mrb_value ClassCanvas_new(mrb_state* mrb, mrb_value klass) {
         return mrb_obj_value(mrb_data_object_alloc(mrb, ClassCanvas, cv, &ClassCanvasDataType));
     }
     catch (std::exception & e) {
-        mrb_raise(mrb, mrb->eStandardError_class, (std::string("Canvas::new: failed to create canvas: ") + e.what()).c_str());
+        mrb_raise(mrb, E_RUNTIME_ERROR, (std::string("Canvas::new: failed to create canvas: ") + e.what()).c_str());
     }
 }
 

@@ -39,7 +39,7 @@ public:
 
     static std::unique_ptr<DirectX::Mouse> mouse;
     DirectX::Mouse::ButtonStateTracker mouse_tracker;
-    
+    std::unique_ptr<Input::Keyboard> keyboard;
 
     Window() {
         _native_handle = 0;
@@ -87,7 +87,7 @@ public:
         }
         //Usually cause a _com_error because of DXGI_STATUS_OCCLUDED.
         //See https://msdn.microsoft.com/en-us/library/windows/desktop/cc308061(v=vs.85).aspx
-
+        keyboard.reset(new Input::Keyboard(native_handle));
     }
     //destructor.
     void Uninitialize() {
@@ -122,7 +122,6 @@ public:
         GetWindowRect(native_handle, &r);
         x = r.left, y = r.top;
     }
-
 
     void SetTitle(const std::wstring& t) {
         assert(_native_handle);
@@ -183,6 +182,14 @@ public:
         GDevice::GetInstance()->Lock();
         native_swap_chain->SetFullscreenState(fullscreen, nullptr);
         GDevice::GetInstance()->UnLock();
+    }
+
+    inline bool GetKeyPressed(int keycode, int timing) {
+        if (timing == 0) return keyboard->IsKeyPressedNow(keycode);
+        else return keyboard->IsKeyPressedBefore(keycode);
+    }
+    inline void UpdateKey() {
+        keyboard->ReadDeviceData();
     }
 
     virtual void OnResized();

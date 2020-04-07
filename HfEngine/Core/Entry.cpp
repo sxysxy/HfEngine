@@ -91,7 +91,7 @@ int __cdecl cmain(wchar_t* path) {
             if (syspath[i] == '\\')syspath[i] = '/';
         }
         mrb_const_set(mrb, ClassObject, mrb_intern_lit(mrb, "SYSTEM_DIRECTORY"), mrb_str_new_cstr(mrb, syspath.c_str()));
-        for (int i = syspath.length() - 1; ~i; --i) {
+        for (size_t i = syspath.length() - 1; ~i; --i) {
             if (syspath[i] == '/') {
                 syspath[i] = 0;
                 mrb_const_set(mrb, ClassObject, mrb_intern_lit(mrb, "WINDOWS_DIRECTORY"), mrb_str_new_cstr(mrb, syspath.c_str()));

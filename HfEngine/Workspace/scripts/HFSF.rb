@@ -175,7 +175,9 @@ class BufferGeneratorBase < Generator
 	end
 end
 
+#Remove buffer support
 #ConstantBufferGenerator *
+=begin
 class ConstantBufferGenerator < BufferGeneratorBase
 	@@valid_area = :ResourceGenerator
 	
@@ -186,6 +188,7 @@ class ConstantBufferGenerator < BufferGeneratorBase
 		super(s)
 	end
 end
+=end
 
 #ResourceGenerator
 class ResourceGenerator < Generator
@@ -666,14 +669,7 @@ def self.load_resource(program, rdata)
 			resource.depth_stencil_state[name.to_sym] = ds
 		end
 =end
-		if element[0] == ConstantBufferGenerator
-			if element[1][:init_data]
-				cb = HEG::ConstantBuffer.new(element[1][:size], element[1][:init_data].pack("C*"))
-			else   
-				cb = HEG::ConstantBuffer.new(element[1][:size])
-			end
-			resource.cbuffer[name.to_sym] = cb
-		elsif element[0] == SamplerGenerator
+		if element[0] == SamplerGenerator
 			s = HEG::Sampler.new 
 			s.__load__(element[1][:raw_data])
 			s.create_state

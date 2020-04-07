@@ -227,7 +227,7 @@ static mrb_value ClassShader_from_string(mrb_state* mrb, mrb_value self) {
         GetNativeObject<Shader>(self)->CreateFromString(RSTRING_PTR(code), entry);
     }
     catch (std::exception& e) {
-        mrb_raise(mrb, mrb->eStandardError_class, e.what());
+        mrb_raise(mrb, E_RUNTIME_ERROR, e.what());
     }
     return self;
 }
@@ -253,7 +253,7 @@ static mrb_value ClassShader_from_file(mrb_state* mrb, mrb_value self) {
         GetNativeObject<Shader>(self)->CreateFromFile(filenamew, entry);
     }
     catch (std::exception & e) {
-        mrb_raise(mrb, mrb->eStandardError_class, e.what());
+        mrb_raise(mrb, E_RUNTIME_ERROR, e.what());
     }
     return self;
 }
@@ -269,7 +269,7 @@ static mrb_value ClassShader_from_binary(mrb_state* mrb, mrb_value self) {
         GetNativeObject<Shader>(self)->CreateFromBinary(RSTRING_PTR(code), RSTRING_LEN(code));
     }
     catch (std::exception & e) {
-        mrb_raise(mrb, mrb->eStandardError_class, e.what());
+        mrb_raise(mrb, E_RUNTIME_ERROR, e.what());
     }
     return self;
 }
@@ -314,7 +314,7 @@ static mrb_value ClassVertexBuffer_new(mrb_state* mrb, mrb_value klass) {
         pdata = nullptr;
     }
     else {
-        mrb_raise(mrb, mrb->eStandardError_class, "VertexBuffer::new: Wrong number of arguments(expecting 2 or 3)");
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "VertexBuffer::new: Wrong number of arguments(expecting 2 or 3)");
         return mrb_value();
     }
     try {
@@ -323,7 +323,7 @@ static mrb_value ClassVertexBuffer_new(mrb_state* mrb, mrb_value klass) {
         return mrb_obj_value(mrb_data_object_alloc(mrb, ClassVertexBuffer, bf, &ClassVertexBufferDataType));
     }
     catch (std::exception & e) {
-        mrb_raise(mrb, mrb->eStandardError_class, (std::string("VertexBuffer::new: Failed to create Vertex Buffer: ") + e.what()).c_str());
+        mrb_raise(mrb, E_RUNTIME_ERROR, (std::string("VertexBuffer::new: Failed to create Vertex Buffer: ") + e.what()).c_str());
         return mrb_value();
     }
 }
@@ -346,7 +346,7 @@ static mrb_value ClassIndexBuffer_new(mrb_state* mrb, mrb_value klass) {
         pdata = nullptr;
     }
     else {
-        mrb_raise(mrb, mrb->eStandardError_class, "IndexBuffer::new: Wrong number of arguments(expecting 2 or 3)");
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "IndexBuffer::new: Wrong number of arguments(expecting 2 or 3)");
         return mrb_value();
     }
     try {
@@ -355,7 +355,7 @@ static mrb_value ClassIndexBuffer_new(mrb_state* mrb, mrb_value klass) {
         return mrb_obj_value(mrb_data_object_alloc(mrb, ClassIndexBuffer, bf, &ClassIndexBufferDataType));
     }
     catch (std::exception & e) {
-        mrb_raise(mrb, mrb->eStandardError_class, (std::string("IndexBuffer::new: Failed to create Index Buffer: ") + e.what()).c_str());
+        mrb_raise(mrb, E_RUNTIME_ERROR, (std::string("IndexBuffer::new: Failed to create Index Buffer: ") + e.what()).c_str());
         return mrb_value();
     }
 }
@@ -379,7 +379,7 @@ static mrb_value ClassConstantBuffer_new(mrb_state* mrb, mrb_value klass) {
         pdata = nullptr;
     }
     else {
-        mrb_raise(mrb, mrb->eStandardError_class, "ConstantBuffer::new: Wrong number of arguments(expecting 2 or 3)");
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "ConstantBuffer::new: Wrong number of arguments(expecting 2 or 3)");
         return mrb_value();
     }
     try {
@@ -388,7 +388,7 @@ static mrb_value ClassConstantBuffer_new(mrb_state* mrb, mrb_value klass) {
         return mrb_obj_value(mrb_data_object_alloc(mrb, ClassConstantBuffer, bf, &ClassConstantBufferDataType));
     }
     catch (std::exception & e) {
-        mrb_raise(mrb, mrb->eStandardError_class, (std::string("ConstantBuffer::new: Failed to create Constant Buffer: ") + e.what()).c_str());
+        mrb_raise(mrb, E_RUNTIME_ERROR, (std::string("ConstantBuffer::new: Failed to create Constant Buffer: ") + e.what()).c_str());
         return mrb_value();
     }
 }
@@ -406,7 +406,7 @@ static mrb_value create_state(mrb_state *mrb, mrb_value self) {
         obj->CreateState();
     }
     catch (const std::runtime_error & err) {
-        mrb_raise(mrb, mrb->eStandardError_class, err.what());
+        mrb_raise(mrb, E_RUNTIME_ERROR, err.what());
     }
     return self;
 }
@@ -492,7 +492,7 @@ static mrb_value ClassRenderContext_layout(mrb_state* mrb, mrb_value self) {
     mrb_int len1 = RARRAY_LEN(names);
     mrb_int len2 = RARRAY_LEN(fmts);
     if (len1 != len2)
-        mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#layout: Array lengths do not match");
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "RenderContext#layout: names and formats arrays' lengths do not match");
     std::vector<std::string> ns;
     std::vector<DXGI_FORMAT> fs;
     for (int i = 0; i < len1; i++) {
@@ -505,7 +505,7 @@ static mrb_value ClassRenderContext_layout(mrb_state* mrb, mrb_value self) {
         context->SetInputLayout(ns.data(), fs.data(), (int)len1);
     }
     catch (std::runtime_error re) {
-        mrb_raise(mrb, mrb->eStandardError_class, re.what());
+        mrb_raise(mrb, E_RUNTIME_ERROR, re.what());
     }
     return self;
 }
@@ -518,7 +518,7 @@ static mrb_value ClassRenderContext_shader(mrb_state* mrb, mrb_value self) {
     mrb_value shader_obj;
     mrb_get_args(mrb, "o", &shader_obj);
     if (!mrb_obj_is_kind_of(mrb, shader_obj, ClassShader)) {
-        mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#shader: argument is expected to be a Shader");
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "RenderContext#shader: argument is expected to be a Shader");
         return self;
     }
     GetNativeObject<RenderContext>(self)->SetShader(GetNativeObject<Shader>(shader_obj));
@@ -533,7 +533,7 @@ static mrb_value ClassRenderContext_vbuffer(mrb_state* mrb, mrb_value self) {
     mrb_value vb_obj;
     mrb_get_args(mrb, "o", &vb_obj);
     if (!mrb_obj_is_kind_of(mrb, vb_obj, ClassVertexBuffer)) {
-        mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#vbuffer: argument is expected to be a Vertex Buffer");
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "RenderContext#vbuffer: argument is expected to be a Vertex Buffer");
         return self;
     }
     GetNativeObject<RenderContext>(self)->SetVertexBuffer(GetNativeObject<VertexBuffer>(vb_obj));
@@ -548,7 +548,7 @@ static mrb_value ClassRenderContext_ibuffer(mrb_state* mrb, mrb_value self) {
     mrb_value ib_obj;
     mrb_get_args(mrb, "o", &ib_obj);
     if (!mrb_obj_is_kind_of(mrb, ib_obj, ClassIndexBuffer)) {
-        mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#ibuffer: argument is expected to be a Index Buffer");
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "RenderContext#ibuffer: argument is expected to be a Index Buffer");
         return self;
     }
     GetNativeObject<RenderContext>(self)->SetIndexBuffer(GetNativeObject<IndexBuffer>(ib_obj));
@@ -584,7 +584,7 @@ static mrb_value ClassRenderContext_target(mrb_state* mrb, mrb_value self) {
     mrb_value cv_obj;
     mrb_get_args(mrb, "o", &cv_obj);
     if (!mrb_obj_is_kind_of(mrb, cv_obj, ClassCanvas)) {
-        mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#target: argument is expected to be a Canvas");
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "RenderContext#target: argument is expected to be a Canvas");
         return self;
     }
     GetNativeObject<RenderContext>(self)->SetRenderTarget(GetNativeObject<Canvas>(cv_obj));
@@ -607,7 +607,7 @@ static mrb_value ClassRenderContext_clear(mrb_state* mrb, mrb_value self) {
             (float)mrb_float(a));
     }
     else {
-        mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#clear requires 0 or 4 floats number arguments to work");
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "RenderContext#clear requires 0 or 4 floats number arguments to work");
     }
     return self;
 }
@@ -620,7 +620,7 @@ static mrb_value ClassRenderContext_flush(mrb_state* mrb, mrb_value self) {
     mrb_value buf, data;
     mrb_get_args(mrb, "oS", &buf, &data);
     if (!mrb_obj_is_kind_of(mrb, buf, ClassGBuffer)) {
-        mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#flush: param 1 should be a GBuffer");
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "RenderContext#flush: param 1 should be a GBuffer");
         return self;
     }
     GetNativeObject<RenderContext>(self)->Flush(
@@ -638,7 +638,7 @@ static mrb_value ClassRenderContext_resource(mrb_state* mrb, mrb_value self) {
     mrb_value canvas;
     mrb_get_args(mrb, "iio", &stage, &slot, &canvas);
     if (!mrb_obj_is_kind_of(mrb, canvas, ClassCanvas)) {
-        mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#resource(stage, slot, canvas): argument 3 is expected to be a Canvas");
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "RenderContext#resource(stage, slot, canvas): argument 3 is expected to be a Canvas");
         return self;
     }
     GetNativeObject<RenderContext>(self)->SetShaderResource((SHADER_TYPE)stage, (int)slot,
@@ -655,7 +655,7 @@ static mrb_value ClassRenderContext_sampler(mrb_state* mrb, mrb_value self) {
     mrb_value s;
     mrb_get_args(mrb, "iio", &stage, &slot, &s);
     if (!mrb_obj_is_kind_of(mrb, s, ClassSampler)) {
-        mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#sampler(stage, slot, cb): argument 3 is expected to be a ConstantBuffer");
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "RenderContext#sampler(stage, slot, cb): argument 3 is expected to be a ConstantBuffer");
         return self;
     }
     GetNativeObject<RenderContext>(self)->SetSampler((SHADER_TYPE)stage, (int)slot,
@@ -672,7 +672,7 @@ static mrb_value ClassRenderContext_cbuffer(mrb_state* mrb, mrb_value self) {
     mrb_value cb;
     mrb_get_args(mrb, "iio", &stage, &slot, &cb);
     if (!mrb_obj_is_kind_of(mrb, cb, ClassConstantBuffer)) {
-        mrb_raise(mrb, mrb->eStandardError_class, "RenderContext#cbuffer(stage, slot, cb): argument 3 is expected to be a ConstantBuffer");
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "RenderContext#cbuffer(stage, slot, cb): argument 3 is expected to be a ConstantBuffer");
         return self;
     }
     GetNativeObject<RenderContext>(self)->SetConstantBuffer((SHADER_TYPE)stage, (int)slot,

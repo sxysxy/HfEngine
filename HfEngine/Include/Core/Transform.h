@@ -54,7 +54,7 @@ public:
     Transform& view(const float* eye_pos, const float* target_pos, const float* up_dir) {
         auto trans = DirectX::XMMatrixLookAtLH({ eye_pos[0], eye_pos[1], eye_pos[2] },
             { target_pos[0], target_pos[1], target_pos[2] },
-            { up_dir[0], up_dir[1], up_dir[1] });
+            { up_dir[0], up_dir[1], up_dir[2] });
         auto cur = DirectX::XMLoadFloat4x4(&matrix);
         cur *= trans;
         DirectX::XMStoreFloat4x4(&matrix, cur);
